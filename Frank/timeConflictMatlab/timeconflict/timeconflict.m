@@ -45,39 +45,59 @@ DEV_factor = 10;
 DEV_factor2= 1;
 sin_factor = 0.25;
 
-%Input subject info
-subject = struct(...
-    'subj_id',[],...
-    'age',[],...
-    'gender',[],...
-    'cb_num',[]); %end subject struct
+% WF dont need to declare subject structure
+% Building as we go allows checks
 
-subject.subj_id = input('Enter the subject ID number: ','s');
+%Input subject info
+% subject = struct(...
+%     'subj_id',[],...
+%     'age',[],...
+%     'gender',[],...
+%     'cb_num',[]); %end subject struct
+
+% skip the questions if we provide var ourself
+if(~exist('subject','var') || ~ismember('subj_id',fields(subject)))
+ subject.subj_id = input('Enter the subject ID number: ','s');
+end
 
 filename = [subject.subj_id '_tc'];
 
-restart = input('Is this a restart (y or n)? ','s');
-
-if restart == 'y' || restart == 'Y'
-    subj_id = subject.subj_id;
-    clear subject
-    load(filename);
-else
-    subject.age = input('Enter subject age: ');
-    sex = input('Enter subject gender (m or f): ','s');
-
-    if sex == 'm' || sex =='M'
-        subject.gender = 'male';
-    else
-        subject.gender = 'female';
+% is the subject new? is it a restart or resume of an existing?
+% set t accordingly, maybe load subject structure 
+if(exist(filename,'file'))
+    restart = input('Is this a restart (y or n)? ','s');
+    if lower(restart) == 'y' 
+        %subj_id = subject.subj_id;
+        clear subject
+        load(filename);
+    else 
+        t=1;
     end
-
-    subject.cb_num = input('Enter CB#: ');
-
-    order = load(['order' mat2str(subject.cb_num) '.txt']);
-    order = [order zeros(size(order,1),2)];
-    t = 1;
+else
+    t=1;
 end
+
+
+% fill out the subject struct if any part of it is still empty
+for attrib={'gender','age','cb_num'}
+    attrib = cell2mat(attrib); % make a normal string
+    if(~ismember(attrib,fields(subject)))
+     promptText=sprintf('Enter subject''s %s: ',attrib);
+     subject.(attrib) = input(promptText,'s');
+    end
+end
+
+if ismember(lower(subject.gender),{'male';'dude';'guy';'m'} )
+    subject.gender = 'male';
+else
+    subject.gender = 'female';
+end
+
+orderFile=['order' num2str(subject.cb_num) '.txt'];
+if(~exist(orderFile,'file')); error('give me a good order number!'); end
+order = load(orderFile);
+order = [order zeros(size(order,1),2)];
+
 
 whichScreen = 0;
 
@@ -201,11 +221,14 @@ win_msg2_bounds=Screen('TextBounds',window,win_msg2);
 cd stims
 clocks=zeros(9);
 
-for clock=1:9
-    tmp_clock=imread([mat2str(clock) '.jpg'],'jpg');
+% WF
+% changed indexer from clock to clockIdx
+% clock is also a function used by this script
+for clockIdx=1:9
+    tmp_clock=imread([mat2str(clockIdx) '.jpg'],'jpg');
     clocksize = size(tmp_clock);
     clocksize = clocksize(1:2);
-    clocks(clock)=Screen('MakeTexture',window,tmp_clock);
+    clocks(clockIdx)=Screen('MakeTexture',window,tmp_clock);
 end
 
 cd box
@@ -253,8 +276,8 @@ blank_clock = Screen('MakeTexture',window,tmp_clock);
 
 cd ..
 
-%set the center
-center=centerrect([0 0 imgsize(2) imgsize(1)],rect);
+%set the center % needed case change
+center=CenterRect([0 0 imgsize(2) imgsize(1)],rect);
 
 %Restart Trials
 if t > 1
