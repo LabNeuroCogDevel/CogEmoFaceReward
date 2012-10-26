@@ -4,21 +4,21 @@
 % Modifications for fMRI testing
 
 PHASE = 1;      %Phase of experiment
-    CEV = 1;        %Constant Expected Value
-    DEV = 2;        %Increasing Expected Value
-    IEV = 3;        %Decreasing Expected Value
-    CEVR = 4;       %Constant Expected Value, reversed
+CEV = 1;        %Constant Expected Value
+DEV = 2;        %Increasing Expected Value
+IEV = 3;        %Decreasing Expected Value
+CEVR = 4;       %Constant Expected Value, reversed
 RUN = 2;        %Run of the experiment
 TRIAL= 3;       %Trial number
 BOXC = 4;       %Box color
-    RED = 1;
-    ORANGE = 2;
-    YELLOW = 3;
-    GREEN = 4;
-    BLUE = 5;
-    PURPLE= 6;
-    PINK = 7;
-    BROWN = 8;
+RED = 1;
+ORANGE = 2;
+YELLOW = 3;
+GREEN = 4;
+BLUE = 5;
+PURPLE= 6;
+PINK = 7;
+BROWN = 8;
 NULL = 5;       %Null interval
 
 TRACT_COL = 6;  %Actual TR, appended
@@ -58,7 +58,7 @@ filename = [subject.subj_id '_tc'];
 
 restart = input('Is this a restart (y or n)? ','s');
 
-if restart == 'y' | restart == 'Y'
+if restart == 'y' || restart == 'Y'
     subj_id = subject.subj_id;
     clear subject
     load(filename);
@@ -66,7 +66,7 @@ else
     subject.age = input('Enter subject age: ');
     sex = input('Enter subject gender (m or f): ','s');
 
-    if sex == 'm' | sex =='M'
+    if sex == 'm' || sex =='M'
         subject.gender = 'male';
     else
         subject.gender = 'female';
@@ -268,7 +268,7 @@ if t > 1
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 wait_stamp=GetSecs;
                 break;
             end
@@ -292,7 +292,7 @@ if t > 1
     while 1
         keyCode=[];
         [keyIsDown,secs,keyCode] = KbCheck;
-        if keyCode(39) | keyCode(98)
+        if keyCode(39) || keyCode(98)
             break;
         end
     end
@@ -307,7 +307,7 @@ if t > 1
     while 1
         keyCode=[];
         [keyIsDown,secs,keyCode] = KbCheck;
-        if keyCode(39) | keyCode(98)
+        if keyCode(39) || keyCode(98)
             trstamp=GetSecs; %stamps time when scanner starts script
             inst_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
             break;
@@ -341,7 +341,7 @@ while t <= ORDER_LENGTH
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 wait_stamp=GetSecs;
                 break;
             end
@@ -370,7 +370,7 @@ while t <= ORDER_LENGTH
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 wait_stamp=GetSecs;
                 break;
             end
@@ -398,7 +398,7 @@ while t <= ORDER_LENGTH
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 wait_stamp=GetSecs;
                 break;
             end
@@ -414,7 +414,7 @@ while t <= ORDER_LENGTH
     %             end
     %             RT = (button_time-rt_stamp)*1000
     %         end
-    elseif t~=1 & order(t,RUN)~=order(t-1,RUN)
+    elseif t~=1 && order(t,RUN)~=order(t-1,RUN)
     Screen('DrawText',window,in1br,middle_x-(in1p3_bounds(3)/2),middle_y-150,white);
     Screen('DrawText',window,in2br,middle_x-(in2p3_bounds(3)/2),middle_y-100,white);
     Screen('DrawText',window,in3br,middle_x-(in3p3_bounds(3)/2),middle_y,white); 
@@ -424,7 +424,7 @@ while t <= ORDER_LENGTH
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 wait_stamp=GetSecs;
                 break;
             end
@@ -441,7 +441,7 @@ while t <= ORDER_LENGTH
     %             RT = (button_time-rt_stamp)*1000
     %         end
     end
-if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
+    if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
     
 
      wait_stamp=GetSecs;
@@ -452,7 +452,7 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 break;
             end
         end
@@ -466,7 +466,7 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         while 1
             keyCode=[];
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) | keyCode(98)
+            if keyCode(39) || keyCode(98)
                 wait_stamp=GetSecs;
                 trstamp=GetSecs; %stamps time when scanner starts script
                 rt_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
@@ -502,10 +502,10 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         Screen('DrawTexture',window,boxes(order(t,BOXC)));
         Screen('DrawTexture',window,clocks(a));
         [junk,junk2,rt_stamp]=Screen('Flip',window);
-        while ~RT & (GetSecs-rt_stamp) <= (CLOCK_DUR) %While no RT and while time is less than clock dur, wait for a keypress for each clock face
+        while ~RT && (GetSecs-rt_stamp) <= (CLOCK_DUR) %While no RT and while time is less than clock dur, wait for a keypress for each clock face
             [keyIsDown,secs,keyCode] = KbCheck;
-            if keyIsDown & ~RT
-                if ~(keyCode(39) | keyCode(98))
+            if keyIsDown && ~RT
+                if ~(keyCode(39) || keyCode(98))
                     RT = (secs - pres_stamp)*1000;    %RT = time elapsed between beginning of for loop and time of keypress
                     if keyCode(17) % the "n" key
                         keyCode = 89;
@@ -568,7 +568,7 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         fma = F_Mag;
         F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
         
-        if F_Freq > rand(1) & RT~=0 
+        if F_Freq > rand(1) && RT~=0 
             Screen('DrawTexture',window,boxes(order(t,BOXC)));
             Screen('DrawTexture',window,blank_clock); 
             Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
@@ -608,7 +608,7 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         fma = F_Mag;
         F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
 
-        if F_Freq > rand(1) & RT~=0 
+        if F_Freq > rand(1) && RT~=0 
            Screen('DrawTexture',window,boxes(order(t,BOXC)));
             Screen('DrawTexture',window,blank_clock); 
             Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
@@ -649,7 +649,7 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         fma = F_Mag;
         F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
 
-        if F_Freq > rand(1) & RT~=0 
+        if F_Freq > rand(1) && RT~=0 
            Screen('DrawTexture',window,boxes(order(t,BOXC)));
             Screen('DrawTexture',window,blank_clock); 
             Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
@@ -687,7 +687,7 @@ if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
         fma = F_Mag;
         F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
 
-        if F_Freq > rand(1) & RT~=0 
+        if F_Freq > rand(1) && RT~=0 
          Screen('DrawTexture',window,boxes(order(t,BOXC)));
             Screen('DrawTexture',window,blank_clock); 
             Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
