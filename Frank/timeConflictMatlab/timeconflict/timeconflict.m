@@ -48,13 +48,6 @@ sin_factor = 0.25;
 % WF dont need to declare subject structure
 % Building as we go allows checks
 
-%Input subject info
-% subject = struct(...
-%     'subj_id',[],...
-%     'age',[],...
-%     'gender',[],...
-%     'cb_num',[]); %end subject struct
-
 % skip the questions if we provide var ourself
 if(~exist('subject','var') || ~ismember('subj_id',fields(subject)))
  subject.subj_id = input('Enter the subject ID number: ','s');
@@ -79,25 +72,34 @@ end
 
 
 % fill out the subject struct if any part of it is still empty
-for attrib={'gender','age','cb_num'}
-    attrib = cell2mat(attrib); % make a normal string
-    if(~ismember(attrib,fields(subject)))
-     promptText=sprintf('Enter subject''s %s: ',attrib);
-     subject.(attrib) = input(promptText,'s');
+for attribCell={'gender','age','cb_num'}
+    % make a normal string
+    attrib = cell2mat(attribCell);
+    
+    % check if it's already filled out
+    if  ~ismember( attrib,fields(subject) )  
+      promptText=sprintf('Enter subject''s %s: ',attrib);
+      subject.(attrib) = input(promptText,'s');
+    else
+      fprintf('using old %s', attrib); fprintf(' (%s)\n', subject.(attrib));
     end
 end
 
+% set sex to a standard
 if ismember(lower(subject.gender),{'male';'dude';'guy';'m'} )
     subject.gender = 'male';
 else
     subject.gender = 'female';
 end
+% print out determined sex, give user a chance to correct
+fprintf('Subject is %s\n', subject.gender);
 
+
+% read in order of runs from file (specified on start)
 orderFile=['order' num2str(subject.cb_num) '.txt'];
 if(~exist(orderFile,'file')); error('give me a good order number!'); end
 order = load(orderFile);
 order = [order zeros(size(order,1),2)];
-
 
 whichScreen = 0;
 
@@ -107,6 +109,7 @@ ORDER_LENGTH=length(order);
 diaryfile = [subject.subj_id 'tcdiary'];
 diary(diaryfile);
 
+%% Start output file
 fid = fopen([subject.subj_id '_tc.txt'],'a');
 
 if t == 1
@@ -120,153 +123,126 @@ if t == 1
 end
 
 fprintf(fid,'%s\n',date);
-chron = clock;
-time = [mat2str(chron(4)) ':' mat2str(chron(5)) ':' mat2str(round(chron(6)))];
-fprintf(fid,'%s\n',time);
-fprintf(fid,'%s	','PHASE');
-fprintf(fid,'%s	','RUN');
-fprintf(fid,'%s	','TRIAL');
-fprintf(fid,'%s	','BKGD');
-fprintf(fid,'%s	','NULL');
-fprintf(fid,'%s	','TRACT');
-fprintf(fid,'%s	','FMAGA');
-fprintf(fid,'%s	','FMAGP');
-fprintf(fid,'%s	','FFREQ');
-fprintf(fid,'%s	','EV');
-fprintf(fid,'%s\n','RT');
 
-%Initialize Screen
-window = Screen('OpenWindow',whichScreen,[],[],32,2);
+% Print header
+chron = clock();
+timestring=[mat2str(chron(4)) ':' mat2str(chron(5)) ':' mat2str(round(chron(6)))];
+header = { ...
+   timestring, 'PHASE','RUN','TRIAL','BKGD','NULL','TRACT', ...
+   'FMAGA','FMAGP','FFREQ','EV','RT' ...
+  };
+for hdridx = 1:length(header)
+    fprintf(fid,'%s ',header{hdridx});
+end
+fprintf('\n');
+
+%% Initialize Screen
+% debugging: screen(,,[],[0 0 640 480],32,2)
+% otherwise:          [],[],32,2)
+window = Screen('OpenWindow',whichScreen,[],[0 0 640 480],32,2);
 white=WhiteIndex(window); % pixel value for white
 black=BlackIndex(window); % pixel value for black
 Screen('FillRect',window,black);
 Screen('Flip',window);
 
 %Define some various display parameters
-rect = Screen('Rect',window);
+
 Screen('TextSize',window,30);
 Screen('TextFont',window,'Helvetica');
 Screen('TextStyle',window,0);
+
+rect = Screen('Rect',window);
 middle_x = rect(:,3)/2;
 middle_y = rect(:,4)/2-10;
 
-%wait message
-wait_message = 'Please remain as still as possible.';
-wait_message_bounds = Screen('TextBounds',window,wait_message);
 
-%ready message
-ready_txt = 'Get ready';
-ready_txt_bounds=Screen('TextBounds',window,ready_txt);
+% Instructions
+instructions1 = [ 
+  'You will see a clock face.\n' ...
+  'Its arm will make a full turn over the course of 5 seconds.\n' ...
+  'Press the button to win points before the arm makes a full turn.\n' ...
+  'Try to win as many points as you can!\n\n' ...
+  'Press any key to read more instructions' ...
+];
 
-% Instruct pg 1
-in1p1 = 'You will see a clock face.';
-in1p1_bounds = Screen('TextBounds',window,in1p1);
-in2p1 = 'Its arm will make a full turn over the course of 5 seconds.';
-in2p1_bounds = Screen('TextBounds',window,in2p1);
-in3p1= 'Press the button to win points before the arm makes a full turn.';
-in3p1_bounds = Screen('TextBounds',window,in3p1);
-in4p1 = 'Try to win as many points as you can!';
-in4p1_bounds = Screen('TextBounds',window,in4p1);
-in5p1 = 'Press any key to read more instructions';
-in5p1_bounds = Screen('TextBounds',window,in5p1);
+instructions2 =  [ 
+  'Sometimes you will win lots of points and sometimes you will win less.\n ' ...
+  'The time at which you respond affects in some way\n' ...
+  'the number of points that you can win.\n' ...
+  'If you dont respond by the end of the clock cycle,\n' ...
+  'you will not win any points.\n\n' ...
+  'Press any key to read more instructions' ...
+];
 
-%Instruct pg2
-in1p2 = 'Sometimes you will win lots of points and sometimes you will win less. ';
-in1p2_bounds = Screen('TextBounds',window,in1p2);
-in2p2 = 'The time at which you respond affects in some way';
-in2p2_bounds = Screen('TextBounds',window,in2p2);
-in3p2 = 'the number of points that you can win.';
-in3p2_bounds = Screen('TextBounds',window,in3p2);
-in4p2= 'If you dont respond by the end of the clock cycle,';
-in4p2_bounds = Screen('TextBounds',window,in4p2);
-in5p2= 'you will not win any points. ';
-in5p2_bounds = Screen('TextBounds',window,in5p2);
-in6p2 = 'Press any key to read more instructions';
-in6p2_bounds = Screen('TextBounds',window,in6p2);
-
-%Instruct pg3
-in1p3 = 'Hint: Try to respond at different times along'; 
-in1p3_bounds = Screen('TextBounds',window,in1p3);
-in2p3 ='the clock cycle in order to learn how to make the most points.';
-in2p3_bounds = Screen('TextBounds',window,in2p3);
-in3p3 = 'Note: The length of the experiment is constant'; 
-in3p3_bounds = Screen('TextBounds',window,in3p3);
-in4p3 ='and is not affected by when you respond.';
-in4p3_bounds = Screen('TextBounds',window,in4p3);
-in5p3 = 'Press any key when you are ready';
-in5p3_bounds = Screen('TextBounds',window,in5p3);
+instructions3 = [ 
+  'Hint: Try to respond at different times along\n' ... 
+  'the clock cycle in order to learn how to make the most points.\n' ...
+  'Note: The length of the experiment is constant\n' ... 
+  'and is not affected by when you respond.\n\n' ...
+  'Press any key when you are ready' ...
+];
 
 %Between run instructions
-in1br = 'Next, you will see a new clock face.';
-in1br_bounds = Screen('TextBounds',window,in1br);
-in2br = 'Try responding at different times in order to learn';
-in2br_bounds = Screen('TextBounds',window,in2br);
-in3br = 'how to make the most points with this clock face.';
-in3br_bounds = Screen('TextBounds',window,in3br);
-in4br= 'Press any key when you are ready';
-in4br_bounds = Screen('TextBounds',window,in4br);
+
+betweenInstructions = [
+  'Next, you will see a new clock face.\n' ...
+  'Try responding at different times in order to learn\n' ...
+  'how to make the most points with this clock face.\n\n' ...
+  'Press any key when you are ready' ...
+ ];
+
+%wait message
+wait_message = 'Please remain as still as possible.';
+
+%ready message
+ready_txt    = 'Get ready';
+
   
 %zero message
 zero_msg = '0';
-zero_msg_bounds=Screen('TextBounds',window,zero_msg);
-
 %win message1
 win_msg1 = 'You win';
-win_msg1_bounds=Screen('TextBounds',window,win_msg1);
 %win message2
 win_msg2 = 'points';
-win_msg2_bounds=Screen('TextBounds',window,win_msg2);
 
 %load colored boxes for practice and test trials
-cd stims
 clocks=zeros(9);
 
 % WF
 % changed indexer from clock to clockIdx
 % clock is also a function used by this script
 for clockIdx=1:9
-    tmp_clock=imread([mat2str(clockIdx) '.jpg'],'jpg');
-    clocksize = size(tmp_clock);
-    clocksize = clocksize(1:2);
+    tmp_clock=imread(['stims/' mat2str(clockIdx) '.jpg'],'jpg');
     clocks(clockIdx)=Screen('MakeTexture',window,tmp_clock);
 end
 
-cd box
+
 boxes = zeros(8);
 for box=1:8
-    tmp_box=imread([mat2str(box) '.jpg'],'jpg'); 
-    boxsize = size(tmp_box);
-    boxsize = boxsize(1:2);
+    tmp_box=imread(['stims/box/' mat2str(box) '.jpg'],'jpg'); 
     boxes(box)=Screen('MakeTexture',window,tmp_box);
 end
-cd ..
+
 
 %load fixation images 
 
-%load green fixation image
-tmp_fix = imread('green_fix.jpg','jpg');
-imgsize = size(tmp_fix);
-imgsize = imgsize(1:2);
-green_fix = Screen('MakeTexture',window,tmp_fix);
+%load green fixation image -- never used!?
+%green_fix = Screen('MakeTexture',window,imread('stims/green_fix.jpg','jpg'));
 
 %load red fixation image
-tmp_fix = imread('red_fix.jpg','jpg');
-imgsize = size(tmp_fix);
-imgsize = imgsize(1:2);
-red_fix = Screen('MakeTexture',window,tmp_fix);
+red_fix = Screen('MakeTexture',window,imread('stims/red_fix.jpg','jpg'));
 
 %load wait fixation image
-tmp_fix = imread('wait_fix.jpg','jpg');
-imgsize = size(tmp_fix);
-imgsize = imgsize(1:2);
+tmp_fix = imread('stims/wait_fix.jpg','jpg');
 wait_fix = Screen('MakeTexture',window,tmp_fix);
 
-
-%load red fixation image
-tmp_clock = imread('blank.jpg','jpg');
+% imgsize used to compute center
 imgsize = size(tmp_fix);
 imgsize = imgsize(1:2);
-blank_clock = Screen('MakeTexture',window,tmp_clock);
+
+%load red fixation image
+blank_clock = Screen('MakeTexture',window,imread('stims/blank.jpg','jpg'));
+
 
 % %load instructions image
 % tmp_inst = imread('instructions.jpg','jpg');
@@ -274,69 +250,37 @@ blank_clock = Screen('MakeTexture',window,tmp_clock);
 % instsize = instsize(1:2);
 % instructions = Screen('MakeTexture',window,tmp_inst);
 
-cd ..
+
 
 %set the center % needed case change
 center=CenterRect([0 0 imgsize(2) imgsize(1)],rect);
 
-%Restart Trials
+%% Setup Trial
+% Restart Trials
 if t > 1
     t=t+2;
-    Screen('DrawText',window,in1br,middle_x-(in1br_bounds(3)/2),middle_y-150,white);
-    Screen('DrawText',window,in2br,middle_x-(in2br_bounds(3)/2),middle_y-75,white);
-    Screen('DrawText',window,in3br,middle_x-(in3br_bounds(3)/2),middle_y-25,white); 
-    Screen('DrawText',window,in4br,middle_x-(in4br_bounds(3)/2),middle_y+75,white);
+    
+    DrawFormattedText(window,bewteenInstructions , 'center', 'center',[256 256 256]);
     Screen('Flip',window);
-   
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                wait_stamp=GetSecs;
-                break;
-            end
-        end
-         % RESPONSE BOX CODES FOR FMRI
-    %         button_time = GetSecs;
-    %         buttons=[Gamepad('GetButton', 1, 1) Gamepad('GetButton', 1, 2) Gamepad('GetButton', 1, 3) Gamepad('GetButton', 1, 4)];
-    %         if any(buttons)
-    %             if length(find(buttons))==1
-    %                 resp=mat2str(find(buttons));
-    %             else
-    %                 resp='2R';
-    %             end
-    %             RT = (button_time-rt_stamp)*1000
-    %         end
+    waitForAnyInput();
+    
+    % RESPONSE BOX CODES FOR FMRI WERE HERE
     
     %Display wait message
     Screen('TextSize',window,38);
-    Screen('DrawText',window,wait_message,middle_x-(wait_message_bounds(3)/2),middle_y,white);
+    DrawFormattedText(window, wait_message, 'center', 'center',[256 256 256]);
     Screen('Flip',window);
-    while 1
-        keyCode=[];
-        [keyIsDown,secs,keyCode] = KbCheck;
-        if keyCode(39) || keyCode(98)
-            break;
-        end
-    end
-
-    wait_stamp=GetSecs;
-    while (GetSecs-wait_stamp)<.1;end %this is so that the 0 press doesn't overlap from the last message
-
+    waitForAnyInput()
+    
+    
     %Display ready message
-    Screen('DrawText',window,ready_txt,middle_x-(ready_txt_bounds(3)/2),middle_y,white);
+    DrawFormattedText(window, ready_txt, 'center', 'center',[256 256 256]);
     Screen('Flip',window);
-
-    while 1
-        keyCode=[];
-        [keyIsDown,secs,keyCode] = KbCheck;
-        if keyCode(39) || keyCode(98)
-            trstamp=GetSecs; %stamps time when scanner starts script
-            inst_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
-            break;
-        end
-    end
-
+    waitForAnyInput()
+    
+    trstamp=GetSecs; %stamps time when scanner starts script
+    inst_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
+    
     %     err=mriTrigger_hack(TTL, V, device);
     %     inst_stamp=GetSecs;
     %     trstamp=inst_stamp-(order(t,TRID)*2);
@@ -354,148 +298,50 @@ end  %end of if loop for restart trials
 while t <= ORDER_LENGTH
     if t==1 %Initial instruction screen
         % PAGE 1 INSTRUCTIONS
-    Screen('DrawText',window,in1p1,middle_x-(in1p1_bounds(3)/2),middle_y-150,white);
-    Screen('DrawText',window,in2p1,middle_x-(in2p1_bounds(3)/2),middle_y-75,white);
-    Screen('DrawText',window,in3p1,middle_x-(in3p1_bounds(3)/2),middle_y,white);
-    Screen('DrawText',window,in4p1,middle_x-(in4p1_bounds(3)/2),middle_y+75,white);
-    Screen('DrawText',window,in5p1,middle_x-(in5p1_bounds(3)/2),middle_y+150,white);
-    Screen('Flip',window);
-   
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                wait_stamp=GetSecs;
-                break;
-            end
-        end
-         % RESPONSE BOX CODES FOR FMRI
-    %         button_time = GetSecs;
-    %         buttons=[Gamepad('GetButton', 1, 1) Gamepad('GetButton', 1, 2) Gamepad('GetButton', 1, 3) Gamepad('GetButton', 1, 4)];
-    %         if any(buttons)
-    %             if length(find(buttons))==1
-    %                 resp=mat2str(find(buttons));
-    %             else
-    %                 resp='2R';
-    %             end
-    %             RT = (button_time-rt_stamp)*1000
-    %         end
-    while (GetSecs-wait_stamp)<.1;end
-    %PAGE 2 INSTRUCTIONS
-    Screen('DrawText',window,in1p2,middle_x-(in1p2_bounds(3)/2),middle_y-150,white);
-    Screen('DrawText',window,in2p2,middle_x-(in2p2_bounds(3)/2),middle_y-75,white);
-    Screen('DrawText',window,in3p2,middle_x-(in3p2_bounds(3)/2),middle_y-25,white);
-    Screen('DrawText',window,in4p2,middle_x-(in4p2_bounds(3)/2),middle_y+75,white);
-    Screen('DrawText',window,in5p2,middle_x-(in5p2_bounds(3)/2),middle_y+150,white);
-    Screen('DrawText',window,in6p2,middle_x-(in6p2_bounds(3)/2),middle_y+225,white);
-    Screen('Flip',window);
-   
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                wait_stamp=GetSecs;
-                break;
-            end
-        end
-         % RESPONSE BOX CODES FOR FMRI
-    %         button_time = GetSecs;
-    %         buttons=[Gamepad('GetButton', 1, 1) Gamepad('GetButton', 1, 2) Gamepad('GetButton', 1, 3) Gamepad('GetButton', 1, 4)];
-    %         if any(buttons)
-    %             if length(find(buttons))==1
-    %                 resp=mat2str(find(buttons));
-    %             else
-    %                 resp='2R';
-    %             end
-    %             RT = (button_time-rt_stamp)*1000
-    %         end
-    while (GetSecs-wait_stamp)<.1;end
-     %PAGE 3 INSTRUCTIONS
-    Screen('DrawText',window,in1p3,middle_x-(in1p3_bounds(3)/2),middle_y-150,white);
-    Screen('DrawText',window,in2p3,middle_x-(in2p3_bounds(3)/2),middle_y-100,white);
-    Screen('DrawText',window,in3p3,middle_x-(in3p3_bounds(3)/2),middle_y,white); 
-    Screen('DrawText',window,in4p3,middle_x-(in4p3_bounds(3)/2),middle_y+50,white);
-    Screen('DrawText',window,in5p3,middle_x-(in5p3_bounds(3)/2),middle_y+150,white); 
-    Screen('Flip',window);
-   
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                wait_stamp=GetSecs;
-                break;
-            end
-        end
-         % RESPONSE BOX CODES FOR FMRI
-    %         button_time = GetSecs;
-    %         buttons=[Gamepad('GetButton', 1, 1) Gamepad('GetButton', 1, 2) Gamepad('GetButton', 1, 3) Gamepad('GetButton', 1, 4)];
-    %         if any(buttons)
-    %             if length(find(buttons))==1
-    %                 resp=mat2str(find(buttons));
-    %             else
-    %                 resp='2R';
-    %             end
-    %             RT = (button_time-rt_stamp)*1000
-    %         end
-    elseif t~=1 && order(t,RUN)~=order(t-1,RUN)
-    Screen('DrawText',window,in1br,middle_x-(in1p3_bounds(3)/2),middle_y-150,white);
-    Screen('DrawText',window,in2br,middle_x-(in2p3_bounds(3)/2),middle_y-100,white);
-    Screen('DrawText',window,in3br,middle_x-(in3p3_bounds(3)/2),middle_y,white); 
-    Screen('DrawText',window,in4br,middle_x-(in4p3_bounds(3)/2),middle_y+75,white);
-    Screen('Flip',window);
-   
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                wait_stamp=GetSecs;
-                break;
-            end
-        end
-         % RESPONSE BOX CODES FOR FMRI
-    %         button_time = GetSecs;
-    %         buttons=[Gamepad('GetButton', 1, 1) Gamepad('GetButton', 1, 2) Gamepad('GetButton', 1, 3) Gamepad('GetButton', 1, 4)];
-    %         if any(buttons)
-    %             if length(find(buttons))==1
-    %                 resp=mat2str(find(buttons));
-    %             else
-    %                 resp='2R';
-    %             end
-    %             RT = (button_time-rt_stamp)*1000
-    %         end
+        DrawFormattedText(window, instructions1, 'center', 'center',[256 256 256]);
+        Screen('Flip',window);
+        waitForAnyInput();
+     
+        %PAGE 2 INSTRUCTIONS
+        DrawFormattedText(window, instructions2, 'center', 'center',[256 256 256]);
+        Screen('Flip',window);
+        waitForAnyInput();
+         
+         %PAGE 3 INSTRUCTIONS
+        DrawFormattedText(window, instructions3, 'center', 'center',[256 256 256]);
+        Screen('Flip',window);
+        waitForAnyInput();
+        wait_stamp=GetSecs; 
     end
-    if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
     
-
-     wait_stamp=GetSecs;
-        while (GetSecs-wait_stamp)<.1;end %this is so that the 0 press doesn't overlap from the last message
-   
-        Screen('DrawText',window,wait_message,middle_x-(wait_message_bounds(3)/2),middle_y,white);
-        Screen('Flip',window);
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                break;
-            end
+    if t==1 || order(t,RUN)~=order(t-1,RUN) %at each new run, show these messages
+       
+        % only give the between message when order changes and it's not the
+        % first trial
+        if t > 1 
+            DrawFormattedText(window,betweenInstructions, 'center', 'center',[256 256 256]);
+            Screen('Flip',window);
+            %DrawFormattedText(window, instructions3, 'center', 'center',[256 256 256]);
+            waitForAnyInput();
         end
-
+        
+        %this is so that the any held key press doesn't overlap from the last message
         wait_stamp=GetSecs;
-        while (GetSecs-wait_stamp)<.1;end %this is so that the 0 press doesn't overlap from the last message
-        %display ready message
-        Screen('DrawText',window,ready_txt,middle_x-(ready_txt_bounds(3)/2),middle_y,white);
+        while (GetSecs-wait_stamp)<.1;end 
+        
+        % wait
+        DrawFormattedText(window, wait_message, 'center', 'center',[256 256 256]);
+        Screen('Flip',window);
+        waitForAnyInput();
+
+        % ready
+        DrawFormattedText(window, ready_txt, 'center', 'center',[256 256 256]);
         Screen('Flip',window);
 
-        while 1
-            keyCode=[];
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyCode(39) || keyCode(98)
-                wait_stamp=GetSecs;
-                trstamp=GetSecs; %stamps time when scanner starts script
-                rt_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
-                break;
-            end
-        end
+        waitForAnyInput();
+        wait_stamp=GetSecs;
+        trstamp=GetSecs; %stamps time when scanner starts script
+        rt_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
 
         %err=mriTrigger_hack(TTL, V, device);
         %inst_stamp=GetSecs;
@@ -509,228 +355,81 @@ while t <= ORDER_LENGTH
 
     end
 
-    %Start trials
-   
-    RT = 0; %currently there is no reaction time
-    a=1;    %each new trial will begin with the first clock face
-    pres_stamp=GetSecs;     %Time stamp signalling beginning of the for loop
-    tract=(pres_stamp-trstamp)/TR; %current TR = time trial starts minus when the scanner started
-    %cumulative=(order(t,TRID)*TR); % total time in s that should have passed
-    %var = ((tract*TR)-cumulative); % total time that has passed minus what should have. this is added onto the null so that each trial stays on TR
-%     if var<0
-%         var=0;
-%     end    
-    
-    for a=1:8 % Loop through all clock faces until there is an RT
-        Screen('DrawTexture',window,boxes(order(t,BOXC)));
-        Screen('DrawTexture',window,clocks(a));
-        [junk,junk2,rt_stamp]=Screen('Flip',window);
-        while ~RT && (GetSecs-rt_stamp) <= (CLOCK_DUR) %While no RT and while time is less than clock dur, wait for a keypress for each clock face
-            [keyIsDown,secs,keyCode] = KbCheck;
-            if keyIsDown && ~RT
-                if ~(keyCode(39) || keyCode(98))
-                    RT = (secs - pres_stamp)*1000;    %RT = time elapsed between beginning of for loop and time of keypress
-                    if keyCode(17) % the "n" key
-                        keyCode = 89;
-                    end
-                    resp = KbName(keyCode);
-                end
-            end
-        end
-        if RT   %If there is an RT, break out of the for loop
-            break;
-        end
-    end
-    
-    clock_stamp=GetSecs;
-    if ~RT 
-        while (GetSecs-clock_stamp) < CLOCK9_DUR
-    Screen('DrawTexture',window,boxes(order(t,BOXC)));
-    Screen('DrawTexture',window,clocks(9));
-    Screen('Flip',window);
-        end
-    end
-    
-    %for no response
-    if ~RT
-        RT = 0;
-        resp = 'NR';
-        ev = 0;
-        fm=0;
-        ff=0;
-    end
-
-    % RESPONSE BOX CODES FOR FMRI
-    %         button_time = GetSecs;
-    %         buttons=[Gamepad('GetButton', 1, 1) Gamepad('GetButton', 1, 2) Gamepad('GetButton', 1, 3) Gamepad('GetButton', 1, 4)];
-    %         if any(buttons)
-    %             if length(find(buttons))==1
-    %                 resp=mat2str(find(buttons));
-    %             else
-    %                 resp='2R';
-    %             end
-    %             RT = (button_time-rt_stamp)*1000
-    %         end
-
+    % Start trials
+    trial_clockarm
+    % workspace now has
+    %   tract   (trial start time    -  trstamp)/TR
+    %   RT      reaction time
+    %   resp    eg. 'space', 'NR'==no response;
 
     %Reward
-    %COMPUTE CEV
-    if order(t,PHASE) == 1
-        F_Mag = (k*rt_extended)/(rt_extended-(RT+Shift)); % magnitude increases while frequency decreases.
-        F_Freq = 1-((RT+Shift)/rt_extended);
-        ff = F_Freq;
 
-        %Add noise to magnitude
-        a = -5;
-        b = 5;
-        r = a + (b-a).*rand(1);
-        round(r) ;              % noise is an integer from -5 to 5
-        F_Mag = F_Mag + r;
-        ev = F_Mag*F_Freq;        
-        F_Mag = round(F_Mag);
-        fma = F_Mag;
-        F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
-        
-        if F_Freq > rand(1) && RT~=0 
-            Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,F_Mag,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-                 
-            fmp=fma;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        else
-            Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,zero_msg,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-             
-            fmp=0;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        end
-        null_stamp=GetSecs;
+    if order(t,PHASE) == 1
+        %COMPUTE CEV
+        % magnitude increases while frequency decreases.
+        F_Mag = (k*rt_extended)/(rt_extended-(RT+Shift)); 
+        F_Freq = 1-((RT+Shift)/rt_extended);
+
     elseif order(t,PHASE) == 2
         % COMPUTE DEV
-        F_Mag = DEV_factor*log(DEV_factor2*(RT+Shift)); %magnitude increases while frequency decreases.
+        %magnitude increases while frequency decreases.
+        F_Mag = DEV_factor*log(DEV_factor2*(RT+Shift)); 
         CEV_x = 1-((RT+Shift)/rt_extended);
         IEV_x = CEV_x + (CEV_x*(sin_factor*sin((RT*pi)/5000)));
         F_Freq = (2*CEV_x)-IEV_x;
-        ff = F_Freq;
-        %Add noise to magnitude
-        a = -5;
-        b = 5;
-        r = a + (b-a).*rand(1);
-        round(r) ;              % noise is an integer from -5 to 5
-        F_Mag = F_Mag + r;
-        ev = F_Mag*F_Freq;
-        F_Mag = round(F_Mag);
-        fma = F_Mag;
-        F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
 
-        if F_Freq > rand(1) && RT~=0 
-           Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,F_Mag,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-            fmp=fma;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        else
-          Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,zero_msg,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-            fmp=0;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        end
-        null_stamp=GetSecs;
-
-    elseif order(t,PHASE) == 3
+   elseif order(t,PHASE) == 3
         %COMPUTE IEV
-        CEV_x = (k*rt_extended)/(rt_extended-(RT+Shift)); % magnitude increases while frequency decreases.
+        % magnitude increases while frequency decreases.
+        CEV_x = (k*rt_extended)/(rt_extended-(RT+Shift)); 
         DEV_x = DEV_factor*log(DEV_factor2*(RT+Shift));
         F_Mag = (2*CEV_x)-(DEV_x);
         CEV_x2 = 1-((RT+Shift)/rt_extended);
         F_Freq = CEV_x2 + (CEV_x2*(sin_factor*sin((RT*pi)/5000)));
-        ff = F_Freq;
 
-        %Add noise to magnitude
-        a = -5;
-        b = 5;
-        r = a + (b-a).*rand(1);
-        round(r) ;              % noise is an integer from -5 to 5
-        F_Mag = F_Mag + r;
-        ev = F_Mag*F_Freq;
-        F_Mag = round(F_Mag);
-        fma = F_Mag;
-        F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
-
-        if F_Freq > rand(1) && RT~=0 
-           Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,F_Mag,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-            fmp=fma;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        else
-          Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,zero_msg,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-            fmp=0;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        end
-        null_stamp=GetSecs;
     elseif order(t,PHASE) == 4
-        F_Mag = 1-((RT+Shift)/rt_extended); %magnitude decreases while frequency increases.
+        %CEVR ?
+        %magnitude decreases while frequency increases.
+        F_Mag = 1-((RT+Shift)/rt_extended);
         F_Mag = F_Mag*200;
         F_Freq = (k*rt_extended)/(rt_extended-(RT+Shift)) ;
         F_Freq = F_Freq/200;
-        ff = F_Freq;
-        
-        %Add noise to magnitude
-        a = -5;
-        b = 5;
-        r = a + (b-a).*rand(1);
-        round(r) ;              % noise is an integer from -5 to 5
-        F_Mag = F_Mag + r;
-        ev = F_Mag*F_Freq;
-        F_Mag = round(F_Mag);
-        fma = F_Mag;
-        F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
+       
+    end
+    
+    ff = F_Freq;
+    %Add noise to magnitude
+    a = -5;
+    b = 5;
+    r = a + (b-a).*rand(1);
+    % noise is an integer from -5 to 5
+    r = round(r) ;              
+    F_Mag = F_Mag + r;
+    ev = F_Mag*F_Freq;
+    F_Mag = round(F_Mag);
+    fma = F_Mag;
+    F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
 
-        if F_Freq > rand(1) && RT~=0 
-         Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,F_Mag,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-            fmp=fma;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        else
-           Screen('DrawTexture',window,boxes(order(t,BOXC)));
-            Screen('DrawTexture',window,blank_clock); 
-            Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-            Screen('DrawText',window,zero_msg,middle_x,middle_y,black);
-            Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
-            fmp=0;
-            [junk,junk2,temp_stamp]=Screen('Flip',window);
-            while(GetSecs-temp_stamp)<=(REWARD_DUR);end
-        end
-        null_stamp=GetSecs;
-    end    
+    if F_Freq > rand(1) && RT~=0 
+     Screen('DrawTexture',window,boxes(order(t,BOXC)));
+        Screen('DrawTexture',window,blank_clock); 
+        Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
+        Screen('DrawText',window,F_Mag,middle_x,middle_y,black);
+        Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
+        fmp=fma;
+        [junk,junk2,temp_stamp]=Screen('Flip',window);
+        while(GetSecs-temp_stamp)<=(REWARD_DUR);end
+    else
+       Screen('DrawTexture',window,boxes(order(t,BOXC)));
+        Screen('DrawTexture',window,blank_clock); 
+        Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
+        Screen('DrawText',window,zero_msg,middle_x,middle_y,black);
+        Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
+        fmp=0;
+        [junk,junk2,temp_stamp]=Screen('Flip',window);
+        while(GetSecs-temp_stamp)<=(REWARD_DUR);end
+    end
+    null_stamp=GetSecs;    
 % add=0;
 % subtract=0;
 %     % Time remaining from allotted 4 seconds
@@ -822,8 +521,10 @@ while t <= ORDER_LENGTH
 
     t = t+1;
 
+    
 end %end trials
 
+%% done
 %Close out
 diary off;	%stop diary
 fclose('all');	%close data file
