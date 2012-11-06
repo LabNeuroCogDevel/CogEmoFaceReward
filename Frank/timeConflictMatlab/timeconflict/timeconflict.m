@@ -3,30 +3,35 @@
 % Modified from B. Doll, M. Frank script previously used on EPRIME
 % Modifications for fMRI testing
 
-PHASE = 1;      %Phase of experiment
-CEV = 1;        %Constant Expected Value
-DEV = 2;        %Increasing Expected Value
-IEV = 3;        %Decreasing Expected Value
+
+% Reward function indices
+CEV  = 1;       %Constant Expected Value
+DEV  = 2;       %Increasing Expected Value
+IEV  = 3;       %Decreasing Expected Value
 CEVR = 4;       %Constant Expected Value, reversed
-RUN = 2;        %Run of the experiment
-TRIAL= 3;       %Trial number
-BOXC = 4;       %Box color
-RED = 1;
+rewardFunctions={'CEV' 'DEV' 'IEV' 'CEVR'};
+
+% Box colors
+RED    = 1;
 ORANGE = 2;
 YELLOW = 3;
-GREEN = 4;
-BLUE = 5;
-PURPLE= 6;
-PINK = 7;
-BROWN = 8;
-NULL = 5;       %Null interval
+GREEN  = 4;
+BLUE   = 5;
+PURPLE = 6;
+PINK   = 7;
+BROWN  = 8;
 
-TRACT_COL = 6;  %Actual TR, appended
-FMAGA_COL = 7;  %F Mag, actual calculated, appended
-FMAGP_COL = 8; %F Mag, presented to subj, appended
-FFREQ_COL = 9; %F freq, appended
-EV_COL = 10;     %Expected value, appended
-RT_COL = 11;     %RT, appended
+PHASE     = 1;    %Phase of experiment
+RUN       = 2;    %Run of the experiment
+TRIAL     = 3;    %Trial number
+BOXC      = 4;    %Box color
+NULL      = 5;    %Null interval
+TRACT_COL = 6;    %Actual TR, appended
+FMAGA_COL = 7;    %F Mag, actual calculated, appended
+FMAGP_COL = 8;    %F Mag, presented to subj, appended
+FFREQ_COL = 9;    %F freq, appended
+EV_COL    = 10;   %Expected value, appended
+RT_COL    = 11;   %RT, appended
 
 %Durations
 CLOCK_DUR = .625;	%Each clock is presented on screen for 625ms
@@ -57,7 +62,7 @@ filename = [subject.subj_id '_tc'];
 
 % is the subject new? is it a restart or resume of an existing?
 % set t accordingly, maybe load subject structure 
-if(exist(filename,'file'))
+if(exist([filename '.txt'],'file'))
     restart = input('Is this a restart (y or n)? ','s');
     if lower(restart) == 'y' 
         %subj_id = subject.subj_id;
@@ -85,6 +90,10 @@ for attribCell={'gender','age','cb_num'}
     end
 end
 
+% age should be a number
+subject.age=str2double(subject.age);
+subject.cb_num=str2double(subject.cb_num);
+
 % set sex to a standard
 if ismember(lower(subject.gender),{'male';'dude';'guy';'m'} )
     subject.gender = 'male';
@@ -93,6 +102,7 @@ else
 end
 % print out determined sex, give user a chance to correct
 fprintf('Subject is %s\n', subject.gender);
+
 
 
 % read in order of runs from file (specified on start)
@@ -208,9 +218,7 @@ win_msg2 = 'points';
 %load colored boxes for practice and test trials
 clocks=zeros(9);
 
-% WF
-% changed indexer from clock to clockIdx
-% clock is also a function used by this script
+
 for clockIdx=1:9
     tmp_clock=imread(['stims/' mat2str(clockIdx) '.jpg'],'jpg');
     clocks(clockIdx)=Screen('MakeTexture',window,tmp_clock);
@@ -264,22 +272,20 @@ if t > 1
     Screen('Flip',window);
     waitForAnyInput();
     
-    % RESPONSE BOX CODES FOR FMRI WERE HERE
-    
     %Display wait message
     Screen('TextSize',window,38);
     DrawFormattedText(window, wait_message, 'center', 'center',[256 256 256]);
     Screen('Flip',window);
     waitForAnyInput()
     
-    
     %Display ready message
     DrawFormattedText(window, ready_txt, 'center', 'center',[256 256 256]);
     Screen('Flip',window);
     waitForAnyInput()
     
-    trstamp=GetSecs; %stamps time when scanner starts script
-    inst_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
+    %trstamp=GetSecs;    % stamps time when scanner starts script
+    %inst_stamp=trstamp; % stamps time, accounts for all time between
+                        % ready message and end of instructions
     
     %     err=mriTrigger_hack(TTL, V, device);
     %     inst_stamp=GetSecs;
@@ -340,8 +346,8 @@ while t <= ORDER_LENGTH
 
         waitForAnyInput();
         wait_stamp=GetSecs;
-        trstamp=GetSecs; %stamps time when scanner starts script
-        rt_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
+        %trstamp=GetSecs; %stamps time when scanner starts script
+        %rt_stamp=trstamp; %stamps time, accounts for all time between ready message and end of instructions
 
         %err=mriTrigger_hack(TTL, V, device);
         %inst_stamp=GetSecs;
@@ -350,8 +356,9 @@ while t <= ORDER_LENGTH
         Screen('FillRect',window,black);
         Screen('DrawTexture',window,wait_fix);
         Screen('Flip',window);
-
-        while (GetSecs-wait_stamp) <= WAIT_TIME,end                             %current time minus how long it took to load red fixation and the trial stims
+        
+        %current time minus how long it took to load red fixation and the trial stims
+        while (GetSecs-wait_stamp) <= WAIT_TIME,end
 
     end
 
@@ -388,7 +395,7 @@ while t <= ORDER_LENGTH
         F_Freq = CEV_x2 + (CEV_x2*(sin_factor*sin((RT*pi)/5000)));
 
     elseif order(t,PHASE) == 4
-        %CEVR ?
+        %CEVR
         %magnitude decreases while frequency increases.
         F_Mag = 1-((RT+Shift)/rt_extended);
         F_Mag = F_Mag*200;
@@ -411,24 +418,21 @@ while t <= ORDER_LENGTH
     F_Mag = mat2str(F_Mag); % f mag is now a string that can be displayed to subj
 
     if F_Freq > rand(1) && RT~=0 
-     Screen('DrawTexture',window,boxes(order(t,BOXC)));
-        Screen('DrawTexture',window,blank_clock); 
-        Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-        Screen('DrawText',window,F_Mag,middle_x,middle_y,black);
-        Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
         fmp=fma;
-        [junk,junk2,temp_stamp]=Screen('Flip',window);
-        while(GetSecs-temp_stamp)<=(REWARD_DUR);end
+        winptsmsg=F_Mag1;
     else
-       Screen('DrawTexture',window,boxes(order(t,BOXC)));
-        Screen('DrawTexture',window,blank_clock); 
-        Screen('DrawText',window,win_msg1,middle_x-150,middle_y,black);
-        Screen('DrawText',window,zero_msg,middle_x,middle_y,black);
-        Screen('DrawText',window,win_msg2,middle_x+75,middle_y,black);
+        winptsmsg=zero_msg;
         fmp=0;
-        [junk,junk2,temp_stamp]=Screen('Flip',window);
-        while(GetSecs-temp_stamp)<=(REWARD_DUR);end
     end
+    
+    Screen('DrawTexture',window,boxes(order(t,BOXC)));
+    Screen('DrawTexture',window, blank_clock  ); 
+    Screen('DrawText',   window, win_msg1,   middle_x-150,middle_y,black);
+    Screen('DrawText',   window, winpotsmsg, middle_x,    middle_y,black);
+    Screen('DrawText',   window, win_msg2,   middle_x+75, middle_y,black);
+    
+    [~,~,temp_stamp]=Screen('Flip',window);
+    
     null_stamp=GetSecs;    
 % add=0;
 % subtract=0;
@@ -454,57 +458,26 @@ while t <= ORDER_LENGTH
     Screen('DrawTexture',window,red_fix);
     Screen('Flip',window);
 
-    %data file
-    %PHASE
-    if order(t,PHASE)==CEV
-        fprintf(fid,'%s	','CEV');
-    elseif order(t,PHASE)==IEV
-        fprintf(fid,'%s	','IEV');
-    elseif order(t,PHASE)==DEV
-        fprintf(fid,'%s	','DEV');
-    else
-        fprintf(fid,'%s	','CEVR');
-    end
-
-    %RUN
-    fprintf(fid,'%4i	',order(t,RUN));
-
-    %TRIAL_NUM
-    fprintf(fid,'%4i	',order(t,TRIAL));
-
-    %BOX Color
-    fprintf(fid,'%4i	',order(t,BOXC));
-
-    %NULL
-    fprintf(fid,'%4i	',order(t,NULL));
-
-%     %TRID
-%     fprintf(fid,'%4i	',order(t,TRID));
-
-    %TR actual
-    fprintf(fid,'%4i	',tract);
-    order(t,TRACT_COL)=tract;
+    %% update order matrix
+    %TR actual    F MAG ACTUAL     F MAG PRESENTED
+    %F Freq       Expected Value   Reaction Time
+    order(t,[TRACT_COL FMAGA_COL FMAGP_COL FFREQ_COL EV_COL RT_COL])= [ tract fma fmp ff ev RT];
     
-    %F MAG ACTUAL 
-    fprintf(fid,'%4i	',fma);
-    order(t,FMAGA_COL)=fma;
+    %% write to data file
+    % line like
+    % CEVR       1      22       5       2    4.481533e+01     176       0    2.136929e-01    3.764108e+01    2.399020e+02
     
-    %F MAG PRESENTED 
-    fprintf(fid,'%4i	',fmp);
-    order(t,FMAGP_COL)=fmp;
+    % Phase
+    fprintf(fid,'%s	',rewardFunctions{ order(t,PHASE) } );
     
-    % F Freq    
-    fprintf(fid,'%4i	',ff);
-    order(t,FFREQ_COL)=ff;
-
-    %Expected Value
-    fprintf(fid,'%4i	',ev);
-    order(t,EV_COL)=ev;
-
-    %RT
-    fprintf(fid,'%4i\n',RT);
-    order(t,RT_COL)=RT;
-
+    % all other values 
+    fprintf(fid, '%4i\t', order(t,[ ...
+                                RUN TRIAL   BOXC        NULL      ... TRID
+                                TRACT_COL   FMAGA_COL   FMAGP_COL ...
+                                FFREQ_COL   EV_COL      RT_COL    ...
+                                ]));
+    fprintf(fid,'\n');
+    
     %Save subject_id.mat file
     save(filename,'order','t','subject');
 
@@ -518,7 +491,7 @@ while t <= ORDER_LENGTH
 %     elseif subtract==1
 %         while (GetSecs-null_stamp)<= (((order(t,NULL))-value-var));end        
 %     end
-
+    %% update trial number
     t = t+1;
 
     
