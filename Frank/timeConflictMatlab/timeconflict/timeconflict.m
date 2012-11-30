@@ -149,7 +149,8 @@ fprintf('\n');
 %% Initialize Screen
 % debugging: screen(,,[],[0 0 640 480],32,2)
 % otherwise:          [],[],32,2)
-window = Screen('OpenWindow',whichScreen,[],[0 0 640 480],32,2);
+%window = Screen('OpenWindow',whichScreen,[],[0 0 640 480],32,2);
+window = Screen('OpenWindow',whichScreen,[],[],32,2);
 white=WhiteIndex(window); % pixel value for white
 black=BlackIndex(window); % pixel value for black
 Screen('FillRect',window,black);

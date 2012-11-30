@@ -33,13 +33,13 @@ randUnifConstrain <- function(len, vals, targetMean) {
 numFaces   <- 20  # length(glob('faces/happy_*png')) # number of distinct faces
 numPresent <- 40  # number of presentations of a reward_emotion combo
 numRep     <- 2   # how many times will we show the same reward_emotion combo
-emotions   <- c("happy","neutral","fear")
-rewardFuns <- c("constant","increase","decrease")
+emotions   <- c("happy","neutral","scram") #emotions   <- c("happy","neutral","fear")
+rewardFuns <- c("CEV","DEV","IEV","CEVR") #rewardFuns <- c("constant","increase","decrease")
 numTrials  <- length(emotions)*length(rewardFuns)*numRep # 18 # how many reward_emotion combos total
 
 root <- data.frame(
-          emotion=sample(   rep( emotions,   numTrials/3), numTrials ),
-           reward=sample(   rep( rewardFuns, numTrials/3), numTrials )
+          emotion=sample(   rep( emotions,   numTrials/length(emotions)), numTrials ),
+           reward=sample(   rep( rewardFuns, numTrials/length(rewardFuns)), numTrials )
         )
 
 ITI1.min <- 400;  ITI1.max <- 1500; ITI1.mean <- 900;
@@ -47,8 +47,9 @@ ITI2.min <- 1000; ITI2.max <- 2000; ITI2.mean <- 1500;
 faceRepeats=numTrials*numPresent/numFaces
 blocklist <- data.frame(
               facenum = as.vector(sapply(1:faceRepeats, function(x){ sample(1:numFaces,numFaces)  })), 
-              ITI1 =    as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI1.min,ITI1.max,by=100),ITI1.mean)   })),
-              ITI2 =    as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI2.min,ITI2.max,by=100),ITI2.mean)   })),
+              ITI1    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI1.min,ITI1.max,by=100),ITI1.mean)   })),
+              ITI2    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI2.min,ITI2.max,by=100),ITI2.mean)   })),
+              block   = rep(1:numTrials, each=numPresent),
               emotion = rep(root$emotion, each=numPresent),
               reward  = rep(root$reward , each=numPresent)
          )
