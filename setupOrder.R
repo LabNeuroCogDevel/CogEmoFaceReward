@@ -1,15 +1,15 @@
 ####
 # randomize events to be inserted into eprime lists
 #
-#   |--------------------------------------------|
-#   |            40  presentations               |   x {inc,dec,const} 
-#   |                    of                      |   x {happy,neutral,fear}
-#   |                                            |   x 2
-#   | facenum_{emotion} | ITI1 | {reward} | ITI2 |  ______________________
-#   |--------------------------------------------|   720 presentations across 18 trials
+#   |------------------------------------------|
+#   |           40  presentations              |   x {inc,dec,const} 
+#   |                    of                    |   x {happy,neutral,fear}
+#   |                                          |   x 2
+#   | facenum_{emotion} | ITI | {reward} | ISI |  ______________________
+#   |------------------------------------------|   720 presentations across 18 trials
 #
 #
-# saved to FaceITI.csv | facenum,ITI1,ITI2,emotion,reward
+# saved to FaceITI.csv | facenum,ITI,ISI,emotion,reward
 #
 ####
 #
@@ -42,13 +42,13 @@ root <- data.frame(
            reward=sample(   rep( rewardFuns, numTrials/length(rewardFuns)), numTrials )
         )
 
-ITI1.min <- 400;  ITI1.max <- 1500; ITI1.mean <- 900;
-ITI2.min <- 1000; ITI2.max <- 2000; ITI2.mean <- 1500;
+ITI.min <- 1000; ITI.max <- 2000; ITI.mean <- 1500;
+ISI.min <- 400;  ISI.max <- 1500; ISI.mean <- 900;
 faceRepeats=numTrials*numPresent/numFaces
 blocklist <- data.frame(
               facenum = as.vector(sapply(1:faceRepeats, function(x){ sample(1:numFaces,numFaces)  })), 
-              ITI1    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI1.min,ITI1.max,by=100),ITI1.mean)   })),
-              ITI2    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI2.min,ITI2.max,by=100),ITI2.mean)   })),
+              ITI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI.min,ITI.max,by=100),ITI.mean)   })),
+              ISI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ISI.min,ISI.max,by=100),ISI.mean)   })),
               block   = rep(1:numTrials, each=numPresent),
               emotion = rep(root$emotion, each=numPresent),
               reward  = rep(root$reward , each=numPresent)
