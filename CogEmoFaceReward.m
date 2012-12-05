@@ -39,7 +39,7 @@ function CogEmoFaceReward
   % This used 'KbDemo' as template
   
   start       = 1;
-  TR          = 1.5;
+  TR          = 1.0;
   %Set3 from Color Brewer
   %only provides 12 colors
 %   blockColors = [141 211 199; ...
@@ -77,12 +77,12 @@ function CogEmoFaceReward
     fprintf(txtfid,'#Subj:\t%s\n', subject.subj_id);
     fprintf(txtfid,'#Run:\t%i\n',  subject.run_num); 
     fprintf(txtfid,'#Age:\t%i\n',  subject.age);
-    fprintf(txtfid,'#Gender\t%s\n',subject.gender);
+    fprintf(txtfid,'#Gender:\t%s\n',subject.gender);
   end
   
   % always print date .. even though it'll mess up reading data if put
   % in the middle
-  fprintf(txtfid,'# %s\n',date);
+  fprintf(txtfid,'#%s\n',date);
   
   %% set order of trials
   %  read in order of things
@@ -97,6 +97,15 @@ function CogEmoFaceReward
       experiment{5}{i} = experiment{5}{i}(1:findstr(experiment{5}{i},',')-1    );
   end
   fclose(fid);
+  
+  %% Counter balance 
+  % by reversing order for odd subjects
+  if mod(str2double(subject.subj_id),2)==1
+      fprintf('NOTE: odd subject, order reversed of input csv!\n')
+      for i=1:length(experiment)
+          experiment{i}=experiment{i}(end:-1:1);
+      end
+  end
   
   %% debug timing -- get expected times
   % add the ITI,ISI, timer duration, and score presentation
@@ -122,7 +131,7 @@ function CogEmoFaceReward
      % Set text display options. We skip on Linux.
      %if ~IsLinux
          Screen('TextFont', w, 'Arial');
-         Screen('TextSize', w, 18);
+         Screen('TextSize', w, 22);
      %end
   
      % Set colors.
@@ -229,7 +238,7 @@ function CogEmoFaceReward
          
         %% instructions if new block
         if i>40 && mod(i,40)==1
-            Screen('TextSize', w, 18);
+            Screen('TextSize', w, 22);
             drawRect;
             DrawFormattedText(w, InstructionsBetween,'center','center',black);
             Screen('Flip', w);
@@ -295,11 +304,15 @@ function CogEmoFaceReward
         
         % print header
         if i == 1
-            fprintf(txtfid,'Func\tRun\tTrial\tBlock\tNull\ttrialStartTime\tMag\tScoreInc\tFreq\tEV\tRT\n');
+            fprintf(txtfid,'Func\tRun\tTrial\tBlock\tNull\ttrialStartTime\tMag\tScoreInc\tFreq\tEV\tRT\tEmotion\tImage\n');
         end
-               
+        
+        emo=experiment{emotionC}{i}; 
+        face=experiment{facenumC}(i); 
+        
         fprintf(txtfid,'%s\t',order{i}{1}{1} );
         fprintf(txtfid, '%4i\t', order{i}{2:end});
+        fprintf(txtfid, '%s\t', emo, strcat(emo,'_',num2str(face),'.png') );
         fprintf(txtfid, '\n');
         
         % save to mat so crash can be reloaded
@@ -571,7 +584,7 @@ function CogEmoFaceReward
         drawRect;
         %Screen('DrawText', w, sprintf('Your Score is: %d\nrecorded rxt: %d', score, rspnstime));
         %DrawFormattedText(w, sprintf('Total score is: %d\nincrease is: %d\nradnom vs Freq (ev): %f v %f (%f)\nrecorded rxt: %d', score,F_Mag,rd,F_Freq,ev, RT),'center','center',black);
-        Screen('TextSize', w, 18);
+        Screen('TextSize', w, 22);
         DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal: %d points', inc,score),'center','center',black);
 
         
