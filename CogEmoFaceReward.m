@@ -86,7 +86,7 @@ function CogEmoFaceReward
   
   %% debug timing -- get expected times
   % add the ITI,ISI, timer duration, and score presentation
-  expectedTime = sum(cell2mat(experiment([ITIC ISIC])),2)/10^3 + timerDuration + receiptDuration;
+  %expectedTime = sum(cell2mat(experiment([ITIC ISIC])),2)/10^3 + timerDuration + receiptDuration;
 
 
   %% launch presentation   
@@ -101,7 +101,9 @@ function CogEmoFaceReward
      
      % Open a new window.
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
-     [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
+     % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
+     [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
+     % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [] );
      
      % Set text display options. We skip on Linux.
      %if ~IsLinux
@@ -200,7 +202,7 @@ function CogEmoFaceReward
      fixation(1000);
      
      %% debug, timing
-     StartOfRunTime=now;
+     StartOfRunTime=GetSecs();
 
   
      %% iterate through trials
@@ -224,10 +226,12 @@ function CogEmoFaceReward
 
 
         %% debug, start time keeping
-        % seconds into the experiement from start of for loop
-        timing.start=(now-StartOfRunTime)*10^5;
         % start of time debuging global var
-        checktime=now;
+        checktime=GetSecs();
+        startOfTrial=checktime;
+        % seconds into the experiement from start of for loop
+        timing.start=checktime-StartOfRunTime;
+        
         
          
         %% face (4s) + ITI + score + ISI
@@ -241,9 +245,13 @@ function CogEmoFaceReward
         
 
         % TOCHANGE?: add RT/2 to fixation time? instead of all remainder
-        % this fixation lasts the remainder of the trial and then ITI
+        % this fixation lasts the remainder the 4 seconds
         % do math in seconds, then put in ms
-        dispRspTime=(now - checktime)*10^5;
+        %
+        % ** the quicker the response, the more latency there is
+        % ** and the greater the timing is off!
+        %  donno why
+        dispRspTime=GetSecs() - checktime;
         fixation((timerDuration - dispRspTime )*10^3);
         setTimeDiff('timer'); %build times (debug timing)
          
@@ -265,7 +273,7 @@ function CogEmoFaceReward
         
         
         %% non critical things (debuging and saving)
-        nonPresTime=tic;
+        %nonPresTime=tic;
         
         %% write to data file
          trial = {experiment{rewardC}(i) subject.run_num i experiment{blockC}(i) 0 t_start F_Mag inc F_Freq ev rspnstime };
@@ -296,10 +304,8 @@ function CogEmoFaceReward
         
         %% debug, show time of this trial
         
-        timing.end= (now - startTime)*10^5 ;
-        % timing is abs start, length of rsp, ITI+remain, receipt, ISI, relative total
-        
-        
+        timing.end= GetSecs() - startOfTrial;
+              
         expected.timer   = 4; 
         expected.ITI     = double(experiment{ITIC}(i))/10^3;
         expected.receipt = receiptDuration;
@@ -325,7 +331,7 @@ function CogEmoFaceReward
 %         timing = []
         % and show the difference
          
-        otherstufftime=toc(nonPresTime)
+        %otherstufftime=toc(nonPresTime) %.025 seconds
         
 
      end
@@ -350,18 +356,23 @@ function CogEmoFaceReward
   % close the screen
   sca
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           support functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
    %% print time since last check
+   % updates global timing struct and checktime double
    function setTimeDiff(interval)
-       timing.(interval) = (now - checktime) * 10^5;
-       checktime=now;
+       timing.(interval) = (GetSecs() - checktime);
+       checktime=GetSecs();
    end 
 
 
 
    %% block indicator
     function drawRect
-       
        Screen('FrameRect', w, blockColors(experiment{blockC}(i),:), [], 10);
     end
 
@@ -381,16 +392,17 @@ function CogEmoFaceReward
      centeredspotRect = CenterRect(spotRect, windowRect); % Center the spot.
      
      % Set up the timer.
-     startTime   = now;
+     startTime   = GetSecs()*10^3;
      durationMS  = timerDuration*10^3; % 4 seconds of looking at a face
      remainingMS = durationMS;
-     
+     elapsedMS = 0;
      % Loop while there is time.
      while remainingMS > 0 
-        elapsedMS = round((now - startTime) * 10 ^ 8);
+        elapsedMS = round((GetSecs()*10^3 - startTime) );
         remainingMS = durationMS - elapsedMS;
         
         %Screen('DrawText', w, sprintf('%i ms remaining...',remainingMS), 20, 20, black);
+        %Screen('DrawText', w, sprintf('%i ms elapsed...',elapsedMS), 20, 40, black);
 
         % what block is this (border color)
         drawRect;
@@ -452,15 +464,17 @@ function CogEmoFaceReward
         %WaitSecs(0.001);
      end
      
-     elapsedMS = round((now - startTime) * 10^8);
+     %elapsedMS = round((GetSecs() - startTime) * 10^3);
      % if 4s, give them no points? -- just a test for warning
      %if elapsedMS >= (timerDuration - .25) *10^3
      %    fprintf('warning: RT is %f\n', elapsedMS*10^8);
      %end
-     %fprintf('\n Done @ %f\n',elapsedMS);
+     %fprintf('\n Submitted @ %f\n',elapsedMS);
      
      return;
    end
+
+
 
    %% Display a red cross for ITI (ms) time
    function fixation(waittime)
@@ -484,6 +498,8 @@ function CogEmoFaceReward
         %disp([waittime, experiment{ITIC}(i), experiment{ISIC}(i), 4000 - rspnstime, rspnstime ])
    end
    
+
+
    %% wait for a response
     function seconds = waitForResponse
       while(1)
@@ -502,8 +518,10 @@ function CogEmoFaceReward
       WaitSecs(.2);
     end
 
+
    %% score based on a response time and Rew Func (as string, eg. 'CEV')
    function scoreRxt(RT,func)
+       startScoreTime=tic;
        %trial start time
        t_start = (GetSecs - scannerStart)/TR;
        
@@ -542,8 +560,9 @@ function CogEmoFaceReward
         Screen('TextSize', w, 18);
         DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal: %d points', inc,score),'center','center',black);
 
+        
         Screen('Flip', w);
-        WaitSecs(receiptDuration);
+        WaitSecs(receiptDuration-toc(startScoreTime));
     
    end
 
@@ -573,7 +592,7 @@ function CogEmoFaceReward
                 end
             else
                 % dont append new stuff to an old file, move the old one
-                movefile(txtfile,[txtfile '.' num2str(now) '.bak']);  
+                movefile(txtfile,[txtfile '.' num2str(GetSecs()) '.bak']);  
             end
         end
         
@@ -614,6 +633,7 @@ function CogEmoFaceReward
 
    end
 
+    % The actual scoring function. Taken from Frank et al
     function [Mag Freq] = getScore(RT,scrfunc)
               % Values for Reward computation - constant for all phases
        k = 37;

@@ -149,8 +149,8 @@ fprintf('\n');
 %% Initialize Screen
 % debugging: screen(,,[],[0 0 640 480],32,2)
 % otherwise:          [],[],32,2)
-%window = Screen('OpenWindow',whichScreen,[],[0 0 640 480],32,2);
-window = Screen('OpenWindow',whichScreen,[],[],32,2);
+window = Screen('OpenWindow',whichScreen,[],[0 0 1600 1200],32,2);
+%window = Screen('OpenWindow',whichScreen,[],[],32,2);
 white=WhiteIndex(window); % pixel value for white
 black=BlackIndex(window); % pixel value for black
 Screen('FillRect',window,black);
@@ -252,7 +252,7 @@ imgsize = imgsize(1:2);
 %load red fixation image
 blank_clock = Screen('MakeTexture',window,imread('stims/blank.jpg','jpg'));
 
-
+global trstamp;
 % %load instructions image
 % tmp_inst = imread('instructions.jpg','jpg');
 % instsize = size(tmp_inst);
@@ -269,7 +269,7 @@ center=CenterRect([0 0 imgsize(2) imgsize(1)],rect);
 if t > 1
     t=t+2;
     
-    DrawFormattedText(window,bewteenInstructions , 'center', 'center',[256 256 256]);
+    DrawFormattedText(window,betweenInstructions , 'center', 'center',[256 256 256]);
     Screen('Flip',window);
     waitForAnyInput();
     
@@ -284,7 +284,8 @@ if t > 1
     Screen('Flip',window);
     waitForAnyInput()
     
-    %trstamp=GetSecs;    % stamps time when scanner starts script
+    
+    trstamp=GetSecs;    % stamps time when scanner starts script
     %inst_stamp=trstamp; % stamps time, accounts for all time between
                         % ready message and end of instructions
     
@@ -420,7 +421,7 @@ while t <= ORDER_LENGTH
 
     if F_Freq > rand(1) && RT~=0 
         fmp=fma;
-        winptsmsg=F_Mag1;
+        winptsmsg=F_Mag;
     else
         winptsmsg=zero_msg;
         fmp=0;
@@ -429,7 +430,7 @@ while t <= ORDER_LENGTH
     Screen('DrawTexture',window,boxes(order(t,BOXC)));
     Screen('DrawTexture',window, blank_clock  ); 
     Screen('DrawText',   window, win_msg1,   middle_x-150,middle_y,black);
-    Screen('DrawText',   window, winpotsmsg, middle_x,    middle_y,black);
+    Screen('DrawText',   window, winptsmsg, middle_x,    middle_y,black);
     Screen('DrawText',   window, win_msg2,   middle_x+75, middle_y,black);
     
     [~,~,temp_stamp]=Screen('Flip',window);
