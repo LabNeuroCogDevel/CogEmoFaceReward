@@ -33,14 +33,61 @@ randUnifConstrain <- function(len, vals, targetMean) {
 numFaces   <- 20  # length(glob('faces/happy_*png')) # number of distinct faces
 numPresent <- 40  # number of presentations of a reward_emotion combo
 numRep     <- 2   # how many times will we show the same reward_emotion combo
-emotions   <- c("happy","neutral","scram") #emotions   <- c("happy","neutral","fear")
-rewardFuns <- c("CEV","DEV","IEV","CEVR") #rewardFuns <- c("constant","increase","decrease")
+emotions   <- c("happy","fear","scram") #emotions   <- c("happy","neutral","fear")
+rewardFuns <- c("DEV","IEV","CEVR") #rewardFuns <- c("DEV","IEV","CEV", "CEVR")
 numTrials  <- length(emotions)*length(rewardFuns)*numRep # 18 # how many reward_emotion combos total
 
-root <- data.frame(
-          emotion=sample(   rep( emotions,   numTrials/length(emotions)), numTrials ),
-           reward=sample(   rep( rewardFuns, numTrials/length(rewardFuns)), numTrials )
-        )
+#force no repeats of emotions or reward conditions
+conditionGrid <- expand.grid(emotion=emotions, reward=rewardFuns, occurrence=1:2)
+
+#a brute force permutation approach (below) doesn't work well -- unlikely to identify matching sets
+conditionGrid <- conditionGrid[
+                               c(1, 5, 9, 2, 4, 3, 8, 6, 7,
+                                 11, 13, 12, 16, 14, 18, 10, 15, 17),]
+
+ ## emotion reward occurrence
+ ##   happy    DEV          1
+ ##    fear    IEV          1
+ ##   scram   CEVR          1
+ ##    fear    DEV          1
+ ##   happy    IEV          1
+ ##   scram    DEV          1
+ ##    fear   CEVR          1
+ ##   scram    IEV          1
+ ##   happy   CEVR          1
+ ##    fear    DEV          2
+ ##   happy    IEV          2
+ ##   scram    DEV          2
+ ##   happy   CEVR          2
+ ##    fear    IEV          2
+ ##   scram   CEVR          2
+ ##   happy    DEV          2
+ ##   scram    IEV          2
+ ##    fear   CEVR          2
+
+## adjacentDupes <- TRUE
+## while(adjacentDupes) {
+##   conditionGrid <- conditionGrid[sample(1:nrow(conditionGrid), nrow(conditionGrid)),]
+
+##   prevEmotion <- rep(NA, nrow(conditionGrid))
+##   prevReward <- rep(NA, nrow(conditionGrid))
+##   for (i in 1:nrow(conditionGrid)) {
+##     prevEmotion[i] <- ifelse(i==1, NA, conditionGrid$emotion[i-1]==conditionGrid$emotion[i])
+##     prevReward[i] <- ifelse(i==1, NA, conditionGrid$reward[i-1]==conditionGrid$reward[i])
+##   }
+
+##   #just enforce no adjacent face condition
+##   #hasDupes <- any(prevEmotion[-1])
+
+##   #enforce no dupes on emotion and reward
+##   hasDupes <- any(prevEmotion[-1] | prevReward[-1])
+##   if (!hasDupes) adjacentDupes <- FALSE
+## }
+    
+#root <- data.frame(
+#          emotion=sample(   rep( emotions,   numTrials/length(emotions)), numTrials ),
+#           reward=sample(   rep( rewardFuns, numTrials/length(rewardFuns)), numTrials )
+#        )
 
 ITI.min <- 1000; ITI.max <- 2000; ITI.mean <- 1500;
 ISI.min <- 400;  ISI.max <- 1500; ISI.mean <- 900;
@@ -50,7 +97,7 @@ blocklist <- data.frame(
               ITI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI.min,ITI.max,by=100),ITI.mean)   })),
               ISI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ISI.min,ISI.max,by=100),ISI.mean)   })),
               block   = rep(1:numTrials, each=numPresent),
-              emotion = rep(root$emotion, each=numPresent),
-              reward  = rep(root$reward , each=numPresent)
+              emotion = rep(conditionGrid$emotion, each=numPresent),
+              reward  = rep(conditionGrid$reward , each=numPresent)
          )
 write.table(blocklist,file="FaceITI.csv",row.names=FALSE,sep=",")
