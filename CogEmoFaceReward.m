@@ -339,7 +339,7 @@ function CogEmoFaceReward
         expected.ISI     = double(experiment{ISIC}(i))/10^3;
         expected.end     = 0;
         expected.end     = sum(struct2array(expected));
-        fprintf('%.2f in, expected, obs, diff\n',timing.start);
+        fprintf('%d: %s_%d.png\n%.2f in, expected, obs, diff\n',i, experiment{emotionC}{i},experiment{facenumC}(i),timing.start);
         for f = {'timer' 'ITI' 'receipt' 'ISI' 'end' };
             f=f{1};
             fprintf('%s\t%.2f\t%.2f\t%.2f\n', f, expected.(f), timing.(f),timing.(f)-expected.(f));
