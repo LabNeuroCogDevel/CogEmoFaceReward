@@ -628,7 +628,10 @@ function CogEmoFaceReward
         diaryfile = [subject.subj_id 'tcdiary'];
         diary(diaryfile);
         
+        if ~ exist('subjects','dir'); mkdir('subjects'); end
         txtfid=fopen(txtfile,'a'); % we'll append to this..maybe
+        
+        if txtfid == -1; error('couldn''t open text file for suject'); end
 
 
    end
