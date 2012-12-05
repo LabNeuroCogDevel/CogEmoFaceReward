@@ -194,12 +194,12 @@ function CogEmoFaceReward
      
      %% give subj a countdown and fixation
      for cdown = 3:-1:1
-         DrawFormattedText(w, ['Begining in ' num2str(cdown)],'center','center',black);
+         DrawFormattedText(w, ['Beginning in\n\n' num2str(cdown)],'center','center',black);
          Screen('Flip',w);
-         WaitSecs(.5);
+         WaitSecs(1.0);
      end
      i=start; % fixation calls drawRect which uses i to get the block number
-     fixation(1000);
+     fixation(1500);
      
      %% debug, timing
      StartOfRunTime=GetSecs();
