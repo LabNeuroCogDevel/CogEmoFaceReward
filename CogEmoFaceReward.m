@@ -2,7 +2,7 @@
 
 %  [ ] response box -- http://docs.psychtoolbox.org/CMUBox
 %  [ ] time of score presentation -- NULL is actually a wait time? 0-12secs
-%      most at 2
+%      most frequent is 2 in Frank code
 
 %  [-] append total score to results file?
 %  [x] between block message !?
@@ -13,7 +13,17 @@
 %  [x] 80% grey bg with central sphere
 %  [x] increase fixation size by 25%
 %  [x] darken dot by 25%
-   
+
+% 12/05
+%  [x] counterbalance odd subjects by reversing order
+%  [x] TR=1
+%  [x] output includes emotion and face file
+%  [x] had neutral, needed fear faces (R script)
+%  [x] fear/happy faces to open mount (prev. closed b/c neutral
+%                                      but using scram instead)
+% 12/06
+%  [] remaining time /2
+%  [] session number drops in a start or half way pt
        
 
 function CogEmoFaceReward
@@ -69,7 +79,7 @@ function CogEmoFaceReward
   %% start recording data
   % sets txtfid, subject.*, start, etc  
 
-     
+  halfwaypt=360; % half of the total lenght
   getSubjInfo
   
   % print the top of output file
@@ -207,10 +217,22 @@ function CogEmoFaceReward
          'Try responding at different times in order to learn\n' ...
          'how to make the most points with this new set.\n\n' ...
          'Press any key when you are ready' ];
+     
+     % is the first time loading?
+     % we know this by where we are set to start (!=1 if loaded from mat)
+     if start==1  
+         % show long instructions for first time player
+         for instnum = 1:length(Instructions)
+             DrawFormattedText(w, Instructions{instnum},'center','center',black);
+             Screen('Flip', w);
+             waitForResponse;
+         end
+
+        % inialize the order of events only if we arn't resuming
+        order=cell(length(experiment{1}),1);
         
-     for instnum = 1:length(Instructions)
-               
-         DrawFormattedText(w, Instructions{instnum},'center','center',black);
+     else
+         DrawFormattedText(w, InstructionsBetween,'center','center',black);
          Screen('Flip', w);
          waitForResponse;
      end
@@ -221,6 +243,7 @@ function CogEmoFaceReward
          Screen('Flip',w);
          WaitSecs(1.0);
      end
+     
      i=start; % fixation calls drawRect which uses i to get the block number
      fixation(1500);
      
@@ -228,16 +251,14 @@ function CogEmoFaceReward
      StartOfRunTime=GetSecs();
 
   
-     %% iterate through trials
-     % inialize the order of events only if we didn't load it from a crash
-     % we know this by where we are set to start
-     if start == 1; order=cell(length(experiment{1}),1); end
+   
      
+     %% THE BIG LOOP -- for all remaining trials or to the halfwaypt
      for i=start:length(experiment{facenumC})
         
          
         %% instructions if new block
-        if i>40 && mod(i,40)==1
+        if i>40 && mod(i,40)==1 && ~ ( i==halfwaypt+1 && subject.run_num > 1)
             Screen('TextSize', w, 22);
             drawRect;
             DrawFormattedText(w, InstructionsBetween,'center','center',black);
@@ -267,15 +288,11 @@ function CogEmoFaceReward
         
         
 
-        % TOCHANGE?: add RT/2 to fixation time? instead of all remainder
-        % this fixation lasts the remainder the 4 seconds
-        % do math in seconds, then put in ms
+        % add RT/2 to fixation time -- prev. added all of remainder
         %
-        % ** the quicker the response, the more latency there is
-        % ** and the greater the timing is off!
-        %  donno why
+        % math done in seconds then convereted to ms for fixation()
         dispRspTime=GetSecs() - checktime;
-        fixation((timerDuration - dispRspTime )*10^3);
+        fixation( (timerDuration - dispRspTime )*10^3/2);
         setTimeDiff('timer'); %build times (debug timing)
          
         % show first fixation
@@ -347,6 +364,15 @@ function CogEmoFaceReward
         
         
         
+        
+        %%%%%%%%%%%%%%%% halfwaypt break!
+        if i==halfwaypt 
+            msgAndCloseEverything(['Great Job! Your score so far is ', num2str(score) ,' points\n\nLet''s take a break']);
+            return
+        end
+        
+        
+        
         % show all intervals + expected
 %         disp([timing expectedTime(i)]);
 %         
@@ -364,15 +390,9 @@ function CogEmoFaceReward
      end
 
  
-    
-    diary off;	%stop diary
-    fclose('all');	%close data file
 
-    DrawFormattedText(w, ['Your final score is ', num2str(score) ,'\nThanks for playing!'],'center','center',black);
-    Screen('Flip', w);
-    waitForResponse;
-    
-    Screen('CloseAll');
+
+    msgAndCloseEverything(['Your final score is ', num2str(score) ,' points\nThanks for playing!']);
     return
 
   catch
@@ -387,7 +407,15 @@ function CogEmoFaceReward
 %                           support functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+    function msgAndCloseEverything(message)
+       DrawFormattedText(w, message,'center','center',black);
+       Screen('Flip', w);
+       waitForResponse;
+       diary off;	%stop diary
+       fclose('all');	%close data file
+       Screen('CloseAll');
+       sca
+    end
 
    %% print time since last check
    % updates global timing struct and checktime double
@@ -480,7 +508,10 @@ function CogEmoFaceReward
         [ keyIsDown, seconds, keyCode ] = KbCheck;
         
         if keyIsDown
-            if(keyCode(escKey)); Screen('CloseAll'); end
+            if(keyCode(escKey)); 
+                msgAndCloseEverything(['Quit on trial ' num2str(i)]);
+                error('quit early (on %d)\n',i)
+            end
             %if keyCode(spaceKey)
                 break
             %end
@@ -532,11 +563,10 @@ function CogEmoFaceReward
       while(1)
           [ keyIsDown, seconds, keyCode ] = KbCheck;
           
-          if(keyIsDown && keyCode(escKey)); 
-              Screen('CloseAll');
-              sca;
-              break;
-          end
+          if(keyIsDown && keyCode(escKey));
+              msgAndCloseEverything(['Quit on trial ' num2str(i)]);
+              error('quit early (on %d)\n',i)
+           end
           
           if(keyIsDown && any(keyCode)); break; end %any() is redudant
           WaitSecs(.001);
@@ -601,27 +631,74 @@ function CogEmoFaceReward
 
         filename = ['subjects/' subject.subj_id '_tc'];
 
-        % is the subject new? is it a restart or resume of an existing?
+        % is the subject new? should we resume from existing?
         % set t accordingly, maybe load subject structure 
         txtfile=[filename '.txt'];
+        backup=[txtfile '.' num2str(GetSecs()) '.bak'];
+        
+        % we did something with this subject before?
         if exist(txtfile,'file') 
-            restart = input('Is this a restart/want to load old file (y or n)? ','s');
-            if lower(restart) == 'y' 
-                %subj_id = subject.subj_id;
-                if exist([filename '.mat'],'file')
+            
+            % check that we have a mat file
+            % if not, backup txt file and restart
+            if ~ exist([filename '.mat'],'file')
+                fprinf('%s.txt exists, but .mat does not!\n',filename)
+                reload= 'n'; % move txt file to backup and start from scratch
+            
+            % we have the mat file
+            % * is this resuming the previous run -- we were at the halfwaypt
+            % * if it's not obviously resuming, do we want to continue where
+            %   we left off?
+            else
+                localVar = load(filename);
+                % sanity check
+                if localVar.subject.subj_id ~= subject.subj_id
+                    error('mat file data conflicts with name!: %d != %d',...
+                        localVar.subject.subj_id, subject.subj_id);
+                end
+                
+                % we have a mat, but did we stop when we should have?
+                if  localVar.subject.run_num == 1 && ...
+                   localVar.trialnum == halfwaypt;
+                    
+                    fprintf('incrementing run_num and assuming reload\n');
+                    resume = 'y';
+                    localVar.subject.run_num=2;
+                    localVar.trialnum=halfwaypt+1; 
+                    % need to increment trail here 
+                    % b/c we exit before incrementing i earlier
+                    % and we'll get stuck in a one trial loop otherwise
+                
+                % no where we expect, maybe psychtoolbox crashed
+                % prompt if we want to restart
+                else
+                    fprintf('not auto resuming b/c trail=%d and run=%d\n\n',...
+                        localVar.subject.run_num,localVar.trialnum)
+                    resume = lower(input('Want to load previous session (y or n)? ','s'));
+                end
+       
+                %
+                % if we auto incremented run_num
+                % or decided to resume
+                %   clear subject, and load from mat file
+                if strcmp(resume,'y')
+                    
                     clear subject
-                    localVar = load(filename);
                     start=localVar.trialnum;
                     subject=localVar.subject;
-                    subject
+
                     order=localVar.order;
                     score=localVar.score;
+                
+                % otherwise, move the existing txt file to a backup
+                % and we'll fill in the subject info below
+                else
+                    fprint('moving %s to %s, start from top\n', txtfile,backup)
+                    movefile(txtfile,backup);
                 end
-            else
-                % dont append new stuff to an old file, move the old one
-                movefile(txtfile,[txtfile '.' num2str(GetSecs()) '.bak']);  
+                
             end
-        end
+         end
         
         %% fill out the subject struct if any part of it is still empty
         for attribCell={'gender','age','run_num'}
@@ -652,10 +729,16 @@ function CogEmoFaceReward
         fprintf('Subject is %s\n', subject.gender);
 
         %% Initialize data storage and records
-        diaryfile = [subject.subj_id 'tcdiary'];
+        % make directoires
+        for dir={'subjects','logs'}
+         if ~ exist(dir{1},'dir'); mkdir(dir{1}); end
+        end
+        
+        % log all output of matlab
+        diaryfile = ['logs/' subject.subj_id '_' num2str(GetSecs()) '_tcdiary'];
         diary(diaryfile);
         
-        if ~ exist('subjects','dir'); mkdir('subjects'); end
+        % log presentation,score, timing (see variable "order")
         txtfid=fopen(txtfile,'a'); % we'll append to this..maybe
         
         if txtfid == -1; error('couldn''t open text file for suject'); end
