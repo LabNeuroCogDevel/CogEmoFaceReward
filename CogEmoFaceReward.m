@@ -22,8 +22,9 @@
 %  [x] fear/happy faces to open mount (prev. closed b/c neutral
 %                                      but using scram instead)
 % 12/06
-%  [] remaining time /2
-%  [] session number drops in a start or half way pt
+%  [x] remaining time /2
+%  [x] session number drops in a start or half way pt
+%  []  fix:if exit on next instruction screen, will redo previous on resume
        
 
 function CogEmoFaceReward
@@ -127,7 +128,9 @@ function CogEmoFaceReward
   
      %% setup screen
      % Removes the blue screen flash and minimize extraneous warnings.
-  	 % Screen('Preference', 'VisualDebugLevel', 3);
+     % http://psychtoolbox.org/FaqWarningPrefs
+  	 Screen('Preference', 'Verbosity', 2); % remove cli startup message 
+     Screen('Preference', 'VisualDebugLevel', 3); % remove  visual logo
      %Screen('Preference', 'SuppressAllWarnings', 1);
   	
      % Find out how many screens and use smallset screen number.
@@ -230,9 +233,11 @@ function CogEmoFaceReward
 
         % inialize the order of events only if we arn't resuming
         order=cell(length(experiment{1}),1);
-        
+     
+     % subjects know the drill. Give them breif instructions
+     % order is already init. and loaded from mat, so don't work about it
      else
-         DrawFormattedText(w, InstructionsBetween,'center','center',black);
+         DrawFormattedText(w, ['Welcome Back!\n\n' InstructionsBetween],'center','center',black);
          Screen('Flip', w);
          waitForResponse;
      end
@@ -256,16 +261,7 @@ function CogEmoFaceReward
      %% THE BIG LOOP -- for all remaining trials or to the halfwaypt
      for i=start:length(experiment{facenumC})
         
-         
-        %% instructions if new block
-        if i>40 && mod(i,40)==1 && ~ ( i==halfwaypt+1 && subject.run_num > 1)
-            Screen('TextSize', w, 22);
-            drawRect;
-            DrawFormattedText(w, InstructionsBetween,'center','center',black);
-            Screen('Flip', w);
-            waitForResponse;
 
-        end
         
 
 
@@ -371,7 +367,17 @@ function CogEmoFaceReward
             return
         end
         
-        
+                 
+        %% instructions if new block
+        % if i=halfwaypt, though mod 40==0, this is never seen
+        if i>40 && mod(i,40)==0
+            Screen('TextSize', w, 22);
+            drawRect(i+1);
+            DrawFormattedText(w, InstructionsBetween,'center','center',black);
+            Screen('Flip', w);
+            waitForResponse;
+
+        end
         
         % show all intervals + expected
 %         disp([timing expectedTime(i)]);
@@ -413,6 +419,7 @@ function CogEmoFaceReward
        waitForResponse;
        diary off;	%stop diary
        fclose('all');	%close data file
+       Screen('Close')
        Screen('CloseAll');
        sca
     end
@@ -427,8 +434,14 @@ function CogEmoFaceReward
 
 
    %% block indicator
-    function drawRect
-       Screen('FrameRect', w, blockColors(experiment{blockC}(i),:), [], 25);
+    function drawRect(varargin)
+       t=i;
+       % allow block to be specified, mostly for instruction display
+       % b/c we want to show the color of the next block
+       if nargin>0
+           t=varargin{1};
+       end
+       Screen('FrameRect', w, blockColors(experiment{blockC}(t),:), [], 25);
     end
 
 
