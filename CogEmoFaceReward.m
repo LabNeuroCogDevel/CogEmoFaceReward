@@ -128,14 +128,9 @@ function CogEmoFaceReward
   
      %% setup screen
      % Removes the blue screen flash and minimize extraneous warnings.
-<<<<<<< HEAD
      % http://psychtoolbox.org/FaqWarningPrefs
   	 Screen('Preference', 'Verbosity', 2); % remove cli startup message 
      Screen('Preference', 'VisualDebugLevel', 3); % remove  visual logo
-=======
-  	 Screen('Preference', 'Verbosity', 2);
-     % Screen('Preference', 'VisualDebugLevel', 3);
->>>>>>> 06eb3c9b50aeb6a34a96a04267c366021ec4bd3d
      %Screen('Preference', 'SuppressAllWarnings', 1);
   	
      % Find out how many screens and use smallset screen number.
