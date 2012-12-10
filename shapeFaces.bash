@@ -5,7 +5,7 @@ set -xe
 #faces directory
 indir=$HOME/nimstim
 outdir=/home/foranw/remotes/B/bea_res/Personal/Will/CogEmoFaceReward/faces/
-scale=50   # from original (506x650)
+scale=35   # from original (506x650)
 # what face to use for each emotion (open mouth faces)
  happy=HA_O 
   fear=FE_O
@@ -34,16 +34,20 @@ while read inf outf;  do
 done
 
 # run matlab
-matlab -nodisplay -nojvm -r 'scale=50; scrambleFace.m'
+echo 'run matlab:' 
+echo "matlab -nodisplay -nojvm -r 'scale=$scale; scrambleFace.m'"
+read
 
 # make spheres again
+# sizes is the widthxheight and then half of that (for sphere center)
+sizes=($(identify $outdir/$scale/scram/scram_1.png | perl -lne '$,=" "; print $1,$2,int($1/2),int($2/2) if m/(\d+)x(\d+)/'))
 for f in $outdir/$scale/scram/scram_*; do 
-  convert -size 253x325 $f \( -size 253x325 xc:none -fill black -draw 'ellipse 127,163 127,163 0,360' \) -alpha Set -compose Dst_In  -composite $f; 
+  convert -size ${sizes[0]}x${sizes[1]} $f \( -size ${sizes[0]}x${sizes[1]} xc:none -fill black -draw "ellipse ${sizes[2]},${sizes[3]} ${sizes[2]},${sizes[3]} 0,360" \) -alpha Set -compose Dst_In  -composite $f; 
 done
 
 # check our work
-ls $scale/*/*.png | wc -l
-feh $scale/*/*.png -i -E 100
+ls $outdir/$scale/*/*.png | wc -l
+feh $outdir/$scale/*/*.png -i -E 100
 
-mv $outdir/$scale/{scram,happy,fear}/* $outdir/
+cp $outdir/$scale/{scram,happy,fear}/* $outdir/
 

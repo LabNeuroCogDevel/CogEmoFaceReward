@@ -25,6 +25,9 @@
 %  [x] remaining time /2
 %  [x] session number drops in a start or half way pt
 %  []  fix:if exit on next instruction screen, will redo previous on resume
+%
+% 12/10 
+%  [x] add sound to no response
        
 
 function CogEmoFaceReward
@@ -76,6 +79,7 @@ function CogEmoFaceReward
   % initialize total points earned
   % incremented as a function (inc,dec,const)
   score = 0;
+  blockTotal = 0;
   
   %% start recording data
   % sets txtfid, subject.*, start, etc  
@@ -176,6 +180,20 @@ function CogEmoFaceReward
      end
 
 
+     %% setup sound
+     % http://docs.psychtoolbox.org/PsychPortAudio
+     % http://wiki.stdout.org/matlabcookbook/Presenting%20auditory%20stimuli/Playing%20sounds/
+     
+     InitializePsychSound;
+     [wavedata, sndFreq] = wavread('incorrect.wav');
+     wavedata=wavedata';
+     nrchannels = size(wavedata,1);
+     % 2nd to last arg should be sndFreq, but portaudio returns error w/it
+     pahandle= PsychPortAudio('Open', [], [], [], [], nrchannels);
+     PsychPortAudio('FillBuffer',pahandle,wavedata);
+     
+     
+     
 
      %% Instructions 
 %         [ 'You will see a clock face.\n' ...
@@ -330,7 +348,7 @@ function CogEmoFaceReward
         
         % save to mat so crash can be reloaded
         trialnum=i;
-        save(filename,'order','trialnum','subject','score');
+        save(filename,'order','trialnum','subject','score','blockTotal');
         
        
         % line like
@@ -370,10 +388,15 @@ function CogEmoFaceReward
                  
         %% instructions if new block
         % if i=halfwaypt, though mod 40==0, this is never seen
-        if i>40 && mod(i,40)==0
+        if i>39 && mod(i,40)==0
             Screen('TextSize', w, 22);
             drawRect(i+1);
-            DrawFormattedText(w, InstructionsBetween,'center','center',black);
+            DrawFormattedText(w, ...
+                 [ InstructionsBetween ...
+                 '\n\nYou have ' num2str(score) ' points so far\n'...
+                 'Completed Game: ' num2str(floor(i/40)) ' of ' num2str(9*subject.run_num) ...
+                 ],'center','center',black);
+            blockTotal=0;
             Screen('Flip', w);
             waitForResponse;
 
@@ -414,13 +437,16 @@ function CogEmoFaceReward
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function msgAndCloseEverything(message)
-       DrawFormattedText(w, message,'center','center',black);
+       DrawFormattedText(w, [message '\n\n push any key but esc to quit'],...
+           'center','center',black);
+       fprintf('%s\n',message)
        Screen('Flip', w);
        waitForResponse;
        diary off;	%stop diary
        fclose('all');	%close data file
        Screen('Close')
        Screen('CloseAll');
+       PsychPortAudio('Close');
        sca
     end
 
@@ -450,7 +476,7 @@ function CogEmoFaceReward
    function [elapsedMS] = faceWithTimer
        
      % dot size and dist from center
-     spotRadius         = 100;        % The radius of the spot from center.
+     spotRadius         = 150;        % The radius of the spot from center.
      spotSize           = 10;         % The radius of the spot's fill.
      initialDotPosition = 3 * pi / 2; % The initial position. -- 12'o clock
      
@@ -460,13 +486,13 @@ function CogEmoFaceReward
      centeredspotRect = CenterRect(spotRect, windowRect); % Center the spot.
      
      % Set up the timer.
-     startTime   = GetSecs()*10^3;
+     startTimeMS   = GetSecs()*10^3;
      durationMS  = timerDuration*10^3; % 4 seconds of looking at a face
      remainingMS = durationMS;
-     elapsedMS = 0;
+     %elapsedMS = 0;
      % Loop while there is time.
      while remainingMS > 0 
-        elapsedMS = round((GetSecs()*10^3 - startTime) );
+        elapsedMS = round((GetSecs()*10^3 - startTimeMS) );
         remainingMS = durationMS - elapsedMS;
         
         %Screen('DrawText', w, sprintf('%i ms remaining...',remainingMS), 20, 20, black);
@@ -476,7 +502,7 @@ function CogEmoFaceReward
         drawRect;
         
         % white cirlce over trial area
-        Screen('FillOval', w, [255 255 255], CenterRect([ 0 0 300 300],windowRect));
+        Screen('FillOval', w, [255 255 255], CenterRect([ 0 0 2*(spotRadius+spotSize)+10 2*(spotRadius+spotSize)+10 ],windowRect));
         
         % put the image up
         emo=experiment{emotionC}{i};
@@ -535,11 +561,15 @@ function CogEmoFaceReward
         %WaitSecs(0.001);
      end
      
-     %elapsedMS = round((GetSecs() - startTime) * 10^3);
+     elapsedMS = round(GetSecs()*10^3 - startTimeMS);
      % if 4s, give them no points? -- just a test for warning
-     %if elapsedMS >= (timerDuration - .25) *10^3
+     if elapsedMS >= (timerDuration) *10^3
      %    fprintf('warning: RT is %f\n', elapsedMS*10^8);
-     %end
+          % play the sound in pahandle once, start now, dont wait for
+          % playback to start
+          fprintf('playing sound\n');
+          PsychPortAudio('Start', pahandle, 1, 0, 0);
+    end
      %fprintf('\n Submitted @ %f\n',elapsedMS);
      
      return;
@@ -614,13 +644,14 @@ function CogEmoFaceReward
         % is freq above thresold and do we have a resonable RT
         if F_Freq > rd && RT~=0 && RT <= timerDuration*10^3
             score=score+F_Mag;
+            blockTotal=blockTotal+F_Mag;
             inc=F_Mag;
         else
             %score=score;
             inc=0;
         end
-        fprintf('%s: ev=%.2f; Mag=%.2f; Freq: %.2f; inc: %d\n', ...
-                experiment{rewardC}{i},ev, F_Mag,F_Freq,inc);
+        fprintf('%s: ev=%.2f; Mag=%.2f; Freq: %.2f; rand: %.2f; inc: %d; pts- block: %d; total: %d\n', ...
+                experiment{rewardC}{i},ev, F_Mag,F_Freq,rd,inc,blockTotal,score);
        
         
         %%% Draw
@@ -628,7 +659,7 @@ function CogEmoFaceReward
         %Screen('DrawText', w, sprintf('Your Score is: %d\nrecorded rxt: %d', score, rspnstime));
         %DrawFormattedText(w, sprintf('Total score is: %d\nincrease is: %d\nradnom vs Freq (ev): %f v %f (%f)\nrecorded rxt: %d', score,F_Mag,rd,F_Freq,ev, RT),'center','center',black);
         Screen('TextSize', w, 22);
-        DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal: %d points', inc,score),'center','center',black);
+        DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,blockTotal),'center','center',black);
 
         
         Screen('Flip', w);
@@ -655,7 +686,7 @@ function CogEmoFaceReward
             % check that we have a mat file
             % if not, backup txt file and restart
             if ~ exist([filename '.mat'],'file')
-                fprinf('%s.txt exists, but .mat does not!\n',filename)
+                fprintf('%s.txt exists, but .mat does not!\n',filename)
                 reload= 'n'; % move txt file to backup and start from scratch
             
             % we have the mat file
@@ -685,7 +716,7 @@ function CogEmoFaceReward
                 % no where we expect, maybe psychtoolbox crashed
                 % prompt if we want to restart
                 else
-                    fprintf('not auto resuming b/c trail=%d and run=%d\n\n',...
+                    fprintf('not auto resuming b/c run=%d and trail=%d\n\n',...
                         localVar.subject.run_num,localVar.trialnum)
                     resume = lower(input('Want to load previous session (y or n)? ','s'));
                 end
@@ -706,7 +737,7 @@ function CogEmoFaceReward
                 % otherwise, move the existing txt file to a backup
                 % and we'll fill in the subject info below
                 else
-                    fprint('moving %s to %s, start from top\n', txtfile,backup)
+                    fprintf('moving %s to %s, start from top\n', txtfile,backup)
                     movefile(txtfile,backup);
                 end
                 
@@ -731,6 +762,12 @@ function CogEmoFaceReward
         %% age should be a number
         if ischar(subject.age);     subject.age    =str2double(subject.age);    end
         if ischar(subject.run_num); subject.run_num=str2double(subject.run_num);end
+
+        if start==1 && subject.run_num==2; 
+            fprintf('WARNING: new subject, but run number 2 means start from the top\n')
+            fprintf('there is no good way to do the first part again\n')
+            start=halfwaypt+1;
+        end
 
         %% set sex to a standard
         if ismember(lower(subject.gender),{'male';'dude';'guy';'m';'1'} )
