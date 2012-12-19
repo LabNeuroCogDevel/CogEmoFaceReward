@@ -6,6 +6,12 @@
 %  * order: cell converted back to double matrix 
 %  * trialnum known again as t, subject.num_run as subject.cb_num
 %  * saves mat files to new subdirectory "orgfmt/"
+%  * new column 12 is emotion
+%
+%  emotion of the face displayed is new, column 12
+%  happy=1
+%   fear=2
+%  scram=3
 %
 % USAGE EXAMPLE:
 %
@@ -21,7 +27,7 @@ function orderToOrig(filename)
 
    load(filename)
    % check load is as expected
-   if ~exist('order','var');fprinf('order DNE, somethign went wrong with loading\n');return; end
+   if ~exist('order','var');fprinf('order DNE, something went wrong with loading\n');return; end
    
    % replace reward function as a string with reward function as a number
    %            1    2      3    4
@@ -42,19 +48,44 @@ function orderToOrig(filename)
        neworder(i,:)=cellfun(@(x) double(x), order{i});
    end
    
-   % make a new name to save the modifications
+   % get file name
    [name.path,name.name,name.ext]=fileparts(filename); 
+
+   % get emotion
+   txtoutputinfn = [name.path '/' name.name '.txt'];
+   if(~ exist(txtoutputinfn,'file')); fprintf('oh no txt file DNE\n'); return; end
+   f=fopen(txtoutputinfn);
+   
+   % should check this exists
+   while(~feof(f))
+      txtoutputin=textscan(f,'%s\t%d\t%d\t%d\t%d\t%f\t%f\t%d\t%f\t%f\t%f\t%s\t%s', 'CommentStyle','#');
+   end
+   fclose(f);
+
+   % go through each line and assing a number
+   emo=zeros(size(neworder,1),1);
+   faces={'happy','fear','scram'};
+   j=0;
+   for i=1:length(txtoutputin{12})
+      if isempty(txtoutputin{12}{i})
+        continue 
+      end
+      j=j+1;
+      emo(j)=find(strcmp(txtoutputin{12}(i),faces));
+   end
+   % would check j = expected length, but will get an error below
+   
+   % make a new name to save the modifications
    name.path=[name.path '/orgfmt/'];
    % make sure the save path exists
    if ~exist(name.path,'dir'); mkdir(name.path); end
    newname=struct2array(name);
-   
 
    % warn about overwriting 
    if exist(newname,'file'); fprintf('WARNING: overwriting %s\n',newname);end
    
    % set other variable names to what is expected
-   order          = neworder;
+   order          = [neworder, emo];
    t              = trialnum;
    subject.cb_num = subject.run_num;
    subject        = rmfield(subject,'run_num');
