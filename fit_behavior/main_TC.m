@@ -41,16 +41,16 @@ for jj=1000:1035 % subjects
         IEV_misc5 = [];
         
         
-        
+        subjdir='../subjects/orgfmt/';
         if (kk==1)
-            if (exist (strcat(num2str(jj),'_tc.mat')) >0)
-                load(strcat(num2str(jj),'_tc'))
+            if (exist (strcat(subjdir,num2str(jj),'_tc.mat')) >0)
+                load(strcat(subjdir,num2str(jj),'_tc'))
                 ii=ii+1;
             else continue;
             end
         else
-            if (exist (strcat(num2str(jj),'b_tc.mat')) >0)
-                load(strcat(num2str(jj),'b_tc'))
+            if (exist (subjdir,strcat(num2str(jj),'b_tc.mat')) >0)
+                load(strcat(subjdir,num2str(jj),'b_tc'))
                 ii=ii+1;
             else continue;
             end
@@ -217,11 +217,17 @@ for jj=1000:1035 % subjects
     end
 end
 
+fname_Best_Fit_Param_Trn='SubjsSummary.txt';
 hdr = {'Subject','Session','lambda','explore','alphaG','alphaL','K','nu','ignore','rho','SSE'};
 txt=sprintf('%s\t',hdr{:});
 txt(end)='';
 dlmwrite(fname_Best_Fit_Param_Trn,txt,'');
 dlmwrite(fname_Best_Fit_Param_Trn, Best_fit_params_Trn,'-append','delimiter','\t','precision', '%6.5f');
+%%% PROBLEM
+% size(Best_fit_params_Trn) => 3    10
+% size(hdr)                 => 1    11
+% Looks like subj_session is missing or not needed in hdr
+
 
 fid_Trn =fopen(fname_trn,'w');
 rSE_Trn_mean = mean(sqrt(SEmin))

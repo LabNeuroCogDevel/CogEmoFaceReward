@@ -62,7 +62,7 @@ function orderToOrig(filename)
    end
    fclose(f);
 
-   % go through each line and assing a number
+   % go through each line and assign a number
    emo=zeros(size(neworder,1),1);
    faces={'happy','fear','scram'};
    j=0;
