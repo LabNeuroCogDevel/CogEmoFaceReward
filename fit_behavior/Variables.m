@@ -21,10 +21,10 @@ comt_colmn =6;
 d2_colmn=7;
 d32_colmn=8;
 
- Group = 'emot';
+Group = 'emot';
 
 
- blk=1; % add block column to data so that order is taken into account for Value comparisons..
+blk=1; % add block column to data so that order is taken into account for Value comparisons..
         Blk_Colmn = FeedBck_Colmn+4; % +4 because of 3 gene columns: comt (met =1), d2 (t=1), d32 (A=1), even if no gene data these are used as placeholders
 emot_colmn = Blk_Colmn+1;
 

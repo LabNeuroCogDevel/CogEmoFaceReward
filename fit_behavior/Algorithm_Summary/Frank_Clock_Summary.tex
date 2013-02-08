@@ -1,0 +1,96 @@
+%\documentclass[12pt]{amsart}
+\documentclass[12pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper, margin=0.5in}
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage[titles]{tocloft}
+\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+%redefine description environment to allow for specified indent
+\renewenvironment{description}[1][0pt]
+  {\list{}{\labelwidth=0pt \leftmargin=#1
+   \let\makelabel\descriptionlabel}}
+  {\endlist}
+
+\begin{document}
+\title{Summary of Fitting Algorithm for Clock Task}
+\author{Michael Hallquist}
+%\today %\date{}                                           % Activate to display a given date or no date
+\maketitle
+\setlength{\parskip}{0cm}
+\tableofcontents
+\setlength{\parskip}{0.2cm}
+\newpage
+
+\section{Structure of the task}
+
+\begin{itemize}
+	\item \textbf{IEV}: Increasing expected value. Waiting leads to more points in the long run: increasing magnitude with decreasing frequency.
+	\item \textbf{DEV}: Decreasing expected value. Waiting leads to fewer points in the long run: relatively flat magnitude with decreasing frequency.
+	\item \textbf{CEV}: Constant expected value. In the long run, RT does not matter: shallow increasing magnitude with decreasing frequency.
+	\item \textbf{CEVR}: Constant expected value -- reversed. In the long run, RT does not matter: decreasing magnitude with increasing frequency (waiting for a sure thing).
+\end {itemize}
+	
+
+\section{Model and Equations}
+
+(Content copied verbatim or adapted from Frank 2009 NN paper)
+
+Premise of model follows traditional R-L models, namely that participants develop an expected value 
+\begin{equation}
+	V(t + 1) = V(t) + \alpha\delta(t)
+\end{equation}
+
+where $\alpha$ is a learning rate that modifies the extent to which values are updated from one trial to the next based on obtained rewards. The reward prediction error (likely coded by striatal DA neurons) is represented by $\delta$:
+
+\begin{equation}
+	\delta(t) = \textnormal{Rew}(t) - V(t)
+\end{equation}
+
+
+%\hline
+\begin{equation}
+\hat{\textnormal{RT}}(s,t) = K + \lambda\textnormal{RT}(s, t - 1 )- \textnormal{Go}(s, a, t) +
+	NoGo(s, a, t) + \rho (\mu_{slow}(s, t) - \mu_{fast}(s, t)) + \nu (\textnormal{RT_best} -\textnormal{RT_avg}) + \textnormal{Explore}(s, t)
+\end{equation}
+%\hline
+
+
+The Frank model builds on the knowledge that different striatal DA populations may underlie Go learning versus NoGo learning.
+
+\begin{description}[1cm]
+	\item [Go Learning] Learning to reproduce behaviors that yield \textit{positive} outcomes.
+	\item [NoGo Learning] Learning to avoid behaviors yield \textit{negative} outcomes.
+\end {description}
+
+
+Go learning is facilitated by the action of (excitatory) D1 receptors in the striatonigral pathway. NoGo learning is facilitated by the action of (inhibitory) D2 receptors in the striatopallidal pathway.
+
+
+\section{MATLAB implementation}
+
+\begin{description}[1cm]
+	\item[main\_TC.m] Loop over subjects and runs/sessions. At this point, I believe this fits each session separately
+	\item[TC\_minSE.m] Fits behavior for each of the blocks in the task (9 in our case) and returns the $SS_E$ (Sum of squares error) summed over all blocks.
+	\item[TC\_Alg.m] Core RT model fitting algorithm outlined in 2009 NN paper.
+	
+\end{description}
+
+\subsection{main\_TC.m}
+	
+The core loop here uses rmsearch, which is essentially a numerical optimizer that minimizes fit discrepancies between the observed behavior and the model prediction.
+
+\begin{lstlisting}
+   [params, SE, exitflag,xstart] = rmsearch(@(params) TC_minSE(params, sess_trn), 'fmincon', init_params, lower_limits, upper_limits, 'initialsample', num_start_pts, 'options', opts) ;
+   SEmin(subsessnum)= min(SE);
+   DiffFmOptimal(subsessnum,:) = SE - SEmin(subsessnum) % how different are the SSE values for each starting pt from optimal one
+\end{lstlisting}
+
+
+
+\end{document}  

@@ -1,0 +1,25 @@
+%Tex detritus
+%setup definition style
+\usepackage{amsthm}
+
+\makeatletter
+\newtheoremstyle{defstyle}%
+{\topsep}{\topsep}
+{\normalfont}{2.5em}
+{\bfseries}{:}
+{0.5em}
+{\thmname{\@ifempty{#3}{#1}\@ifnotempty{#3}{#3}}}
+\makeatother
+
+\theoremstyle{defstyle}
+\newtheorem*{defn}{Definition} %definition environment
+
+
+
+\begin{defn}[Go Learning]
+	Learning to reproduce behaviors that yield \textit{positive} outcomes
+\end{defn}
+
+\begin{defn}[NoGo Learning]
+	Learning to avoid behaviors yield \textit{negative} outcomes
+\end{defn}

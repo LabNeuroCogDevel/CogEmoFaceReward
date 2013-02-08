@@ -103,6 +103,8 @@ for subsessnum = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop 
     global RTpred;
     RTpred=[];
     
+    %provides model fit for each block
+    %we have 9 blocks: 3 emotion x 3 reward functions
     if ~(isempty(trn_blk1))
         
         cond= trn_blk1(1,TrlType_Colmn);
