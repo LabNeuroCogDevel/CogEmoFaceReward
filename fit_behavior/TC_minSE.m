@@ -147,11 +147,7 @@ for subsessnum = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop 
         
         mySE = mySE + sum(RTdiffs4);
         
-        
-        
     end
-    
-    
     
     if ~(isempty(trn_blk5))
         

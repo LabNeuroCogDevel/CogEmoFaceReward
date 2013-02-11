@@ -1,6 +1,21 @@
 
 
-function [RTpred misc1 misc2 misc3 misc4 misc5 misc6 misc7 misc8]=TC_Alg(Response,Reward, Params, avg_RT, cond);
+function [RTpred misc1 misc2 misc3 misc4 misc5 misc6 misc7 misc8]=TC_Alg_mine(Response, Reward, Params, avg_RT, cond);
+
+%Response is a t x 1 column vector of reaction times for t trials.
+%Reward is a t x 1 column vector of rewards obtained for t trials.
+%Params is an 8 x 1 columnn vector of model parameters to be used to fit behavior.
+%  
+%Params 8 x 1 <numeric>
+%   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+%   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+%                         #    about fast vs. slow responses
+%   ,3:  alpha1           #learning rate for positive prediction errors (approach)
+%   ,4:  alpha2           #learning rate for negative prediction errors (avoid)
+%   ,5:  K                #baseline response speed (person mean RT?)    
+%   ,6:  scale            #nu: going for the gold (modulating RT toward highest payoff)
+%   ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+%   ,8:  meandiff         #rho parameter: 
 
 global Vstart
 global Go NoGo
@@ -314,14 +329,14 @@ for (trial = 2:NumTrls_TrlType)
     
     
     % store misc variables (e.g., PE and explore, etc)
-    misc1a = Rew_last - V_last;
-    misc2a =  exp1_last;
-    misc3a = sqrt(vars_last);
-    misc4a = sqrt(varl_last);
-    misc5a = means_last;
-    misc6a = meanl_last;
-    misc7a = Go_last;
-    misc8a = NoGo_last;
+    misc1a = Rew_last - V_last; %prediction error
+    misc2a =  exp1_last; %explore product: epsilon * (sd diff [slow - fast])
+    misc3a = sqrt(vars_last); %sd of short RT
+    misc4a = sqrt(varl_last); %sd of long RT
+    misc5a = means_last; %mean of short RT
+    misc6a = meanl_last; %mean of long RT
+    misc7a = Go_last; %mean of Gos
+    misc8a = NoGo_last; %mean of NoGos
     
     
     if trial ==2

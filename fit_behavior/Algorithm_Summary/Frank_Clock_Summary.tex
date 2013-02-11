@@ -6,6 +6,7 @@
 %\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
 \usepackage{graphicx}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{epstopdf}
 \usepackage[titles]{tocloft}
 \usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
@@ -52,24 +53,44 @@ where $\alpha$ is a learning rate that modifies the extent to which values are u
 	\delta(t) = \textnormal{Rew}(t) - V(t)
 \end{equation}
 
-
-%\hline
-\begin{equation}
-\hat{\textnormal{RT}}(s,t) = K + \lambda\textnormal{RT}(s, t - 1 )- \textnormal{Go}(s, a, t) +
-	NoGo(s, a, t) + \rho (\mu_{slow}(s, t) - \mu_{fast}(s, t)) + \nu (\textnormal{RT_best} -\textnormal{RT_avg}) + \textnormal{Explore}(s, t)
-\end{equation}
-%\hline
-
-
 The Frank model builds on the knowledge that different striatal DA populations may underlie Go learning versus NoGo learning.
 
-\begin{description}[1cm]
+\begin{description}[1cm] \itemsep1pt \parskip0pt \parsep0pt
 	\item [Go Learning] Learning to reproduce behaviors that yield \textit{positive} outcomes.
 	\item [NoGo Learning] Learning to avoid behaviors yield \textit{negative} outcomes.
 \end {description}
 
+Thus, the core computational model (Moustafa et al., 2008) separates Go and NoGo learning. Go learning is facilitated by the action of (excitatory) D1 receptors in the striatonigral pathway. NoGo learning is facilitated by the action of (inhibitory) D2 receptors in the striatopallidal pathway. Thus, the idea is that the agent may learn different information from positive prediction errors (PPEs) than negative prediction errors (NPEs).
 
-Go learning is facilitated by the action of (excitatory) D1 receptors in the striatonigral pathway. NoGo learning is facilitated by the action of (inhibitory) D2 receptors in the striatopallidal pathway.
+\begin{align}
+\textnormal{Go}(s, a, t+1) &= \textnormal{Go}(s, a, t) + \alpha_G\delta_+(t) \\
+\textnormal{NoGo}(s, a, t+1) &= \textnormal{NoGo}(s, a, t) + \alpha_G\delta_-(t)
+\end{align}
+
+\subsection{Model-predicted reaction time}
+The full model of reaction time includes several influences:
+
+\begin{enumerate}
+	\item $K$: Baseline response speed --- allows for individual differences in mean reaction time irrespective of reward.
+	\item $\lambda$: RT Autocorrelation with $t - 1$ --- allow for dependency of this RT on the previous RT
+	\item - Go(\textit{s, a, t}): speed-up of reaction time related to D1 activity in striatonigral pathway. More generally, faster RT accompanies positive prediction error.
+	\item + NoGo(\textit{s, a, t}): 
+	
+\end{enumerate}
+
+\begin{equation}
+\begin{split}
+\hat{\textnormal{RT}}(s,t) = 
+	K + 
+	\lambda\textnormal{RT}(s, t - 1 ) -
+	\textnormal{Go}(s, a, t) +
+	\textnormal{NoGo}(s, a, t) + \\
+	\rho [\mu_{slow}(s, t) - \mu_{fast}(s, t)] + 
+	\nu[\textnormal{RT}_{best} - \textnormal{RT}_{avg}] +
+	\textnormal{Explore}(s, t)
+\end{split}
+\end{equation}
+
 
 
 \section{MATLAB implementation}

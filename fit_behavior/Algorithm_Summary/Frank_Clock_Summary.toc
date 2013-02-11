@@ -1,0 +1,5 @@
+\contentsline {section}{\numberline {1}Structure of the task}{2}
+\contentsline {section}{\numberline {2}Model and Equations}{2}
+\contentsline {subsection}{\numberline {2.1}Model-predicted reaction time}{2}
+\contentsline {section}{\numberline {3}MATLAB implementation}{3}
+\contentsline {subsection}{\numberline {3.1}main\_TC.m}{3}
