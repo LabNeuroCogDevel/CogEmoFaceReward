@@ -2,11 +2,11 @@
 # randomize events to be inserted into eprime lists
 #
 #   |------------------------------------------|
-#   |           50  presentations              |   x {inc,dec,const} 
-#   |                    of                    |   x {happy,fear,scram(x2)} # scam done twice as much as other two
+#   |           42  presentations              |   x {inc,dec,cev,cevr} 
+#   |                    of                    |   x {happy,fear,scram)}
 #   |                                          |   x 1
 #   | facenum_{emotion} | ITI | {reward} | ISI |  ______________________
-#   |------------------------------------------|   600 presentations across 12 trials
+#   |------------------------------------------|   504 presentations across 12 blocks
 #
 #
 # saved to FaceITI.csv | facenum,ITI,ISI,emotion,reward
@@ -17,9 +17,9 @@
 # * blocklist is saved as a csv to be imported by eprime (or better presentation software )
 #   - lists each presentations face number, ITIs, emotion, and reward (with a header)
 #
-#   12 trials (ea. combo of reward(3) x emotion(3+1 addit. scram) of 50 presentations with 20 faces
+#   12 blocks: 4 reward functions (CEV, CEVR, IEV, DEV) and 3 emotions (happy, fear, scram). Blocks are 42 trials
 #    each presentation can have a unique ITI pair
-#    within each (50 presentations long) trial, faces should appear in a different order and each repeats at least once
+#    within each (42 trials long) block, faces should appear in a different order and each repeats at least once
 #
 ####
 
@@ -29,11 +29,11 @@ randUnifConstrain <- function(len, vals, targetMean) {
    return(sampVec)
 }
 
-numFaces   <- 20  # length(glob('faces/happy_*png')) # number of distinct faces
-numPresent <- 50  # number of presentations of a reward_emotion combo
+numFaces   <- 21  # length(glob('faces/happy_*png')) # number of distinct faces
+numPresent <- 42  # number of presentations of a reward_emotion combo
 numRep     <- 1   # how many times will we show the same reward_emotion combo
-emotions   <- c("happy","fear","scram","scram") #emotions   <- c("happy","neutral","fear")
-rewardFuns <- c("DEV","IEV","CEVR") #rewardFuns <- c("DEV","IEV","CEV", "CEVR")
+emotions   <- c("happy","fear","scram") #emotions   <- c("happy","neutral","fear")
+rewardFuns <- c("DEV", "IEV", "CEVR", "CEV") #rewardFuns <- c("DEV","IEV","CEV", "CEVR")
 numTrials  <- length(emotions)*length(rewardFuns)*numRep # 18 # how many reward_emotion combos total
 halfTrial  <- floor(numTrials/2)
 
@@ -41,12 +41,30 @@ halfTrial  <- floor(numTrials/2)
 conditionGrid <- expand.grid(emotion=emotions, reward=rewardFuns, occurrence=1:numRep)
 
 #a brute force permutation approach (below) doesn't work well -- unlikely to identify matching sets
+#manual order for 4 x 3 grid to force no repeats and relative balance of first 6 versus second 6 blocks
+conditionGrid <- conditionGrid[c(11,   #fear CEV                                 
+                                 1,    #happy DEV
+                                 5,    #fear IEV
+                                 9,    #scram CEVR
+                                 10,   #happy CEV
+                                 6,    #scram IEV                                
+                                 7,    #happy CEVR
+                                 3,    #scram DEV
+                                 8,    #fear CEVR
+                                 4,    #happy IEV
+                                 2,    #fear DEV
+                                 12    #scram CEV
+                                 ),]  
+
+
 #conditionGrid <- conditionGrid[
 #                               c(1, 5, 9, 2, 4, 3, 8, 6, 7,
 #                                 11, 13, 12, 16, 14, 18, 10, 15, 17),]
-conditionGrid <- conditionGrid[  c( sample(1:halfTrial,halfTrial),
-                                    sample((halfTrial+1):numTrials,(numTrials-halfTrial)) )
-                              , ]
+
+
+#conditionGrid <- conditionGrid[  c( sample(1:halfTrial,halfTrial),
+#                                    sample((halfTrial+1):numTrials,(numTrials-halfTrial)) )
+#                              , ]
 
  ## emotion reward occurrence
  ##   happy    DEV          1
@@ -94,13 +112,15 @@ conditionGrid <- conditionGrid[  c( sample(1:halfTrial,halfTrial),
 
 ITI.min <- 1000; ITI.max <- 2000; ITI.mean <- 1500;
 ISI.min <- 400;  ISI.max <- 1500; ISI.mean <- 900;
+
 faceRepeats=numTrials*numPresent/numFaces
 blocklist <- data.frame(
               facenum = as.vector(sapply(1:faceRepeats, function(x){ sample(1:numFaces,numFaces)  })), 
-              ITI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI.min,ITI.max,by=100),ITI.mean)   })),
-              ISI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ISI.min,ISI.max,by=100),ISI.mean)   })),
+              ITI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI.min,ITI.max,by=100), ITI.mean)   })),
+              ISI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ISI.min,ISI.max,by=100), ISI.mean)   })),
               block   = rep(1:numTrials, each=numPresent),
               emotion = rep(conditionGrid$emotion, each=numPresent),
               reward  = rep(conditionGrid$reward , each=numPresent)
          )
+
 write.table(blocklist,file="FaceITI.csv",row.names=FALSE,sep=",")

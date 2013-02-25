@@ -28,7 +28,6 @@
 %
 % 12/10 
 %  [x] add sound to no response
-       
 
 function CogEmoFaceReward
   %% CogEmoFaceReward
@@ -72,8 +71,7 @@ function CogEmoFaceReward
   blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
   txtfid      = 0; %just so we know the file pntr's not a private nested function var
   
-  
-  receiptDuration  = 1.5;
+  receiptDuration  = 1.4; %show feedback for 1400ms
   timerDuration    = 4;
   
   % initialize total points earned
@@ -84,7 +82,10 @@ function CogEmoFaceReward
   %% start recording data
   % sets txtfid, subject.*, start, etc  
 
-  halfwaypt=360; % half of the total lenght
+  trialsPerBlock = 42; %how many trials in a block
+  totalBlocks = 6; %how many blocks within a session
+  totalSessions = 2; %broken into first and second halves
+  halfwaypt=(trialsPerBlock*totalBlocks*totalSessions)/2; % half of the total length
   getSubjInfo
   
   % print the top of output file
@@ -95,8 +96,7 @@ function CogEmoFaceReward
     fprintf(txtfid,'#Gender:\t%s\n',subject.gender);
   end
   
-  % always print date .. even though it'll mess up reading data if put
-  % in the middle
+  % always print date .. even though it'll mess up reading data if put in the middle
   fprintf(txtfid,'#%s\n',date);
   
   %% set order of trials
@@ -108,7 +108,7 @@ function CogEmoFaceReward
   experiment=textscan(fid,'%d,%d,%d,%d,%q','HeaderLines',1);
    % ugly unpack of " "," "
   for i=1:length(experiment{5})
-      experiment{6}{i} = experiment{5}{i}(  findstr(experiment{5}{i},',')+2:end);
+      experiment{6}{i} = experiment{5}{i}(findstr(experiment{5}{i},',')+2:end);
       experiment{5}{i} = experiment{5}{i}(1:findstr(experiment{5}{i},',')-1    );
   end
   fclose(fid);
@@ -145,6 +145,9 @@ function CogEmoFaceReward
      [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [] );
      
+     %permit transparency
+     Screen('BlendFunction', w, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+     
      % Set text display options. We skip on Linux.
      %if ~IsLinux
          Screen('TextFont', w, 'Arial');
@@ -173,7 +176,8 @@ function CogEmoFaceReward
      for emo=unique(experiment{emotionC})'
          for facenum=unique(experiment{facenumC})'
             stimfilename=strcat('faces/',emo{1},'_',num2str(facenum),'.png');
-            imdata=imread(stimfilename);
+            [imdata colormap alpha]=imread(stimfilename);
+            imdata(:, :, 4) = alpha(:, :); %add alpha information
             % make texture image out of image matrix 'imdata'
             facetex.(emo{1}){facenum} = Screen('MakeTexture', w, imdata);
          end
@@ -280,9 +284,6 @@ function CogEmoFaceReward
      for i=start:length(experiment{facenumC})
         
 
-        
-
-
         %% debug, start time keeping
         % start of time debuging global var
         checktime=GetSecs();
@@ -290,8 +291,6 @@ function CogEmoFaceReward
         % seconds into the experiement from start of for loop
         timing.start=checktime-StartOfRunTime;
         
-        
-         
         %% face (4s) + ITI + score + ISI
 
         % show face, record time to spacebar
@@ -299,7 +298,6 @@ function CogEmoFaceReward
         rspnstime = faceWithTimer;
         %dispRspTime=toc(dispRspTime)*10^3 % this time 
         % is shorter than rspnstime!!? how
-        
         
 
         % add RT/2 to fixation time -- prev. added all of remainder
@@ -318,7 +316,6 @@ function CogEmoFaceReward
         scoreRxt(rspnstime,experiment{rewardC}{i});
         
         setTimeDiff('receipt'); %build times (debug timing)
-       
         
         % show second fixation
         fixation(experiment{ISIC}(i));
@@ -387,16 +384,23 @@ function CogEmoFaceReward
         
                  
         %% instructions if new block
-        % if i=halfwaypt, though mod 40==0, this is never seen
-        if i>39 && mod(i,40)==0
+        % if i=halfwaypt, though mod 42==0, this is never seen
+        if i > (trialsPerBlock - 1) && mod(i, trialsPerBlock) == 0
             Screen('TextSize', w, 22);
+            %% give subj a 60 second break with countdown            
+            for cdown = 60:-1:1
+                DrawFormattedText(w, ...
+                    [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
+                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks*subject.run_num) ...
+                    '\n\nNext game will begin in\n\n' num2str(cdown) ...
+                    ],'center','center',black);               
+                Screen('Flip',w);
+                WaitSecs(1.0);
+            end
+            
             drawRect(i+1);
-            DrawFormattedText(w, ...
-                 [ InstructionsBetween ...
-                 '\n\nYou have ' num2str(score) ' points so far\n'...
-                 'Completed Game: ' num2str(floor(i/40)) ' of ' num2str(9*subject.run_num) ...
-                 ],'center','center',black);
-            blockTotal=0;
+            DrawFormattedText(w, InstructionsBetween,'center','center',black);
+            blockTotal=0; %reset block score for new block
             Screen('Flip', w);
             waitForResponse;
 
@@ -416,9 +420,7 @@ function CogEmoFaceReward
         %otherstufftime=toc(nonPresTime) %.025 seconds
         
 
-     end
-
- 
+     end 
 
 
     msgAndCloseEverything(['Your final score is ', num2str(score) ,' points\nThanks for playing!']);
@@ -539,8 +541,6 @@ function CogEmoFaceReward
 %             Screen('DrawText',w,num2str(M*F),EV_offRect(1), EV_offRect(2),[ 0 0 0]);
 %         end
         
-        
-        
         % display screen
         Screen('Flip', w);
         
@@ -586,8 +586,9 @@ function CogEmoFaceReward
         waittime=double(waittime)/10^3;
         %fprintf('waiting %.3f\n',waittime);
         
-        Screen('TextSize', w, 22);
+        oldFontSize=Screen(w,'TextSize', 40 );
         DrawFormattedText(w,'+','center','center',[ 255 0 0]);
+        Screen(w,'TextSize', oldFontSize);
         drawRect;
         Screen('Flip', w);
         drawTime=toc(starttime);

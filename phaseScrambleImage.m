@@ -33,6 +33,15 @@ for layer = 1:ImSize(3)
 end
 
 ImScrambled = real(ImScrambled); %get rid of imaginery part in image (due to rounding error)
+
+%psychtoolbox doesn't respect transparency by default.
+%mat2gray above appears to convert 255 to 0 (black)
+%so, set the periphery of ellipse to white manually
+[maskx masky] = find(alpha == 0);
+for i = 1:length(maskx)
+    ImScrambled(maskx(i), masky(i), :) = 1; %white
+end
+
 imwrite(ImScrambled,outfile,'png', 'Alpha', alpha);
 
 imshow(ImScrambled)
