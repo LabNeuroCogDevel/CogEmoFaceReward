@@ -385,7 +385,9 @@ function CogEmoFaceReward
                  
         %% instructions if new block
         % if i=halfwaypt, though mod 42==0, this is never seen
-        if i > (trialsPerBlock - 1) && mod(i, trialsPerBlock) == 0
+        % also, only display instructions between if this is not the last trial.
+        if i > (trialsPerBlock - 1) && mod(i, trialsPerBlock) == 0 && i < (trialsPerBlock*totalBlocks*totalSessions)
+
             Screen('TextSize', w, 22);
             %% give subj a 60 second break with countdown            
             for cdown = 60:-1:1
@@ -398,14 +400,11 @@ function CogEmoFaceReward
                 WaitSecs(1.0);
             end
             
-            %only display instructions between if this is not the last trial.
-            if i < (trialsPerBlock*totalBlocks*totalSessions)
-                drawRect(i+1);
-                DrawFormattedText(w, InstructionsBetween,'center','center',black);
-                blockTotal=0; %reset block score for new block
-                Screen('Flip', w);
-                waitForResponse;
-            end
+            drawRect(i+1);
+            DrawFormattedText(w, InstructionsBetween,'center','center',black);
+            blockTotal=0; %reset block score for new block
+            Screen('Flip', w);
+            waitForResponse;
 
         end
         
@@ -426,7 +425,7 @@ function CogEmoFaceReward
      end 
 
 
-    msgAndCloseEverything(['Your final score is ', num2str(score) ,' points\nThanks for playing!']);
+    msgAndCloseEverything(['Your final score is ', num2str(score) ,' points\n\nThanks for playing!']);
     return
 
   catch
@@ -713,7 +712,7 @@ function CogEmoFaceReward
                     resume = 'y';
                     localVar.subject.run_num=2;
                     localVar.trialnum=halfwaypt+1; 
-                    % need to increment trail here 
+                    % need to increment trial here 
                     % b/c we exit before incrementing i earlier
                     % and we'll get stuck in a one trial loop otherwise
                 
