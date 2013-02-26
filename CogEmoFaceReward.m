@@ -398,11 +398,14 @@ function CogEmoFaceReward
                 WaitSecs(1.0);
             end
             
-            drawRect(i+1);
-            DrawFormattedText(w, InstructionsBetween,'center','center',black);
-            blockTotal=0; %reset block score for new block
-            Screen('Flip', w);
-            waitForResponse;
+            %only display instructions between if this is not the last trial.
+            if i < (trialsPerBlock*totalBlocks*totalSessions)
+                drawRect(i+1);
+                DrawFormattedText(w, InstructionsBetween,'center','center',black);
+                blockTotal=0; %reset block score for new block
+                Screen('Flip', w);
+                waitForResponse;
+            end
 
         end
         
