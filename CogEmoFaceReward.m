@@ -1,9 +1,27 @@
-%TODO:
-
+% CogEmo Face Reward Task:
+%
+%
+%  usage:
+%    http://arnold/dokuwiki/doku.php?id=howto:experiments:cogemofacereward
+%
+%  cd B:/bea_res/Personal/Will/CogEmoFaceReward
+%  CogEmoFaceReward
+%
+%  Testing:
+%  load subjects/test_tc.mat                                          % load everything the presentation saves
+%  trialnum=597                                                       % set the trial number to be tested
+%  subject.run_num=2                                                  % trial number > mid-way (300), trial==2
+%  save('subjects/test_tc.mat','order','trialnum','subject','score'); % save new settings
+%  CogEmoFaceReward
+%     Enter the subject ID number: test
+%     Is this a restart/want to load old file (y or n)? y
+%
+% TODO/DONE
+%
 %  [ ] response box -- http://docs.psychtoolbox.org/CMUBox
 %  [ ] time of score presentation -- NULL is actually a wait time? 0-12secs
 %      most frequent is 2 in Frank code
-
+%
 %  [-] append total score to results file?
 %  [x] between block message !?
 %  [x] clear textures? -- preload textures would be better
@@ -13,7 +31,7 @@
 %  [x] 80% grey bg with central sphere
 %  [x] increase fixation size by 25%
 %  [x] darken dot by 25%
-
+%
 % 12/05
 %  [x] counterbalance odd subjects by reversing order
 %  [x] TR=1
@@ -28,7 +46,17 @@
 %
 % 12/10 
 %  [x] add sound to no response
-
+%
+% 01/06
+%  [ ] check new .csv file. have 12 instead of 18 runs
+%
+% 2013/03/26
+%  [x] add conditional bonus message
+%  [x] change finish screen to not crash? -- was it doing this before
+%  [MH] fix trial number reporting (was hardcoded)  -- use experement{4}
+%  [MH] block change done by mod trialsInBlock, was hard coded
+%  [x] merge with other changes on github
+%
 function CogEmoFaceReward
   %% CogEmoFaceReward
   % WF 2012-10-05
@@ -79,25 +107,6 @@ function CogEmoFaceReward
   score = 0;
   blockTotal = 0;
   
-  %% start recording data
-  % sets txtfid, subject.*, start, etc  
-
-  trialsPerBlock = 42; %how many trials in a block
-  totalBlocks = 6; %how many blocks within a session
-  totalSessions = 2; %broken into first and second halves
-  halfwaypt=(trialsPerBlock*totalBlocks*totalSessions)/2; % half of the total length
-  getSubjInfo
-  
-  % print the top of output file
-  if start == 1
-    fprintf(txtfid,'#Subj:\t%s\n', subject.subj_id);
-    fprintf(txtfid,'#Run:\t%i\n',  subject.run_num); 
-    fprintf(txtfid,'#Age:\t%i\n',  subject.age);
-    fprintf(txtfid,'#Gender:\t%s\n',subject.gender);
-  end
-  
-  % always print date .. even though it'll mess up reading data if put in the middle
-  fprintf(txtfid,'#%s\n',date);
   
   %% set order of trials
   %  read in order of things
@@ -112,6 +121,36 @@ function CogEmoFaceReward
       experiment{5}{i} = experiment{5}{i}(1:findstr(experiment{5}{i},',')-1    );
   end
   fclose(fid);
+
+
+  %% start recording data
+  % sets txtfid, subject.*, start, etc  
+
+  totalSessions = 2; %broken into first and second halves
+  halfwaypt=floor(length(experiment{blockC})/totalSessions); % 252
+  
+  % how long (trials) is a block
+  [~,blockchangeidx] = unique(experiment{blockC});
+  trialsPerBlock     = unique(diff(blockchangeidx)); % 42
+  if(length(trialsPerBlock) > 1) 
+      fprintf('Whoa!? different trial lengths? I dont know whats goign on!')
+      trialsPerBlock = trialsPerBlock(1);
+  end
+
+  totalBlocks = length(experiment{blockC})/trialsPerBlock; % 12
+
+  getSubjInfo
+
+  % print the top of output file
+  if start == 1
+    fprintf(txtfid,'#Subj:\t%s\n', subject.subj_id);
+    fprintf(txtfid,'#Run:\t%i\n',  subject.run_num); 
+    fprintf(txtfid,'#Age:\t%i\n',  subject.age);
+    fprintf(txtfid,'#Gender:\t%s\n',subject.gender);
+  end
+  
+  % always print date .. even though it'll mess up reading data if put in the middle
+  fprintf(txtfid,'#%s\n',date);
   
   %% Counter balance 
   % by reversing order for odd subjects
@@ -254,7 +293,7 @@ function CogEmoFaceReward
          end
 
         % inialize the order of events only if we arn't resuming
-        order=cell(length(experiment{1}),1);
+        order=cell(length(experiment{facenumC}),1);
      
      % subjects know the drill. Give them breif instructions
      % order is already init. and loaded from mat, so don't work about it
@@ -386,14 +425,16 @@ function CogEmoFaceReward
         %% instructions if new block
         % if i=halfwaypt, though mod 42==0, this is never seen
         % also, only display instructions between if this is not the last trial.
-        if i > (trialsPerBlock - 1) && mod(i, trialsPerBlock) == 0 && i < (trialsPerBlock*totalBlocks*totalSessions)
+        if i > (trialsPerBlock - 1) && mod(i, trialsPerBlock) == 0 && i < (trialsPerBlock*totalBlocks)
 
             Screen('TextSize', w, 22);
             %% give subj a 60 second break with countdown            
             for cdown = 60:-1:1
+                % says e.g. 5 of 6 on first session
+                % then     10 of 12 on the second
                 DrawFormattedText(w, ...
                     [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
-                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks*subject.run_num) ...
+                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks*subject.run_num/totalSessions) ...
                     '\n\nNext game will begin in\n\n' num2str(cdown) ...
                     ],'center','center',black);               
                 Screen('Flip',w);
@@ -424,8 +465,13 @@ function CogEmoFaceReward
 
      end 
 
+    % everyone should earn the bonus
+    % but they should have at least 2000 pts
+    earnedmsg='\n\nYou earned a $25 bonus !'; 
+    if(score<2000); earnedmsg=''; end;
 
-    msgAndCloseEverything(['Your final score is ', num2str(score) ,' points\n\nThanks for playing!']);
+
+    msgAndCloseEverything(['Your final score is ', num2str(score) ,' points', earnedmsg, '\n\nThanks for playing!']);
     return
 
   catch
@@ -471,7 +517,13 @@ function CogEmoFaceReward
        if nargin>0
            t=varargin{1};
        end
-       Screen('FrameRect', w, blockColors(experiment{blockC}(t),:), [], 25);
+       if( t > length(experiment{blockC}) )
+           rgbcolorIDX=1;
+           fprintf('Something funny is happening!! -- we are at t=%i\n',t)
+       else
+           rgbcolorIDX=experiment{blockC}(t);
+       end
+       Screen('FrameRect', w, blockColors(rgbcolorIDX,:), [], 25);
     end
 
 
