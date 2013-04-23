@@ -22,20 +22,32 @@
 %%%
 function orderToOrig(filename)
  
-   % check inputs
+   %% check inputs
    if ~exist(filename,'file'); fprintf('file: %s DNE\n',filename);return; end
 
    load(filename)
-   % check load is as expected
+   %% check load is as expected
    if ~exist('order','var');fprinf('order DNE, something went wrong with loading\n');return; end
    
-   % replace reward function as a string with reward function as a number
+   %% replace reward function as a string with reward function as a number
    %            1    2      3    4
    rewards= {'CEV','DEV','IEV','CEVR'};
-      
+   faces=
+   
    for i=1:length(order); 
        if isempty(order{i}); break; end; 
        order{i}{1}=find(strcmp(order{i}{1},rewards));
+   end
+   
+   %% replace emotion/face with number
+   % newer format has emotion in the order cell (12 columns), older does
+   % not (11 cols)
+   if(size(order{1},2) >=12)
+     faces={'happy','fear','scram'};
+     for i=1:length(order); 
+         if isempty(order{i}); break; end; 
+         order{i}{12}=find(strcmp(order{i}{12},faces));
+     end
    end
    
    % truncate order when the rows are empty
@@ -50,30 +62,36 @@ function orderToOrig(filename)
    
    % get file name
    [name.path,name.name,name.ext]=fileparts(filename); 
-
-   % get emotion
-   txtoutputinfn = [name.path '/' name.name '.txt'];
-   if(~ exist(txtoutputinfn,'file')); fprintf('oh no txt file DNE\n'); return; end
-   f=fopen(txtoutputinfn);
    
-   % should check this exists
-   while(~feof(f))
-      txtoutputin=textscan(f,'%s\t%d\t%d\t%d\t%d\t%f\t%f\t%d\t%f\t%f\t%f\t%s\t%s', 'CommentStyle','#');
-   end
-   fclose(f);
+   %% set emotion for old mat format
+   % should never hit this code
+   if( size(order{1},2) < 12 )
+       % get emotion
+       txtoutputinfn = [name.path '/' name.name '.txt'];
+       if(~ exist(txtoutputinfn,'file')); fprintf('oh no txt file DNE\n'); return; end
+       f=fopen(txtoutputinfn);
 
-   % go through each line and assign a number
-   emo=zeros(size(neworder,1),1);
-   faces={'happy','fear','scram'};
-   j=0;
-   for i=1:length(txtoutputin{12})
-      if isempty(txtoutputin{12}{i})
-        continue 
-      end
-      j=j+1;
-      emo(j)=find(strcmp(txtoutputin{12}(i),faces));
+       % should check this exists
+       while(~feof(f))
+          txtoutputin=textscan(f,'%s\t%d\t%d\t%d\t%d\t%f\t%f\t%d\t%f\t%f\t%f\t%s\t%s', 'CommentStyle','#');
+       end
+       fclose(f);
+
+       % go through each line and assign a number
+       emo=zeros(size(neworder,1),1);
+       faces={'happy','fear','scram'};
+       j=0;
+       for i=1:length(txtoutputin{12})
+          if isempty(txtoutputin{12}{i})
+            continue 
+          end
+          j=j+1;
+          emo(j)=find(strcmp(txtoutputin{12}(i),faces));
+       end
+       % would check j = expected length, but will get an error below
    end
-   % would check j = expected length, but will get an error below
+   
+   %% save new mat to orgfmt
    
    % make a new name to save the modifications
    name.path=[name.path '/orgfmt/'];
