@@ -63,7 +63,8 @@ lower_limits = [ 0 ; 0 ; 0.01 ; 0.01 ; .1 ; 0 ; .1 ; 0 ];
 upper_limits = [1 ; 100000 ; 5 ; 5 ; 5000 ; 5000 ; 5000 ; 10000 ]; % for rmsearch set min/max to 0 for unused params (otherwise spits out weird values that aren't used)
 
 Params=[];
-[RTpred_1  misc_1a misc_1b misc_1c misc_1d misc_1e misc_1f] = TC_Alg_mine(RT_1, Reward_1, init_params, avgRT, cond);
-RTdiffs1 = (fitRT1 - RTpred_1).^2;
+[RTpred  misc_1a misc_1b misc_1c misc_1d misc_1e misc_1f] = TC_Alg_mine(RT_1, Reward_1, init_params, avgRT, cond);
 
-mySE = mySE + sum(RTdiffs1);
+RTdiffs = (fitRT1 - RTpred).^2; %squared residuals
+
+mySE = mySE + sum(RTdiffs);

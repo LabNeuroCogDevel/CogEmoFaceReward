@@ -39,7 +39,7 @@ for subsessnum = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop 
     trn_blk9 = sess_trn1(find(sess_trn1(:,Blk_Colmn) == 9), :);
     
     
-    FitTrls= max(40, size(trn_blk1,1)); % by default fit all trials
+    FitTrls= max(42, size(trn_blk1,1)); % by default fit all trials
     
     % construct reward and rt vectors
     RT_1 = trn_blk1(1:min(FitTrls,length(trn_blk1)), Resp_Colmn);
@@ -68,8 +68,7 @@ for subsessnum = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop 
     
     RT_9 = trn_blk9(1:min(FitTrls,length(trn_blk9)), Resp_Colmn);
     Reward_9= trn_blk9(1:min(FitTrls,length(trn_blk9)),FeedBck_Colmn);
-    
-    
+      
     
     avgRT = mean(sess_trn1(:,Resp_Colmn));
     

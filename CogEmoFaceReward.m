@@ -366,16 +366,17 @@ function CogEmoFaceReward
         %nonPresTime=tic;
         
         %% write to data file
-         trial = {experiment{rewardC}(i) subject.run_num i experiment{blockC}(i) 0 t_start F_Mag inc F_Freq ev rspnstime };
+        emo=experiment{emotionC}{i};
+        face=experiment{facenumC}(i);
+        
+        %set the output of the order structure
+        trial = { experiment{rewardC}(i) subject.run_num i experiment{blockC}(i) 0 t_start F_Mag inc F_Freq ev rspnstime emo };
         order(i) = {trial};
         
         % print header
         if i == 1
             fprintf(txtfid,'Func\tRun\tTrial\tBlock\tNull\ttrialStartTime\tMag\tScoreInc\tFreq\tEV\tRT\tEmotion\tImage\n');
         end
-        
-        emo=experiment{emotionC}{i}; 
-        face=experiment{facenumC}(i); 
         
         fprintf(txtfid,'%s\t',order{i}{1}{1} );
         fprintf(txtfid, '%4i\t', order{i}{2:end});
@@ -385,7 +386,6 @@ function CogEmoFaceReward
         % save to mat so crash can be reloaded
         trialnum=i;
         save(filename,'order','trialnum','subject','score','blockTotal');
-        
        
         % line like
         % CEVR       1      22       5       2    4.481533e+01   176       0       2.136929e-01    3.764108e+01    2.399020e+02
@@ -393,7 +393,7 @@ function CogEmoFaceReward
         % | --------------- input file ---------|
         %%% tract = (trial start time    -  trstamp)/TR
         %%% null = old exprm field
-        %%% we only have one run of the exeriment
+        %%% we only have one run of the experiment
         
         
         %% debug, show time of this trial
@@ -846,7 +846,7 @@ function CogEmoFaceReward
         % log presentation,score, timing (see variable "order")
         txtfid=fopen(txtfile,'a'); % we'll append to this..maybe
         
-        if txtfid == -1; error('couldn''t open text file for suject'); end
+        if txtfid == -1; error('couldn''t open text file for subject'); end
 
 
    end
