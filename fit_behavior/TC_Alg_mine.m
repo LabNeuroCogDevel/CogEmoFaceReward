@@ -1,10 +1,8 @@
+function [RTpred, ret]=TC_Alg_mine(RTobs, Reward, Params, avg_RT, cond)
 
-
-function [RTpred misc1 misc2 misc3 misc4 misc5 misc6 misc7 misc8]=TC_Alg_mine(Response, Reward, Params, avg_RT, cond);
-
-%Response is a t x 1 column vector of reaction times for t trials.
+%RTobs is a t x 1 column vector of reaction times for t trials.
 %Reward is a t x 1 column vector of rewards obtained for t trials.
-%Params is an 8 x 1 columnn vector of model parameters to be used to fit behavior.
+%Params is an 8 x 1 column vector of model parameters to be used to fit behavior.
 %  
 %Params 8 x 1 <numeric>
 %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
@@ -15,19 +13,23 @@ function [RTpred misc1 misc2 misc3 misc4 misc5 misc6 misc7 misc8]=TC_Alg_mine(Re
 %   ,5:  K                #baseline response speed (person mean RT?)    
 %   ,6:  scale            #nu: going for the gold (modulating RT toward highest payoff)
 %   ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
-%   ,8:  meandiff         #rho parameter: 
+%   ,8:  meandiff         #rho parameter: weight for expected reward of fast versus slow
 
 global Vstart
 global Go NoGo
-NumTrls_TrlType = length(Response);
-RTpred = Response(1)*ones(1,1); % can't predict first choice due to
-% learning so just set it to actual
-% subject RT and then predict
-% starting trial 2
+numTrials = length(RTobs);
 
-V = Vstart; V_fast = V; V_slow =V;
-misc = 0;
-joint_ent=1.0;
+RTpred = NaN(numTrials, 1); %vector of predicted RTs
+V = NaN(numTrials, 1); %state-value function
+
+% can't predict first choice due to learning so just set it to actual subject RT 
+% and then predict starting trial 2
+RTpred(1) = RTobs(1)*ones(1,1);
+
+V(1) = Vstart; %initialize expected value for first trial to prior (possibly from previous run)
+V_fast = V(1); V_slow = V(1); %no differentiation of slow vs. fast to start
+
+%joint_ent=1.0; %unused at the moment.
 
 lambda = Params(1);
 explore = Params(2);
@@ -60,7 +62,7 @@ if (generative ==1)
     exp_alt =500;
     scale = .25;
     meandiff = 1000;
-    if dist_type == 'Gauss'
+    if strcmp(dist_type,'Gauss')
         meandiff=20;
         explore = 10;
     end
@@ -75,15 +77,27 @@ alph_short=1.01; b_short=1.01;
 cnt_short=0; cnt_long=0;
 cnt_speed=0; cnt_slow=0;
 
-RT_new = Response(1); % just for init;
-RT_last =  Response(1); % just for init
-RT_last2 = Response(1); % just for init
-RT_last3 = Response(1); % just for init
-bestRT= avg_RT; % just for init
+RT_new      = RTobs(1); % just for init;
+RT_last     = RTobs(1); % just for init
+RT_last2    = RTobs(1); % just for init
+RT_last3    = RTobs(1); % just for init
+bestRT      = avg_RT; % just for init
 
 var_short = alph_short*b_short/(((alph_short+b_short)^2)*(alph_short+b_short+1));
 var_long = alph_long*b_long/(((alph_long+b_long)^2)*(alph_long+b_long+1));
-for (trial = 2:NumTrls_TrlType)
+
+%initialize return values for PEs, mean for short and long, etc.
+ret.rpe = NaN(numTrials, 1);
+ret.explore = NaN(numTrials, 1);
+ret.sdShort = NaN(numTrials, 1);
+ret.sdLong = NaN(numTrials, 1);
+ret.meanShort = NaN(numTrials, 1);
+ret.meanLong = NaN(numTrials, 1);
+ret.go = NaN(numTrials, 1);
+ret.noGo = NaN(numTrials, 1);
+
+%iterate over trial 2..n
+for trial = 2:numTrials
     lasttrial = trial-1;
     
     exp1_last = exp1; exp_last = exp; exp1a_last = exp1a;
@@ -106,12 +120,11 @@ for (trial = 2:NumTrls_TrlType)
         RT_last = RT_new;
     else
         
-        RT_last = Response(lasttrial);
-        if trial > 2 RT_last2 = Response(trial-2); end
-        if trial > 3 RT_last3 = Response(trial-3); end
+        RT_last = RTobs(lasttrial);
+        if trial > 2 RT_last2 = RTobs(trial-2); end
+        if trial > 3 RT_last3 = RTobs(trial-3); end
         
     end
-    
     
     mom = (RT_last - RT_last2); % momentum
     if mom==0 mom=1; end
@@ -159,7 +172,6 @@ for (trial = 2:NumTrls_TrlType)
         % mean explore control model
         
         
-        
         if strcmp(dist_type,'beta')
             
             if(Rew_last> V_last)
@@ -196,9 +208,6 @@ for (trial = 2:NumTrls_TrlType)
                 alphaKs = vars/(vars+rewvar); % Kalman gain for slow responses
                 vars = (1 - alphaKs)*vars; % Kalaman variance for slow resps
         
-            
-            
-            
             mean_s = mean_s + alphaKs*((Rew_last - 0*V_last) - mean_s); ...
                 % kalman mean
             
@@ -265,20 +274,15 @@ for (trial = 2:NumTrls_TrlType)
                 alphaKf = varf / (varf +rewvar);
                 varf = (1 - alphaKf)*varf;
                 mean_f = mean_f + alphaKf*((Rew_last - 0*V_last) - mean_f);
-                mean_short = mean_f;mean_long = mean_s;
+                mean_short = mean_f; mean_long = mean_s;
                 var_short =varf; var_long = vars;
                 
                 exp1 = + explore*(sqrt(vars) - sqrt(varf));  % using kalman filter normal distributions.
             end
             
-            
-            if RT_last<RT_last2   && exp1<0 exp1=0;   % reset if
-                % already
-                % explored in
-                % this direction
-                % last trial (see
-                % supplement of
-                % Frank et al 09)
+            % reset if already explored in this direction last trial 
+            % (see supplement of Frank et al 09)
+            if RT_last<RT_last2   && exp1<0 exp1=0;   
             elseif RT_last>RT_last2   && exp1>0 exp1=0;
             end;
             
@@ -292,13 +296,7 @@ for (trial = 2:NumTrls_TrlType)
     
     
     exp = exp_alt*(sqrt(cnt_short)-sqrt(cnt_long)); % sutton
-    % exploration
-    % bonus model,
-    % for control
-    % model in
-    % supplement
-    
-    
+    % exploration bonus model, for control model in supplement
     
     if (RT_last==0) RT_last = RT_last2; end; %% if last trial there
     %% was no response, use trial before that for updating RT avg and autocorrelation effects (otherwise counted as 0)
@@ -308,13 +306,11 @@ for (trial = 2:NumTrls_TrlType)
     RT_new = K+ lambda*RT_last - Go_new + NoGo_new  +exp1 + 0*regress ...
         + meandiff*(mean_long-mean_short) + scale*(bestRT-avg_RT)+ Noise*(rand-0.5);
     
-    if Response(trial)==0 RT_new = 0; end; %% don't try to predict
+    if RTobs(trial)==0 RT_new = 0; end; %% don't try to predict
     %% non-RTs which are
     %% counted as 0 in e-prime
     
-    rtvar = (std(Response))^2;
-   
-    
+    rtvar = (std(RTobs))^2;
     
     if strcmp(dist_type,'Gauss')
         alphaK = varK/(varK+rtvar); % alphaK = kalman gain;
@@ -322,63 +318,36 @@ for (trial = 2:NumTrls_TrlType)
     end
     
     
-    RTpred = [RTpred; RT_new]; % add new RT pred to vector
+    RTpred(trial) = RT_new; % add new RT pred to vector
     V = [V; V_new];
     Go = [Go; Go_new];
     NoGo = [NoGo; NoGo_new];
     
+    ret.rpe(trial-1) = Rew_last - V_last; %prediction error
+    ret.explore(trial-1) = exp1_last; %explore product: epsilon * (sd diff [slow - fast])
+    ret.sdShort(trial-1) = sqrt(vars_last); %sd of short RT
+    ret.sdLong(trial-1) = sqrt(varl_last); %sd of long RT
+    ret.meanShort(trial-1) = means_last; %mean of short RT
+    ret.meanLong(trial-1) = meanl_last; %mean of long RT
+    ret.go(trial-1) = Go_last; %mean of Gos
+    ret.noGo(trial-1) = NoGo_last; %mean of NoGos
     
-    % store misc variables (e.g., PE and explore, etc)
-    misc1a = Rew_last - V_last; %prediction error
-    misc2a =  exp1_last; %explore product: epsilon * (sd diff [slow - fast])
-    misc3a = sqrt(vars_last); %sd of short RT
-    misc4a = sqrt(varl_last); %sd of long RT
-    misc5a = means_last; %mean of short RT
-    misc6a = meanl_last; %mean of long RT
-    misc7a = Go_last; %mean of Gos
-    misc8a = NoGo_last; %mean of NoGos
-    
-    
-    if trial ==2
-        misc1 =misc1a;
-        misc2=misc2a;
-        misc3 =misc3a;
-        misc4=misc4a;
-        misc5 =misc5a;
-        misc6 =misc6a;
-        misc7 =misc7a;
-        misc8 =misc8a;
-        
-    else
-        misc1=[misc1;  misc1a];
-        misc2=[misc2; misc2a];
-        misc3=[misc3;  misc3a];
-        misc4=[misc4; misc4a];
-        misc5=[misc5;  misc5a];
-        misc6=[misc6;  misc6a];
-        misc7=[misc7;  misc7a];
-        misc8=[misc8;  misc8a];
-        
-        
+    if (trial == numTrials)
+        %If this is the last trial, add return values for last trial
+        ret.rpe(trial-1) = Reward(trial) - V_new; %prediction error
+        ret.explore(trial-1) = exp1; %explore product: epsilon * (sd diff [slow - fast])
+        ret.sdShort(trial-1) = sqrt(var_short); %sd of short RT
+        ret.sdLong(trial-1) = sqrt(var_long); %sd of long RT
+        ret.meanShort(trial-1) = mean_short; %mean of short RT
+        ret.meanLong(trial-1) = mean_long; %mean of long RT
+        ret.go(trial-1) = Go_new; %mean of Gos
+        ret.noGo(trial-1) = NoGo_new; %mean of NoGos
     end
     
 end
 
-% after looping through trials add one last value for last trial to misc
 
-
-misc1 = [misc1; Reward(trial) - V_new];
-misc2 = [misc2; exp1];
-misc3 = [misc3; sqrt(var_short)];
-misc4 = [misc4; sqrt(var_long)];
-misc5 = [misc5; mean_short];
-misc6 = [misc6; mean_long];
-misc7 = [misc7; Go_new];
-misc8 = [misc8; NoGo_new];
-
-
-Vstart=  V_new;  % set V_start for next block to set up expectation
-% for rew values.
+Vstart=  V_new;  % set V_start for next block to set up expectation for rew values.
 
 Go =  0;  % reinit GN values for next block
 NoGo = 0;
