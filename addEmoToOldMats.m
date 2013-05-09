@@ -22,8 +22,7 @@ function addEmoToOldMats(filename)
    if ~exist('order','var');fprinf('order DNE, something went wrong with loading\n');return; end
 
    % check if already has faces
-   if ( any(strcmp(order{1}(end) ,{'happy','fear','scarm'}))>0 ); fprintf('%s order already has emotion, exiting!\n',filename);return; end
-   
+   if ( any(strcmp(order{1}(end) ,{'happy','fear','scram'}))>0 ); fprintf('%s order already has emotion, exiting!\n',filename);return; end
    
    % get file name
    [name.path,name.name,name.ext]=fileparts(filename); 
@@ -69,6 +68,9 @@ function addEmoToOldMats(filename)
        a{i}(end+1)=  emo(i+1) ;
    end
    order          = a;
+   
+   %old mats inadvertently stored reward function in a cell
+   for i=1:size(order,1); order{i}{1} = order{i}{1}{1}; end
    
    % save new version
    % - save new to withEmo

@@ -28,8 +28,6 @@ function [RTpred, ret]=TC_Alg_mine(RTobs, Reward, params, priors, avg_RT, rewFun
 
 if nargin < 6, emo = -1; end %no emotion condition
 
-%global Vstart;
-%global Go NoGo;
 numTrials = length(RTobs);
 
 RTpred = NaN(numTrials, 1); %vector of predicted RTs
