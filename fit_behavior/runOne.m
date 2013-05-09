@@ -77,9 +77,9 @@ priors.V = 0;
 priors.Go = 0;
 priors.NoGo = 0;
 
-[RTpred_new, ret_val] = TC_Alg_mine(RT_1, Reward_1, good_params, priors, avgRT, cond, -1);
+[RTpred_new, ret_val] = TC_Alg(RT_1, Reward_1, good_params, priors, avgRT, cond, -1);
 
-[RTpred, misc_1a, misc_1b, misc_1c, misc_1d, misc_1e, misc_1f] = TC_Alg(RT_1, Reward_1, good_params, avgRT, cond);
+%[RTpred, misc_1a, misc_1b, misc_1c, misc_1d, misc_1e, misc_1f] = TC_Alg(RT_1, Reward_1, good_params, avgRT, cond);
 
 RTdiffs = (fitRT1 - RTpred).^2; %squared residuals
 

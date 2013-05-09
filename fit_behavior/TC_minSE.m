@@ -68,7 +68,7 @@ for s = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop through e
             fitRT = rt;
         end
         
-        [RTpred, ret] = TC_Alg_mine(rt, reward, params, priors, avgRT, rewFunc, emo);
+        [RTpred, ret] = TC_Alg(rt, reward, params, priors, avgRT, rewFunc, emo);
         
         ret.block = blocks(b);
         
