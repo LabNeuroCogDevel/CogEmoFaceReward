@@ -1,3 +1,4 @@
+%DEPRECATED
 PathName = cd;
 
 fname_Best_Fit_Param_Trn =strcat(PathName,'/','Best_fit_parameter_',ModelUsed,'_Trn_',Group,'.doc');

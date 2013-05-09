@@ -370,7 +370,7 @@ function CogEmoFaceReward
         face=experiment{facenumC}(i);
         
         %set the output of the order structure
-        trial = { experiment{rewardC}(i) subject.run_num i experiment{blockC}(i) 0 t_start F_Mag inc F_Freq ev rspnstime emo };
+        trial = { experiment{rewardC}{i} subject.run_num i experiment{blockC}(i) 0 t_start F_Mag inc F_Freq ev rspnstime emo };
         order(i) = {trial};
         
         % print header
@@ -378,7 +378,7 @@ function CogEmoFaceReward
             fprintf(txtfid,'Func\tRun\tTrial\tBlock\tNull\ttrialStartTime\tMag\tScoreInc\tFreq\tEV\tRT\tEmotion\tImage\n');
         end
         
-        fprintf(txtfid,'%s\t',order{i}{1}{1} );
+        fprintf(txtfid,'%s\t',order{i}{1} );
         fprintf(txtfid, '%4i\t', order{i}{2:end});
         fprintf(txtfid, '%s\t', emo, strcat(emo,'_',num2str(face),'.png') );
         fprintf(txtfid, '\n');

@@ -1,3 +1,4 @@
+%DEPRECATED
 
 global Prob_Colmn;
 global match_Colmn;

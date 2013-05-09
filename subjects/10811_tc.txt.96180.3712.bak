@@ -1,7 +1,0 @@
-#Subj:	10811
-#Run:	1
-#Age:	14
-#Gender:	male
-#23-Apr-2013
-Func	Run	Trial	Block	Null	trialStartTime	Mag	ScoreInc	Freq	EV	RT	Emotion	Image
-CEV	   1	   1	  12	   0	8.910736e+02	  57	   0	6.708571e-01	3.834171e+01	1604	scram	scram_16.png	

@@ -1,7 +1,6 @@
 
 %% re-runs TC_minSE but for best fitting params and saves the output
-
- function [mySE misc_a misc_b misc_c misc_d misc_e misc_f misc_g misc_h] = SavePredsFmBest(Params, sess_trn); 
+function [mySE misc_a misc_b misc_c misc_d misc_e misc_f misc_g misc_h] = SavePredsFmBest(Params, sess_trn); 
  
 global TrlType_Colmn Resp_Colmn FeedBck_Colmn Blk_Colmn;   
 global Vstart   
@@ -56,7 +55,6 @@ for subsessnum = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop 
 
     RT_4 = trn_blk4(1:min(FitTrls,length(trn_blk4)), Resp_Colmn);
     Reward_4= trn_blk4(1:min(FitTrls,length(trn_blk4)),FeedBck_Colmn);
-
 
     RT_5 = trn_blk5(1:min(FitTrls,length(trn_blk5)), Resp_Colmn);
     Reward_5= trn_blk5(1:min(FitTrls,length(trn_blk5)),FeedBck_Colmn);

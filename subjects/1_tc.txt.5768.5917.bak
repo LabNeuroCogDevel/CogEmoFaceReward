@@ -1,8 +1,0 @@
-#Subj:	1
-#Run:	1
-#Age:	22
-#Gender:	female
-#19-Mar-2013
-Func	Run	Trial	Block	Null	trialStartTime	Mag	ScoreInc	Freq	EV	RT	Emotion	Image
-CEV	   1	   1	  12	   0	4.782487e+01	  51	   0	7.544286e-01	3.850886e+01	1019	scram	scram_16.png	
-CEV	   1	   2	  12	   0	5.473007e+01	  57	  57	6.732857e-01	3.834657e+01	1587	scram	scram_8.png	
