@@ -1,4 +1,4 @@
-function [RTpred, ret]=TC_Alg(RTobs, Reward, params, priors, avg_RT, rewFunc, emo)
+function [RTpred, ret]=TC_Alg(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model)
 % Time clock R-L algorithm developed by Michael Frank
 %
 %
@@ -15,18 +15,11 @@ function [RTpred, ret]=TC_Alg(RTobs, Reward, params, priors, avg_RT, rewFunc, em
 % Reward is a t x 1 column vector of rewards obtained for t trials.
 % params is an 8 x 1 column vector of model parameters to be used to fit behavior.
 %
-% params 8 x 1 <numeric>
-%    ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
-%    ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
-%                              about fast vs. slow responses
-%    ,3:  alpha1           #learning rate for positive prediction errors (approach)
-%    ,4:  alpha2           #learning rate for negative prediction errors (avoid)
-%    ,5:  K                #baseline response speed (person mean RT?)
-%    ,6:  scale            #nu: going for the gold (modulating RT toward highest payoff)
-%    ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
-%    ,8:  meandiff         #rho parameter: weight for expected reward of fast versus slow
 
-if nargin < 6, emo = -1; end %no emotion condition
+global emoNames;
+
+if nargin < 7, emo = -1; end %no emotion condition
+if nargin < 8, model = 'noemo'; end %if not specified, use the model where no parameters vary by emotion.
 
 numTrials = length(RTobs);
 
@@ -46,16 +39,61 @@ NoGo(1) = priors.NoGo; %initialize NoGo for first trial
 %V_fast = V(1); V_slow = V(1); %no differentiation of slow vs. fast to start
 %joint_ent=1.0; %unused at the moment.
 
-lambda = params(1);
-explore = params(2);
-alpha1 =  params(3);
-alpha2 = params(4);
-alphaV =  0.1; % just set this to avoid degeneracy
-K = params(5);
-scale = params(6);
-decay = 1;  % decay counts for beta distribution 1= nodecay
-exp_alt = params(7); % param for alternative exp models of rt swings
-meandiff = params(8);
+if strcmp(model, 'noemo')
+    %NOEMO params 8 x 1 <numeric>
+    %    ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+    %    ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+    %                              about fast vs. slow responses
+    %    ,3:  alpha1           #learning rate for positive prediction errors (approach)
+    %    ,4:  alpha2           #learning rate for negative prediction errors (avoid)
+    %    ,5:  K                #baseline response speed (person mean RT?)
+    %    ,6:  scale            #nu: going for the gold (modulating RT toward highest payoff)
+    %    ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %    ,8:  meandiff         #rho parameter: weight for expected reward of fast versus slow
+
+    lambda = params(1);
+    explore = params(2);
+    alpha1 =  params(3);
+    alpha2 = params(4);
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(5);
+    scale = params(6);
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(7); % param for alternative exp models of rt swings
+    meandiff = params(8);
+elseif strcmp(model, 'emoexplore')
+    %EMOEXPLORE params 10 x 1 <numeric>
+    %
+    %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+    %   ,2:  explore_scram    #epsilon parameter for scrambled: how much should RT be modulated by greater relative uncertainty
+    %   ,3:  explore_fear     #epsilon parameter for fearful: how much should RT be modulated by greater relative uncertainty
+    %   ,4:  explore_happy    #epsilon parameter for happy: how much should RT be modulated by greater relative uncertainty
+    %   ,5:  alpha1           #learning rate for positive prediction errors (approach)
+    %   ,6:  alpha2           #learning rate for negative prediction errors (avoid)
+    %   ,7:  K                #baseline response speed (person mean RT?)
+    %   ,8:  scale            #nu: going for the gold (modulating RT toward highest payoff)
+    %   ,9:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,10: meandiff         #rho parameter: weight for expected reward of fast versus slow
+    
+    lambda = params(1);
+    if strcmp(emoNames{emo}, 'happy')
+        explore=params(4);
+    elseif strcmp(emoNames{emo}, 'fear')
+        explore=params(3);
+    elseif strcmp(emoNames{emo}, 'scram')
+        explore = params(2);
+    end
+    alpha1 =  params(5);
+    alpha2 = params(6);
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(7);
+    scale = params(8);
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(9); % param for alternative exp models of rt swings
+    meandiff = params(10);
+end
+
+%vary params 
 
 Q = 0;
 

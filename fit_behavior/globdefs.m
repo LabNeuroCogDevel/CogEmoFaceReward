@@ -3,6 +3,7 @@ global tdef;
 global trialsPerBlock;
 global trialLength;
 global rewFuncNames;
+global emoNames;
 
 tdef.subj = 1;     %subject id
 tdef.cb = 2;       %counterbalance order
@@ -21,3 +22,4 @@ trialsPerBlock = 42;
 trialLength = 4000;
 
 rewFuncNames = { 'CEV' 'CEVR' 'DEV' 'IEV' };
+emoNames = { 'happy' 'fear' 'scram' };
