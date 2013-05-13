@@ -109,7 +109,7 @@ var_long = alph_long*b_long/(((alph_long+b_long)^2)*(alph_long+b_long+1));
 
 %initialize return values for PEs, mean for short and long, etc.
 ret.rtobs = RTobs;
-ret.rpe = NaN(numTrials, 1);
+ret.rtpred = NaN(numTrials, 1);
 ret.rpe = NaN(numTrials, 1);
 ret.explore = NaN(numTrials, 1);
 ret.sdShort = NaN(numTrials, 1);
