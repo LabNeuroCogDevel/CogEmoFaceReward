@@ -138,6 +138,11 @@ for f = 1:size(subjdata,1)
         bestFit_all(f, :) = [subjids(f) 1 params' sqrt(SE(f))];
     end
     
+    % save ret_all structure
+    LunaID = subjids(f);
+    save(strcat('../outputs/parameter_mat/ret_all_', num2str(subjids(f)), ModelUsed), 'ret_all','LunaID','ModelUsed');
+    
+    %plot model fits
     plotSubjData(subjids(f), ret_all, ModelUsed);
 end
 
