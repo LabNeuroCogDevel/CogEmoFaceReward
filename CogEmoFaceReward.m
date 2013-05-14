@@ -79,6 +79,16 @@ function CogEmoFaceReward
   %
   % This used 'KbDemo' as template
   
+  %screenResolution=[640 480]; %basic VGA
+  %screenResolution=[1600 1200];
+  screenResolution=[1440 900]; %new eyelab room
+  %screenResolution=[1680 1050]; %mac laptop
+  
+  % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
+     % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
+     % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
+     
+  
   start       = 1;
   TR          = 1.0;
   %Set3 from Color Brewer
@@ -181,7 +191,9 @@ function CogEmoFaceReward
      % Open a new window.
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
-     [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
+     % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
+     % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1680 1050] );
+     [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 screenResolution] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [] );
      
      %permit transparency
