@@ -130,6 +130,7 @@ for f = 1:size(subjdata,1)
         bestFit_all(f, :) = [subjids(f) 1 params' sqrt(SE(f))];
     end
     
+
     %for now, create vectors that correspond to what was present before (for checking against vetted code)
     subject = subjids(f);
     PE = reshape([ret_all.rpe], [], 1);
