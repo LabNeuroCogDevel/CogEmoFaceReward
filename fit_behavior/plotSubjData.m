@@ -1,4 +1,4 @@
-function plotSubjData(subjid, ret_all)
+function plotSubjData(subjid, ret_all, model)
 
 global trialLength;
 global rewFuncNames;
@@ -22,7 +22,7 @@ for b = 1:length(blocks)
     ylabel('RT (ms)',  'FontSize', 24);
     xlabel('Trial', 'FontSize', 24);
     set(gca, 'Box', 'off' );
-    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
+    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
 end
 
 end

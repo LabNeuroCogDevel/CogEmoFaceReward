@@ -4,7 +4,9 @@
 globdefs
 
 %initialize behavior of fitting function
-ModelUsed = 'TC';
+ModelUsed = 'noemo'; %no parameters vary by emotion
+%ModelUsed = 'emoexplore'; %explore epsilon varies by emotion
+
 generative = 0; % generative model that makes its own choices and gets reward rather than fitting subject data.
 multstart = 1; % use multiple starting points for gradient descent.
 
@@ -30,23 +32,49 @@ for f = 1:length(subjfiles)
     subjconcat = vertcat(subjconcat, subjdata{f});  
 end
 
+refit=0; %whether to refit a subject who has already been run.
+
 %for now, just fit per subject
 for f = 1:size(subjdata,1)
-    %model parameter initialization
-    %Params 8 x 1 <numeric>
-    %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
-    %   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
-    %                         #    about fast vs. slow responses
-    %   ,3:  alpha1           #learning rate for positive prediction errors (approach)
-    %   ,4:  alpha2           #learning rate for negative prediction errors (avoid)
-    %   ,5:  K                #baseline response speed (person mean RT?)    
-    %   ,6:  scale            #nu: going for the gold (modulating RT toward highest payoff)
-    %   ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
-    %   ,8:  meandiff         #rho parameter: weight for expected reward of fast versus slow
-    init_params = [ 0.3 ; 2000 ; 0.2 ; 0.2 ; 1000 ; 0.1 ; 0.5 ; 300 ];
-    lower_limits = [ 0 ; 0 ; 0.01 ; 0.01 ; .1 ; 0 ; .1 ; 0 ];
-    upper_limits = [1 ; 100000 ; 5 ; 5 ; 5000 ; 5000 ; 5000 ; 10000 ]; % for rmsearch set min/max to 0 for unused params (otherwise spits out weird values that aren't used)
+    %skip 
+    if (exist(strcat('../outputs/parameter_mat/modelVars_', num2str(subjids(f)), ModelUsed, '.mat'), 'file') > 0 && ~refit)
+        fprintf(strcat('Skipping: modelVars_', num2str(subjids(f)), ModelUsed, '.mat\n'));
+        continue
+    end
     
+    if strcmp(ModelUsed, 'noemo')
+        %NOEMO: model parameter initialization
+        %Params 8 x 1 <numeric>
+        %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+        %   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+        %                         #    about fast vs. slow responses
+        %   ,3:  alpha1           #learning rate for positive prediction errors (approach)
+        %   ,4:  alpha2           #learning rate for negative prediction errors (avoid)
+        %   ,5:  K                #baseline response speed (person mean RT?)
+        %   ,6:  scale            #nu: going for the gold (modulating RT toward highest payoff)
+        %   ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+        %   ,8:  meandiff         #rho parameter: weight for expected reward of fast versus slow
+        init_params = [ 0.3 ; 2000 ; 0.2 ; 0.2 ; 1000 ; 0.1 ; 0.5 ; 300 ];
+        lower_limits = [ 0 ; 0 ; 0.01 ; 0.01 ; .1 ; 0 ; .1 ; 0 ];
+        upper_limits = [1 ; 100000 ; 5 ; 5 ; 5000 ; 5000 ; 5000 ; 10000 ]; % for rmsearch set min/max to 0 for unused params (otherwise spits out weird values that aren't used)
+    elseif strcmp(ModelUsed, 'emoexplore')
+        %EMOEXPLORE: model parameter initialization
+        %Params 10 x 1 <numeric>
+        %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+        %   ,2:  explore_scram    #epsilon parameter for scrambled: how much should RT be modulated by greater relative uncertainty
+        %   ,3:  explore_fear     #epsilon parameter for fearful: how much should RT be modulated by greater relative uncertainty
+        %   ,4:  explore_happy    #epsilon parameter for happy: how much should RT be modulated by greater relative uncertainty
+        %   ,5:  alpha1           #learning rate for positive prediction errors (approach)
+        %   ,6:  alpha2           #learning rate for negative prediction errors (avoid)
+        %   ,7:  K                #baseline response speed (person mean RT?)
+        %   ,8:  scale            #nu: going for the gold (modulating RT toward highest payoff)
+        %   ,9:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+        %   ,10: meandiff         #rho parameter: weight for expected reward of fast versus slow
+        init_params = [ 0.3 ; 2000 ; 2000 ; 2000 ; 0.2 ; 0.2 ; 1000 ; 0.1 ; 0.5 ; 300 ];
+        lower_limits = [ 0 ; 0 ; 0 ; 0 ; 0.01 ; 0.01 ; .1 ; 0 ; .1 ; 0 ];
+        upper_limits = [1 ; 100000 ; 100000 ; 100000 ; 5 ; 5 ; 5000 ; 5000 ; 5000 ; 10000 ]; % for rmsearch set min/max to 0 for unused params (otherwise spits out weird values that aren't used)
+    end
+        
     if generative == 0
         
         %use multiple starting values?
@@ -62,7 +90,7 @@ for f = 1:size(subjdata,1)
             %core fitting function -- returns results of length num_start_pts (5) above.
             %These contain fit estimates for each starting point.
             %Then identify the best-fitting output for use in analyses.
-            [params, SE, exitflag, xstart] = rmsearch(@(params) TC_minSE(params, subjdata{f}), 'fmincon', init_params, ...
+            [params, SE, exitflag, xstart] = rmsearch(@(params) TC_minSE(params, subjdata{f}, ModelUsed), 'fmincon', init_params, ...
                 lower_limits, upper_limits, 'initialsample', num_start_pts, 'options', opts);
             
             SEmin(f)= min(SE);
@@ -70,7 +98,7 @@ for f = 1:size(subjdata,1)
             DiffFmOptimal(f,:) = SE - SEmin(f); % how different are the SSE values for each starting pt from optimal one
             
             %re-run TC_alg for all blocks with optimal parameters
-            [totalSqErr, ret_all] = TC_minSE(params(find(SE == min(SE), 1 ),:), subjdata{f});
+            [totalSqErr, ret_all] = TC_minSE(params(find(SE == min(SE), 1 ),:), subjdata{f}, ModelUsed);
             
             %[SEbest, PE, exp, std_f, std_s, mn_f, mn_s, Go, NoGo ] = SavePredsFmBest(params(find(SE == min(SE), 1 ),:), subjdata{f}); % save predictions from best run of rmsearch
             
@@ -84,20 +112,20 @@ for f = 1:size(subjdata,1)
             mn_s = reshape([ret_all.meanLong], [], 1);
             Go = reshape([ret_all.go], [], 1);
             NoGo = reshape([ret_all.noGo], [], 1);
-            save(strcat('modelVars_', num2str(subjids(f))), 'subject',  'PE', 'exp', 'std_f', 'std_s', 'mn_f', 'mn_s', 'Go', 'NoGo');
+            save(strcat('../outputs/parameter_mat/modelVars_', num2str(subjids(f)), ModelUsed), 'subject',  'PE', 'exp', 'std_f', 'std_s', 'mn_f', 'mn_s', 'Go', 'NoGo', 'ret_all');
             
         else
             % use below line if just want to run one starting point (faster and
             % usually not far off from optimal.)
-            [params, SE(f), exitflag] = fmincon(@(params) TC_minSE(params, subjdata{f}), init_params, [], [], [], [], lower_limits, upper_limits, [], options) ;
-            [totalSqErr, ret_all] = TC_minSE(params(find(SE == min(SE), 1 ),:), subjdata{f}); %run once with best params... (can we get all this back from fmincon?)
+            [params, SE(f), exitflag] = fmincon(@(params) TC_minSE(params, subjdata{f}, ModelUsed), init_params, [], [], [], [], lower_limits, upper_limits, [], options) ;
+            [totalSqErr, ret_all] = TC_minSE(params(find(SE == min(SE), 1 ),:), subjdata{f}, ModelUsed); %run once with best params... (can we get all this back from fmincon?)
             %SavePredsFmBest(params, subjdata{f});
             
         end
     else % generative model, used for generating agent-based behavior
         
-        SE = TC_minSE(init_params, subjdata{f});
-        RTGene_preds;
+        SE = TC_minSE(init_params, subjdata{f}, ModelUsed);
+        %RTGene_preds;
         bestFit_all(f, :) = [this_subj s sqrt(SE)] % note these are sqrt of sum!
         
         SEmin = SE;
@@ -110,18 +138,23 @@ for f = 1:size(subjdata,1)
         bestFit_all(f, :) = [subjids(f) 1 params' sqrt(SE(f))];
     end
     
-    plotSubjData(subjids(f), ret_all);
+    plotSubjData(subjids(f), ret_all, ModelUsed);
 end
 
-fname_bestFit='SubjsSummary.txt';
-hdr = {'Subject','Session','lambda','explore','alphaG','alphaL','K','nu','ignore','rho','SSE'};
+fname_bestFit=sprintf('SubjsSummary_%s.txt', ModelUsed);
+if strcmp(model, 'noemo')
+    hdr = {'Subject','Session','lambda','explore','alphaG','alphaL','K','nu','ignore','rho','SSE'};
+elseif strcmp(model, 'emoexplore')
+    hdr = {'Subject','Session','lambda','explore_scram', 'explore_fear', 'explore_happy', 'alphaG','alphaL','K','nu','ignore','rho','SSE'};
+end
+    
 txt=sprintf('%s\t',hdr{:});
 txt(end)='';
 dlmwrite(fname_bestFit,txt,'');
 dlmwrite(fname_bestFit, bestFit_all,'-append','delimiter','\t','precision', '%6.5f');
 
 
-fname_trn = 'GroupStats.doc';
+fname_trn = sprintf('GroupStats_%s.doc', ModelUsed);
 
 fid_Trn =fopen(fname_trn,'w');
 rSE_Trn_mean = mean(sqrt(SEmin))
