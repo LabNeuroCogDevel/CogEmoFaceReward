@@ -4,14 +4,16 @@ global trialLength;
 global rewFuncNames;
 % Plot single subject model and data
 
-blocks=[ret_all.block];
+blocks = [ret_all.block];
 
-set(figure(1), 'color', 'white');
-hold off
+%set(figure(1), 'color', 'white');
+%hold off
 
+%% plot each block separately
 for b = 1:length(blocks)
+
     ntrials=length(ret_all(b).rtobs);
-    
+    figure;
     plot(1:ntrials, smooth(ret_all(b).rtpred,1),'--', ...
         1:ntrials, smooth(ret_all(b).rtobs,1),'-', ...
         'LineWidth', 2);
@@ -22,9 +24,58 @@ for b = 1:length(blocks)
     ylabel('RT (ms)',  'FontSize', 24);
     xlabel('Trial', 'FontSize', 24);
     set(gca, 'Box', 'off' );
-    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
+    %saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
 end
 
+close all;
+%% plot each reward function separatly 
+
+%scrsz = get(0,'ScreenSize');
+%h=figure('Position',[1 scrsz(4)/2 800 600]);
+set(figure(1), 'color', 'white');
+%sort condition
+Emo_block = [];
+Rew_block = [];
+for b = 1:length(blocks)
+    Emo_block(b) = squeeze(ret_all(b).emo);
+    Rew_block(b) = squeeze(ret_all(b).rewFunc);
+end
+
+%Happy_blocks = find(Emo_block==1);
+%Fear_blocks = find(Emo_block==2);
+%Neutral_blocks = find(Emo_block==3);
+%'Position', [0.07, 0.56, 0.4,0.35]
+
+%plot
+for b=1:4
+    hs=subplot(2,2,b);
+    %Happy
+    plot(1:ntrials, smooth(ret_all(Emo_block==1&Rew_block==b).rtpred,1),'-g','LineWidth', 2);
+    hold on
+    %Fear
+    plot(1:ntrials, smooth(ret_all(Emo_block==2&Rew_block==b).rtpred,1),'-r','LineWidth', 2);
+    %Neutral
+    plot(1:ntrials, smooth(ret_all(Emo_block==3&Rew_block==b).rtpred,1),'-b','LineWidth', 2);
+    
+    axis([0 ntrials 0 trialLength]);
+    title([   rewFuncNames{ret_all(b).rewFunc}  ], 'FontSize', 14);
+    if b==4
+        legend('Happy','Fear','Neutral','location','Best');
+    end
+    if b ==1 || b==3
+        ylabel('RT (ms)',  'FontSize', 12);
+    end
+    if b ==3 || b==4
+        xlabel('Trial', 'FontSize', 12);
+    end
+    set(gca, 'Box', 'off','FontSize',12 );
+    hold off
+    %set(gca, 'LooseInset', get(gca,'TightInset'));
+end
+mtit(strcat('Subject: ',num2str(subjid)),'xoff',0,'yoff',+0.02,'fontsize',16,'fontweight','bold');
+%saveas(h, ['../outputs/figures/S' num2str(subjid) '_' model '_' 'RewardByEmotion' '.jpg']);
+print(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' 'RewardByEmotion'], '-djpeg100  ', '-r300')
+close all
 end
 
 
