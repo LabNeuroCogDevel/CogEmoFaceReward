@@ -2,6 +2,7 @@ function plotSubjData(subjid, ret_all, model)
 
 global trialLength;
 global rewFuncNames;
+global emoNames;
 % Plot single subject model and data
 
 blocks = [ret_all.block];
@@ -14,7 +15,7 @@ for b = 1:length(blocks)
 
     ntrials=length(ret_all(b).rtobs);
     figure;
-    plot(1:ntrials, smooth(ret_all(b).rtpred,1),'--', ...
+    plot(1:ntrials, smooth(ret_all(b).rtpred,1),'--', ... %% smooth with window of 1? thats no smoothing at all.
         1:ntrials, smooth(ret_all(b).rtobs,1),'-', ...
         'LineWidth', 2);
     
@@ -24,10 +25,11 @@ for b = 1:length(blocks)
     ylabel('RT (ms)',  'FontSize', 24);
     xlabel('Trial', 'FontSize', 24);
     set(gca, 'Box', 'off' );
-    %saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
+    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
 end
 
 close all;
+
 %% plot each reward function separatly 
 
 %scrsz = get(0,'ScreenSize');
@@ -73,9 +75,32 @@ for b=1:4
     %set(gca, 'LooseInset', get(gca,'TightInset'));
 end
 mtit(strcat('Subject: ',num2str(subjid)),'xoff',0,'yoff',+0.02,'fontsize',16,'fontweight','bold');
-%saveas(h, ['../outputs/figures/S' num2str(subjid) '_' model '_' 'RewardByEmotion' '.jpg']);
 print(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' 'RewardByEmotion'], '-djpeg100  ', '-r300')
-close all
+close all;
+
+%% plot exploration parameter
+
+
+for b = 1:length(blocks)
+
+    ntrials=length(ret_all(b).rtobs);
+    figure;
+    plot(2:ntrials-1, 20*(ret_all(b).explore(2:ntrials-1)),'-k', ... % *20 is from MF
+        2:ntrials-1, ret_all(b).rtobs(2:ntrials-1)-ret_all(b).rtobs(1:ntrials-2),'-b', ...
+        'LineWidth', 2);
+    
+    axis([0 ntrials -trialLength trialLength]);
+    title(['Subject: ' num2str(subjid) ', ' rewFuncNames{ret_all(b).rewFunc} ', ' emoNames{ret_all(b).emo} ], 'FontSize', 32);
+    legend('Exploration Param','RT Swing')
+    ylabel('RT (ms)',  'FontSize', 24);
+    xlabel('Trial', 'FontSize', 24);
+    set(gca, 'Box', 'off' );
+    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_' emoNames{ret_all(b).emo} '_RTSwing.jpg']);
+end
+
+close all;
+
+
 end
 
 
@@ -380,6 +405,8 @@ end
 % 
 % figure(1)
 % hold off;
+
+%% here is where MF plot exploration
 % 
 % plot(2: FitTrls-1,20*smooth(iev_misc2_met(i,2:FitTrls-1),1),2:FitTrls-1,smooth(rtiev_met(i,2:FitTrls-1)-rtiev_met(i,1:FitTrls-2),1),'LineWidth',2)
 % axis([1 FitTrls -4000 4000])
@@ -397,12 +424,7 @@ end
 % saveas(gcf, 'Explore_IEV_S1.jpg')
 % saveas(gcf, 'Explore_IEV_S1.fig')
 % 
-% 
-% 
-% 
-% 
-% 
-% 
+
 % for i=1:size(cevr_misc2_met,1) corr_exp_met(i) = corr(cevr_misc2_met(i,2:50)',rtcevr_met(i,2:50)'-rtcevr_met(i,1:49)');
 %     if isnan(corr_exp_met(i)) corr_exp_met(i)=0;
 %     end
