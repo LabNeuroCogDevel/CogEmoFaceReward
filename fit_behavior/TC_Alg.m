@@ -91,6 +91,40 @@ elseif strcmp(model, 'emoexplore')
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(9); % param for alternative exp models of rt swings
     meandiff = params(10);
+elseif strcmp(model, 'emogonogo')
+    %EMOGONOGO: model parameter initialization
+    %Params 12 x 1 <numeric>
+    %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+    %   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+    %   ,3:  alpha1_scram     #learning rate for scrambled positive prediction errors (approach)
+    %   ,4:  alpha1_fear      #learning rate for fear positive prediction errors (approach)
+    %   ,5:  alpha1_happy     #learning rate for happy positive prediction errors (approach)
+    %   ,6:  alpha2_scram     #learning rate for scrambled negative prediction errors (avoid)
+    %   ,7:  alpha2_fear      #learning rate for fear negative prediction errors (avoid)
+    %   ,8:  alpha2_happy     #learning rate for happy negative prediction errors (avoid)
+    %   ,9:  K                #baseline response speed (person mean RT?)
+    %   ,10:  scale           #nu: going for the gold (modulating RT toward highest payoff)
+    %   ,11:  exp_alt         #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,12: meandiff         #rho parameter: weight for expected reward of fast versus slow
+    
+    lambda = params(1);
+    explore = params(2);
+    if strcmp(emoNames{emo}, 'happy')
+        alpha1=params(5);
+        alpha2=params(8);
+    elseif strcmp(emoNames{emo}, 'fear')
+        alpha1=params(4);
+        alpha2=params(7);
+    elseif strcmp(emoNames{emo}, 'scram')
+        alpha1=params(3);
+        alpha2=params(6);
+    end
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(5);
+    scale = params(6);
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(7); % param for alternative exp models of rt swings
+    meandiff = params(8);
 end
 
 %vary params 
@@ -238,8 +272,7 @@ for trial = 2:numTrials
                 lose_switch = -exp_alt; % if was slow go fast after neg PE
             end
             
-            alph_long=decay*alph_long; % if decay <1 then this decays
-            % counts, making beta dists less confident
+            alph_long=decay*alph_long; % if decay <1 then this decays counts, making beta dists less confident
             b_long=decay*b_long;
             alph_short=decay*alph_short;
             b_short=decay*b_short;
