@@ -1,0 +1,2032 @@
+PTB-INFO: Using specially modified PortAudio engine, based on offical version: PortAudio V19-devel WITH-DIM
+
+Will use ASIO enhanced Portaudio driver DLL. See Psychtoolbox/PsychSound/PortAudioLICENSE.txt
+for the exact terms of use for this dll.
+
+
+Disclaimer: "ASIO is a trademark and software of Steinberg Media Technologies GmbH."
+PTB-Warning: Although using the ASIO enabled Psychtoolbox sound driver,
+PTB-Warning: could not find any ASIO capable soundcard in your system.
+PTB-Warning: If you think you should have an ASIO card, please check your
+PTB-Warning: system for properly installed and configured drivers and retry.
+PTB-Warning: Read "help InitializePsychSound" for more info about ASIO et al.
+PTB-INFO: New audio device with handle 0 opened as PortAudio stream:
+PTB-INFO: For 1 channels Playback: Audio subsystem is Windows DirectSound, Audio device name is Primary Sound Driver
+PTB-INFO: Real samplerate 44100.000000 Hz. Input latency 0.000000 msecs, Output latency 39.977324 msecs.
+CEV: ev=38.26; Mag=61.00; Freq: 0.63; rand: 0.76; inc: 0; pts- block: 0; total: 0
+1: fear_10.png
+0.00 in, expected, obs, diff
+timer	4.00	2.94	-1.06
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.00	6.98	-1.02
+CEV: ev=37.94; Mag=81.00; Freq: 0.47; rand: 0.39; inc: 81; pts- block: 81; total: 81
+2: fear_4.png
+7.03 in, expected, obs, diff
+timer	4.00	3.51	-0.49
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.80	7.33	-0.47
+CEV: ev=37.97; Mag=78.00; Freq: 0.48; rand: 0.17; inc: 78; pts- block: 159; total: 159
+3: fear_8.png
+14.37 in, expected, obs, diff
+timer	4.00	3.46	-0.54
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.40	6.87	-0.53
+CEV: ev=38.51; Mag=51.00; Freq: 0.76; rand: 0.03; inc: 51; pts- block: 210; total: 210
+4: fear_21.png
+21.24 in, expected, obs, diff
+timer	4.00	2.50	-1.50
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.30	6.81	-1.49
+CEV: ev=35.93; Mag=67.00; Freq: 0.53; rand: 0.05; inc: 67; pts- block: 277; total: 277
+5: fear_1.png
+28.05 in, expected, obs, diff
+timer	4.00	3.29	-0.71
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.90	7.20	-0.70
+CEV: ev=35.30; Mag=83.00; Freq: 0.42; rand: 0.82; inc: 0; pts- block: 277; total: 277
+6: fear_6.png
+35.26 in, expected, obs, diff
+timer	4.00	3.67	-0.33
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.70	7.38	-0.32
+CEV: ev=38.02; Mag=74.00; Freq: 0.51; rand: 0.32; inc: 74; pts- block: 351; total: 351
+7: fear_9.png
+42.65 in, expected, obs, diff
+timer	4.00	3.36	-0.64
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.50	6.87	-0.63
+CEV: ev=39.55; Mag=78.00; Freq: 0.51; rand: 0.03; inc: 78; pts- block: 429; total: 429
+8: fear_11.png
+49.52 in, expected, obs, diff
+timer	4.00	3.37	-0.63
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.30	6.68	-0.62
+CEV: ev=36.53; Mag=77.00; Freq: 0.47; rand: 0.38; inc: 77; pts- block: 506; total: 506
+9: fear_12.png
+56.20 in, expected, obs, diff
+timer	4.00	3.50	-0.50
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.50	7.01	-0.49
+CEV: ev=38.52; Mag=76.00; Freq: 0.51; rand: 0.80; inc: 0; pts- block: 506; total: 506
+10: fear_17.png
+63.21 in, expected, obs, diff
+timer	4.00	3.38	-0.62
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.70	7.09	-0.61
+CEV: ev=35.59; Mag=76.00; Freq: 0.47; rand: 0.49; inc: 0; pts- block: 506; total: 506
+11: fear_15.png
+70.33 in, expected, obs, diff
+timer	4.00	3.51	-0.49
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.20	6.72	-0.48
+CEV: ev=36.31; Mag=53.00; Freq: 0.69; rand: 0.65; inc: 53; pts- block: 559; total: 559
+12: fear_14.png
+77.05 in, expected, obs, diff
+timer	4.00	2.74	-1.26
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	6.66	-1.24
+CEV: ev=38.37; Mag=56.00; Freq: 0.68; rand: 0.75; inc: 0; pts- block: 559; total: 559
+13: fear_5.png
+83.71 in, expected, obs, diff
+timer	4.00	2.76	-1.24
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.40	6.17	-1.23
+CEV: ev=35.95; Mag=68.00; Freq: 0.53; rand: 0.68; inc: 0; pts- block: 559; total: 559
+14: fear_7.png
+89.89 in, expected, obs, diff
+timer	4.00	3.31	-0.69
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.00	7.32	-0.68
+CEV: ev=37.98; Mag=77.00; Freq: 0.49; rand: 0.16; inc: 77; pts- block: 636; total: 636
+15: fear_16.png
+97.21 in, expected, obs, diff
+timer	4.00	3.44	-0.56
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	7.80	7.25	-0.55
+CEV: ev=35.02; Mag=71.00; Freq: 0.50; rand: 0.50; inc: 0; pts- block: 636; total: 636
+16: fear_18.png
+104.47 in, expected, obs, diff
+timer	4.00	3.41	-0.59
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.30	6.73	-0.57
+CEV: ev=39.55; Mag=78.00; Freq: 0.51; rand: 0.34; inc: 78; pts- block: 714; total: 714
+17: fear_13.png
+111.20 in, expected, obs, diff
+timer	4.00	3.37	-0.63
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.10	6.48	-0.62
+CEV: ev=37.51; Mag=73.00; Freq: 0.51; rand: 0.22; inc: 73; pts- block: 787; total: 787
+18: fear_20.png
+117.68 in, expected, obs, diff
+timer	4.00	3.36	-0.64
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	8.10	7.48	-0.62
+CEV: ev=38.56; Mag=74.00; Freq: 0.52; rand: 0.26; inc: 74; pts- block: 861; total: 861
+19: fear_19.png
+125.16 in, expected, obs, diff
+timer	4.00	3.34	-0.66
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.60	6.95	-0.65
+CEV: ev=37.00; Mag=71.00; Freq: 0.52; rand: 0.70; inc: 0; pts- block: 861; total: 861
+20: fear_3.png
+132.11 in, expected, obs, diff
+timer	4.00	3.33	-0.67
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.10	7.44	-0.66
+CEV: ev=39.01; Mag=78.00; Freq: 0.50; rand: 0.96; inc: 0; pts- block: 861; total: 861
+21: fear_2.png
+139.56 in, expected, obs, diff
+timer	4.00	3.40	-0.60
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.40	7.81	-0.59
+CEV: ev=37.00; Mag=81.00; Freq: 0.46; rand: 0.14; inc: 81; pts- block: 942; total: 942
+22: fear_3.png
+147.37 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	8.40	7.96	-0.44
+CEV: ev=35.12; Mag=75.00; Freq: 0.47; rand: 0.26; inc: 75; pts- block: 1017; total: 1017
+23: fear_12.png
+155.33 in, expected, obs, diff
+timer	4.00	3.50	-0.50
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.60	8.12	-0.48
+CEV: ev=38.31; Mag=88.00; Freq: 0.44; rand: 0.25; inc: 88; pts- block: 1105; total: 1105
+24: fear_15.png
+163.45 in, expected, obs, diff
+timer	4.00	3.62	-0.38
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.80	7.43	-0.37
+CEV: ev=38.23; Mag=93.00; Freq: 0.41; rand: 0.24; inc: 93; pts- block: 1198; total: 1198
+25: fear_18.png
+170.89 in, expected, obs, diff
+timer	4.00	3.72	-0.28
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.20	6.93	-0.27
+CEV: ev=38.59; Mag=97.00; Freq: 0.40; rand: 0.35; inc: 97; pts- block: 1295; total: 1295
+26: fear_20.png
+177.82 in, expected, obs, diff
+timer	4.00	3.76	-0.24
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.80	7.58	-0.22
+CEV: ev=35.84; Mag=92.00; Freq: 0.39; rand: 0.25; inc: 92; pts- block: 1387; total: 1387
+27: fear_14.png
+185.40 in, expected, obs, diff
+timer	4.00	3.79	-0.21
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	8.00	7.81	-0.19
+CEV: ev=37.37; Mag=101.00; Freq: 0.37; rand: 0.47; inc: 0; pts- block: 1387; total: 1387
+28: fear_1.png
+193.22 in, expected, obs, diff
+timer	4.00	3.85	-0.15
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.30	7.17	-0.13
+CEV: ev=36.59; Mag=89.00; Freq: 0.41; rand: 0.83; inc: 0; pts- block: 1387; total: 1387
+29: fear_7.png
+200.39 in, expected, obs, diff
+timer	4.00	3.71	-0.29
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.10	6.83	-0.27
+CEV: ev=37.40; Mag=93.00; Freq: 0.40; rand: 0.55; inc: 0; pts- block: 1387; total: 1387
+30: fear_13.png
+207.22 in, expected, obs, diff
+timer	4.00	3.75	-0.25
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.40	8.17	-0.23
+CEV: ev=38.79; Mag=87.00; Freq: 0.45; rand: 0.29; inc: 87; pts- block: 1474; total: 1474
+31: fear_6.png
+215.39 in, expected, obs, diff
+timer	4.00	3.59	-0.41
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.70	7.30	-0.40
+CEV: ev=38.29; Mag=89.00; Freq: 0.43; rand: 0.75; inc: 0; pts- block: 1474; total: 1474
+32: fear_19.png
+222.70 in, expected, obs, diff
+timer	4.00	3.65	-0.35
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.20	6.86	-0.34
+CEV: ev=36.59; Mag=89.00; Freq: 0.41; rand: 0.57; inc: 0; pts- block: 1474; total: 1474
+33: fear_10.png
+229.56 in, expected, obs, diff
+timer	4.00	3.71	-0.29
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.70	7.42	-0.28
+CEV: ev=34.08; Mag=47.00; Freq: 0.73; rand: 0.05; inc: 47; pts- block: 1521; total: 1521
+34: fear_2.png
+236.99 in, expected, obs, diff
+timer	4.00	2.59	-1.41
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.80	6.41	-1.39
+CEV: ev=37.00; Mag=90.00; Freq: 0.41; rand: 0.78; inc: 0; pts- block: 1521; total: 1521
+35: fear_16.png
+243.40 in, expected, obs, diff
+timer	4.00	3.71	-0.29
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.40	7.13	-0.27
+CEV: ev=40.32; Mag=49.00; Freq: 0.83; rand: 0.13; inc: 49; pts- block: 1570; total: 1570
+36: fear_17.png
+250.54 in, expected, obs, diff
+timer	4.00	2.25	-1.75
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.10	6.37	-1.73
+CEV: ev=37.69; Mag=55.00; Freq: 0.69; rand: 0.47; inc: 55; pts- block: 1625; total: 1625
+37: fear_9.png
+256.91 in, expected, obs, diff
+timer	4.00	2.73	-1.27
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.80	6.55	-1.25
+CEV: ev=34.99; Mag=87.00; Freq: 0.40; rand: 0.34; inc: 87; pts- block: 1712; total: 1712
+38: fear_4.png
+263.46 in, expected, obs, diff
+timer	4.00	3.75	-0.25
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.30	8.07	-0.23
+CEV: ev=35.78; Mag=88.00; Freq: 0.41; rand: 0.79; inc: 0; pts- block: 1712; total: 1712
+39: fear_21.png
+271.53 in, expected, obs, diff
+timer	4.00	3.73	-0.27
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.10	6.85	-0.25
+CEV: ev=36.21; Mag=92.00; Freq: 0.39; rand: 0.53; inc: 0; pts- block: 1712; total: 1712
+40: fear_8.png
+278.38 in, expected, obs, diff
+timer	4.00	3.78	-0.22
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.60	8.39	-0.21
+CEV: ev=34.68; Mag=45.00; Freq: 0.77; rand: 0.60; inc: 45; pts- block: 1757; total: 1757
+41: fear_11.png
+286.78 in, expected, obs, diff
+timer	4.00	2.44	-1.56
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.60	7.06	-1.54
+CEV: ev=36.02; Mag=73.00; Freq: 0.49; rand: 0.65; inc: 0; pts- block: 1757; total: 1757
+42: fear_5.png
+293.85 in, expected, obs, diff
+timer	4.00	3.43	-0.57
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.70	8.15	-0.55
+DEV: ev=49.03; Mag=77.00; Freq: 0.64; rand: 0.75; inc: 0; pts- block: 0; total: 1757
+43: happy_2.png
+370.99 in, expected, obs, diff
+timer	4.00	2.51	-1.49
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	6.43	-1.47
+DEV: ev=36.24; Mag=79.00; Freq: 0.46; rand: 0.08; inc: 79; pts- block: 79; total: 1836
+44: happy_5.png
+377.42 in, expected, obs, diff
+timer	4.00	3.04	-0.96
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.80	6.86	-0.94
+DEV: ev=27.88; Mag=79.00; Freq: 0.35; rand: 0.91; inc: 0; pts- block: 79; total: 1836
+45: happy_9.png
+384.29 in, expected, obs, diff
+timer	4.00	3.55	-0.45
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.00	7.57	-0.43
+DEV: ev=40.40; Mag=74.00; Freq: 0.55; rand: 0.83; inc: 0; pts- block: 79; total: 1836
+46: happy_1.png
+391.86 in, expected, obs, diff
+timer	4.00	2.75	-1.25
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.80	6.57	-1.23
+DEV: ev=31.35; Mag=81.00; Freq: 0.39; rand: 1.00; inc: 0; pts- block: 79; total: 1836
+47: happy_11.png
+398.43 in, expected, obs, diff
+timer	4.00	3.36	-0.64
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.70	7.08	-0.62
+DEV: ev=24.18; Mag=80.00; Freq: 0.30; rand: 0.44; inc: 0; pts- block: 79; total: 1836
+48: happy_13.png
+405.52 in, expected, obs, diff
+timer	4.00	3.86	-0.14
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	8.00	7.88	-0.12
+DEV: ev=50.17; Mag=68.00; Freq: 0.74; rand: 0.96; inc: 0; pts- block: 79; total: 1836
+49: happy_17.png
+413.40 in, expected, obs, diff
+timer	4.00	2.30	-1.70
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.20	5.52	-1.68
+DEV: ev=39.79; Mag=72.00; Freq: 0.55; rand: 0.77; inc: 0; pts- block: 79; total: 1836
+50: happy_8.png
+418.92 in, expected, obs, diff
+timer	4.00	2.73	-1.27
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	6.80	5.55	-1.25
+DEV: ev=30.62; Mag=85.00; Freq: 0.36; rand: 0.87; inc: 0; pts- block: 79; total: 1836
+51: happy_21.png
+424.47 in, expected, obs, diff
+timer	4.00	3.50	-0.50
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.60	7.12	-0.48
+DEV: ev=35.34; Mag=75.00; Freq: 0.47; rand: 0.40; inc: 75; pts- block: 154; total: 1911
+52: happy_4.png
+431.60 in, expected, obs, diff
+timer	4.00	2.99	-1.01
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.80	6.81	-0.99
+DEV: ev=35.92; Mag=77.00; Freq: 0.47; rand: 0.80; inc: 0; pts- block: 154; total: 1911
+53: happy_7.png
+438.41 in, expected, obs, diff
+timer	4.00	3.01	-0.99
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.90	6.93	-0.97
+DEV: ev=37.83; Mag=77.00; Freq: 0.49; rand: 0.91; inc: 0; pts- block: 154; total: 1911
+54: happy_10.png
+445.34 in, expected, obs, diff
+timer	4.00	2.93	-1.07
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	6.90	5.85	-1.05
+DEV: ev=33.60; Mag=77.00; Freq: 0.44; rand: 0.26; inc: 77; pts- block: 231; total: 1988
+55: happy_14.png
+451.20 in, expected, obs, diff
+timer	4.00	3.12	-0.88
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.60	7.74	-0.86
+DEV: ev=33.15; Mag=76.00; Freq: 0.44; rand: 0.14; inc: 76; pts- block: 307; total: 2064
+56: happy_16.png
+458.94 in, expected, obs, diff
+timer	4.00	3.12	-0.88
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.00	6.14	-0.86
+DEV: ev=35.43; Mag=84.00; Freq: 0.42; rand: 0.58; inc: 0; pts- block: 307; total: 2064
+57: happy_6.png
+465.08 in, expected, obs, diff
+timer	4.00	3.19	-0.81
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.70	6.91	-0.79
+DEV: ev=33.94; Mag=80.00; Freq: 0.42; rand: 0.14; inc: 80; pts- block: 387; total: 2144
+58: happy_12.png
+472.00 in, expected, obs, diff
+timer	4.00	3.18	-0.82
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.40	7.60	-0.80
+DEV: ev=37.01; Mag=84.00; Freq: 0.44; rand: 0.62; inc: 0; pts- block: 387; total: 2144
+59: happy_15.png
+479.61 in, expected, obs, diff
+timer	4.00	3.10	-0.90
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.90	7.02	-0.88
+DEV: ev=34.25; Mag=79.00; Freq: 0.43; rand: 0.51; inc: 0; pts- block: 387; total: 2144
+60: happy_20.png
+486.63 in, expected, obs, diff
+timer	4.00	3.13	-0.87
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.30	6.46	-0.84
+DEV: ev=40.22; Mag=77.00; Freq: 0.53; rand: 0.08; inc: 77; pts- block: 464; total: 2221
+61: happy_3.png
+493.09 in, expected, obs, diff
+timer	4.00	2.81	-1.19
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.10	5.94	-1.16
+DEV: ev=38.75; Mag=75.00; Freq: 0.52; rand: 0.12; inc: 75; pts- block: 539; total: 2296
+62: happy_19.png
+499.03 in, expected, obs, diff
+timer	4.00	2.83	-1.17
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	8.30	7.16	-1.14
+DEV: ev=38.87; Mag=75.00; Freq: 0.52; rand: 0.24; inc: 75; pts- block: 614; total: 2371
+63: happy_18.png
+506.19 in, expected, obs, diff
+timer	4.00	2.83	-1.17
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.70	7.55	-1.15
+DEV: ev=39.83; Mag=77.00; Freq: 0.52; rand: 0.05; inc: 77; pts- block: 691; total: 2448
+64: happy_2.png
+513.74 in, expected, obs, diff
+timer	4.00	2.83	-1.17
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.40	6.27	-1.13
+DEV: ev=42.36; Mag=82.00; Freq: 0.52; rand: 0.94; inc: 0; pts- block: 691; total: 2448
+65: happy_17.png
+520.02 in, expected, obs, diff
+timer	4.00	2.83	-1.17
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	6.90	5.76	-1.14
+DEV: ev=38.97; Mag=78.00; Freq: 0.50; rand: 0.49; inc: 78; pts- block: 769; total: 2526
+66: happy_7.png
+525.78 in, expected, obs, diff
+timer	4.00	2.90	-1.10
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.10	7.02	-1.08
+DEV: ev=24.64; Mag=82.00; Freq: 0.30; rand: 0.90; inc: 0; pts- block: 769; total: 2526
+67: happy_3.png
+532.80 in, expected, obs, diff
+timer	4.00	3.87	-0.13
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.20	8.09	-0.11
+DEV: ev=27.78; Mag=82.00; Freq: 0.34; rand: 0.11; inc: 82; pts- block: 851; total: 2608
+68: happy_18.png
+540.90 in, expected, obs, diff
+timer	4.00	3.62	-0.38
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.70	7.35	-0.35
+DEV: ev=29.45; Mag=86.00; Freq: 0.34; rand: 0.39; inc: 0; pts- block: 851; total: 2608
+69: happy_10.png
+548.26 in, expected, obs, diff
+timer	4.00	3.59	-0.41
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.70	7.32	-0.38
+DEV: ev=27.45; Mag=80.00; Freq: 0.34; rand: 0.40; inc: 0; pts- block: 851; total: 2608
+70: happy_20.png
+555.58 in, expected, obs, diff
+timer	4.00	3.59	-0.41
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	7.90	7.51	-0.39
+DEV: ev=38.10; Mag=74.00; Freq: 0.52; rand: 0.13; inc: 74; pts- block: 925; total: 2682
+71: happy_19.png
+563.09 in, expected, obs, diff
+timer	4.00	2.84	-1.16
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.70	6.56	-1.14
+DEV: ev=42.38; Mag=82.00; Freq: 0.52; rand: 0.96; inc: 0; pts- block: 925; total: 2682
+72: happy_11.png
+569.66 in, expected, obs, diff
+timer	4.00	2.83	-1.17
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.40	6.26	-1.14
+DEV: ev=46.27; Mag=76.00; Freq: 0.61; rand: 0.06; inc: 76; pts- block: 1001; total: 2758
+73: happy_16.png
+575.92 in, expected, obs, diff
+timer	4.00	2.60	-1.40
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.10	6.72	-1.38
+DEV: ev=29.97; Mag=78.00; Freq: 0.38; rand: 0.35; inc: 78; pts- block: 1079; total: 2836
+74: happy_13.png
+582.65 in, expected, obs, diff
+timer	4.00	3.38	-0.62
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.00	7.40	-0.60
+DEV: ev=27.44; Mag=86.00; Freq: 0.32; rand: 0.02; inc: 86; pts- block: 1165; total: 2922
+75: happy_5.png
+590.05 in, expected, obs, diff
+timer	4.00	3.76	-0.24
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	8.10	7.89	-0.21
+DEV: ev=49.13; Mag=67.00; Freq: 0.74; rand: 0.17; inc: 67; pts- block: 1232; total: 2989
+76: happy_15.png
+597.94 in, expected, obs, diff
+timer	4.00	2.31	-1.69
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.80	6.13	-1.67
+DEV: ev=42.59; Mag=78.00; Freq: 0.55; rand: 0.73; inc: 0; pts- block: 1232; total: 2989
+77: happy_12.png
+604.08 in, expected, obs, diff
+timer	4.00	2.75	-1.25
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.60	6.38	-1.22
+DEV: ev=36.57; Mag=80.00; Freq: 0.46; rand: 0.45; inc: 80; pts- block: 1312; total: 3069
+78: happy_1.png
+610.46 in, expected, obs, diff
+timer	4.00	3.05	-0.95
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.50	7.58	-0.92
+DEV: ev=29.10; Mag=82.00; Freq: 0.35; rand: 0.30; inc: 82; pts- block: 1394; total: 3151
+79: happy_8.png
+618.04 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.30	7.86	-0.44
+DEV: ev=37.98; Mag=81.00; Freq: 0.47; rand: 0.19; inc: 81; pts- block: 1475; total: 3232
+80: happy_21.png
+625.90 in, expected, obs, diff
+timer	4.00	3.00	-1.00
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.80	6.82	-0.98
+DEV: ev=29.74; Mag=84.00; Freq: 0.35; rand: 0.18; inc: 84; pts- block: 1559; total: 3316
+81: happy_9.png
+632.73 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.00	7.57	-0.43
+DEV: ev=36.24; Mag=78.00; Freq: 0.46; rand: 0.63; inc: 0; pts- block: 1559; total: 3316
+82: happy_4.png
+640.30 in, expected, obs, diff
+timer	4.00	3.02	-0.98
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.40	6.44	-0.96
+DEV: ev=48.66; Mag=78.00; Freq: 0.62; rand: 0.08; inc: 78; pts- block: 1637; total: 3394
+83: happy_14.png
+646.74 in, expected, obs, diff
+timer	4.00	2.55	-1.45
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.90	6.48	-1.42
+DEV: ev=34.62; Mag=85.00; Freq: 0.41; rand: 0.78; inc: 0; pts- block: 1637; total: 3394
+84: happy_6.png
+653.23 in, expected, obs, diff
+timer	4.00	3.24	-0.76
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.70	7.97	-0.73
+IEV: ev=20.04; Mag=23.00; Freq: 0.87; rand: 0.44; inc: 23; pts- block: 23; total: 3417
+85: fear_4.png
+724.89 in, expected, obs, diff
+timer	4.00	2.49	-1.51
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.60	6.11	-1.49
+IEV: ev=43.67; Mag=76.00; Freq: 0.57; rand: 0.31; inc: 76; pts- block: 99; total: 3493
+86: fear_12.png
+731.01 in, expected, obs, diff
+timer	4.00	3.53	-0.47
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.50	7.05	-0.45
+IEV: ev=25.27; Mag=31.00; Freq: 0.83; rand: 0.51; inc: 31; pts- block: 130; total: 3524
+87: fear_17.png
+738.07 in, expected, obs, diff
+timer	4.00	2.74	-1.26
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.40	7.17	-1.23
+IEV: ev=40.55; Mag=61.00; Freq: 0.67; rand: 0.79; inc: 0; pts- block: 130; total: 3524
+88: fear_5.png
+745.24 in, expected, obs, diff
+timer	4.00	3.28	-0.72
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.70	7.01	-0.69
+IEV: ev=21.85; Mag=25.00; Freq: 0.86; rand: 0.38; inc: 25; pts- block: 155; total: 3549
+89: fear_13.png
+752.26 in, expected, obs, diff
+timer	4.00	2.54	-1.46
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.80	6.36	-1.44
+IEV: ev=33.57; Mag=44.00; Freq: 0.76; rand: 0.53; inc: 44; pts- block: 199; total: 3593
+90: fear_19.png
+758.63 in, expected, obs, diff
+timer	4.00	2.99	-1.01
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.00	6.02	-0.98
+IEV: ev=16.41; Mag=18.00; Freq: 0.89; rand: 0.94; inc: 0; pts- block: 199; total: 3593
+91: fear_8.png
+764.65 in, expected, obs, diff
+timer	4.00	2.32	-1.68
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	7.80	6.15	-1.65
+IEV: ev=46.71; Mag=82.00; Freq: 0.57; rand: 0.55; inc: 82; pts- block: 281; total: 3675
+92: fear_11.png
+770.80 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.80	7.36	-0.44
+IEV: ev=44.74; Mag=78.00; Freq: 0.57; rand: 0.59; inc: 0; pts- block: 281; total: 3675
+93: fear_14.png
+778.17 in, expected, obs, diff
+timer	4.00	3.52	-0.48
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.80	7.35	-0.45
+IEV: ev=35.67; Mag=53.00; Freq: 0.68; rand: 0.30; inc: 53; pts- block: 334; total: 3728
+94: fear_16.png
+785.52 in, expected, obs, diff
+timer	4.00	3.25	-0.75
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.40	6.68	-0.72
+IEV: ev=25.64; Mag=31.00; Freq: 0.82; rand: 0.23; inc: 31; pts- block: 365; total: 3759
+95: fear_2.png
+792.20 in, expected, obs, diff
+timer	4.00	2.76	-1.24
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.80	6.59	-1.21
+IEV: ev=51.11; Mag=111.00; Freq: 0.46; rand: 0.19; inc: 111; pts- block: 476; total: 3870
+96: fear_9.png
+798.79 in, expected, obs, diff
+timer	4.00	3.80	-0.20
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.80	7.63	-0.17
+IEV: ev=47.28; Mag=98.00; Freq: 0.48; rand: 0.17; inc: 98; pts- block: 574; total: 3968
+97: fear_18.png
+806.42 in, expected, obs, diff
+timer	4.00	3.74	-0.26
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.40	7.17	-0.23
+IEV: ev=46.80; Mag=95.00; Freq: 0.49; rand: 0.44; inc: 95; pts- block: 669; total: 4063
+98: fear_1.png
+813.60 in, expected, obs, diff
+timer	4.00	3.72	-0.28
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.80	7.55	-0.25
+IEV: ev=48.31; Mag=102.00; Freq: 0.47; rand: 0.92; inc: 0; pts- block: 669; total: 4063
+99: fear_3.png
+821.15 in, expected, obs, diff
+timer	4.00	3.77	-0.23
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.60	8.40	-0.20
+IEV: ev=47.64; Mag=96.00; Freq: 0.50; rand: 0.18; inc: 96; pts- block: 765; total: 4159
+100: fear_20.png
+829.56 in, expected, obs, diff
+timer	4.00	3.71	-0.29
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.00	6.74	-0.26
+IEV: ev=49.61; Mag=98.00; Freq: 0.51; rand: 0.98; inc: 0; pts- block: 765; total: 4159
+101: fear_21.png
+836.30 in, expected, obs, diff
+timer	4.00	3.69	-0.31
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.70	7.42	-0.28
+IEV: ev=45.35; Mag=84.00; Freq: 0.54; rand: 0.11; inc: 84; pts- block: 849; total: 4243
+102: fear_6.png
+843.72 in, expected, obs, diff
+timer	4.00	3.60	-0.40
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.40	7.03	-0.37
+IEV: ev=45.05; Mag=84.00; Freq: 0.54; rand: 0.41; inc: 84; pts- block: 933; total: 4327
+103: fear_7.png
+850.76 in, expected, obs, diff
+timer	4.00	3.61	-0.39
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.70	7.35	-0.35
+IEV: ev=47.29; Mag=90.00; Freq: 0.52; rand: 0.26; inc: 90; pts- block: 1023; total: 4417
+104: fear_15.png
+858.11 in, expected, obs, diff
+timer	4.00	3.65	-0.35
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.90	7.58	-0.32
+IEV: ev=46.99; Mag=89.00; Freq: 0.53; rand: 0.71; inc: 0; pts- block: 1023; total: 4417
+105: fear_10.png
+865.68 in, expected, obs, diff
+timer	4.00	3.63	-0.37
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	7.90	7.56	-0.34
+IEV: ev=44.83; Mag=84.00; Freq: 0.53; rand: 0.12; inc: 84; pts- block: 1107; total: 4501
+106: fear_16.png
+873.25 in, expected, obs, diff
+timer	4.00	3.63	-0.37
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.50	8.16	-0.34
+IEV: ev=45.51; Mag=86.00; Freq: 0.53; rand: 0.32; inc: 86; pts- block: 1193; total: 4587
+107: fear_3.png
+881.41 in, expected, obs, diff
+timer	4.00	3.64	-0.36
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.80	7.47	-0.33
+IEV: ev=46.36; Mag=89.00; Freq: 0.52; rand: 0.51; inc: 89; pts- block: 1282; total: 4676
+108: fear_19.png
+888.88 in, expected, obs, diff
+timer	4.00	3.65	-0.35
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	7.80	7.48	-0.32
+IEV: ev=44.47; Mag=84.00; Freq: 0.53; rand: 0.26; inc: 84; pts- block: 1366; total: 4760
+109: fear_1.png
+896.36 in, expected, obs, diff
+timer	4.00	3.64	-0.36
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	8.00	7.67	-0.33
+IEV: ev=49.09; Mag=97.00; Freq: 0.51; rand: 0.03; inc: 97; pts- block: 1463; total: 4857
+110: fear_20.png
+904.03 in, expected, obs, diff
+timer	4.00	3.68	-0.32
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.60	7.32	-0.28
+IEV: ev=49.66; Mag=98.00; Freq: 0.51; rand: 0.73; inc: 0; pts- block: 1463; total: 4857
+111: fear_13.png
+911.35 in, expected, obs, diff
+timer	4.00	3.69	-0.31
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	8.00	7.72	-0.28
+IEV: ev=45.97; Mag=85.00; Freq: 0.54; rand: 0.58; inc: 0; pts- block: 1463; total: 4857
+112: fear_15.png
+919.08 in, expected, obs, diff
+timer	4.00	3.61	-0.39
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.80	7.44	-0.36
+IEV: ev=18.44; Mag=21.00; Freq: 0.86; rand: 0.46; inc: 21; pts- block: 1484; total: 4878
+113: fear_5.png
+926.52 in, expected, obs, diff
+timer	4.00	2.54	-1.46
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.00	6.58	-1.42
+IEV: ev=48.57; Mag=90.00; Freq: 0.54; rand: 0.55; inc: 0; pts- block: 1484; total: 4878
+114: fear_7.png
+933.10 in, expected, obs, diff
+timer	4.00	3.60	-0.40
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.70	7.34	-0.36
+IEV: ev=47.11; Mag=91.00; Freq: 0.52; rand: 0.23; inc: 91; pts- block: 1575; total: 4969
+115: fear_6.png
+940.44 in, expected, obs, diff
+timer	4.00	3.66	-0.34
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.60	7.29	-0.31
+IEV: ev=47.73; Mag=95.00; Freq: 0.50; rand: 0.62; inc: 0; pts- block: 1575; total: 4969
+116: fear_18.png
+947.74 in, expected, obs, diff
+timer	4.00	3.69	-0.31
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.30	8.03	-0.27
+IEV: ev=48.54; Mag=95.00; Freq: 0.51; rand: 0.40; inc: 95; pts- block: 1670; total: 5064
+117: fear_2.png
+955.78 in, expected, obs, diff
+timer	4.00	3.68	-0.32
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.70	7.42	-0.28
+IEV: ev=47.10; Mag=93.00; Freq: 0.51; rand: 0.99; inc: 0; pts- block: 1670; total: 5064
+118: fear_21.png
+963.19 in, expected, obs, diff
+timer	4.00	3.69	-0.31
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.10	7.82	-0.28
+IEV: ev=44.33; Mag=85.00; Freq: 0.52; rand: 0.89; inc: 0; pts- block: 1670; total: 5064
+119: fear_4.png
+971.02 in, expected, obs, diff
+timer	4.00	3.65	-0.35
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.20	6.89	-0.31
+IEV: ev=48.61; Mag=92.00; Freq: 0.53; rand: 0.80; inc: 0; pts- block: 1670; total: 5064
+120: fear_14.png
+977.91 in, expected, obs, diff
+timer	4.00	3.63	-0.37
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	7.70	7.37	-0.33
+IEV: ev=21.74; Mag=26.00; Freq: 0.83; rand: 0.26; inc: 26; pts- block: 1696; total: 5090
+121: fear_10.png
+985.27 in, expected, obs, diff
+timer	4.00	2.73	-1.27
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.70	7.46	-1.24
+IEV: ev=39.56; Mag=63.00; Freq: 0.63; rand: 0.68; inc: 0; pts- block: 1696; total: 5090
+122: fear_8.png
+992.74 in, expected, obs, diff
+timer	4.00	3.38	-0.62
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.40	7.81	-0.59
+IEV: ev=43.53; Mag=80.00; Freq: 0.55; rand: 0.72; inc: 0; pts- block: 1696; total: 5090
+123: fear_12.png
+1000.56 in, expected, obs, diff
+timer	4.00	3.60	-0.40
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	6.80	6.43	-0.37
+IEV: ev=46.07; Mag=93.00; Freq: 0.50; rand: 0.65; inc: 0; pts- block: 1696; total: 5090
+124: fear_11.png
+1006.99 in, expected, obs, diff
+timer	4.00	3.71	-0.29
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.00	7.74	-0.26
+IEV: ev=51.58; Mag=124.00; Freq: 0.42; rand: 0.78; inc: 0; pts- block: 1696; total: 5090
+125: fear_9.png
+1014.74 in, expected, obs, diff
+timer	4.00	3.91	-0.09
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	8.10	8.04	-0.06
+IEV: ev=39.04; Mag=57.00; Freq: 0.68; rand: 0.90; inc: 0; pts- block: 1696; total: 5090
+126: fear_17.png
+1022.78 in, expected, obs, diff
+timer	4.00	3.25	-0.75
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	8.00	7.28	-0.72
+CEVR: ev=38.71; Mag=91.00; Freq: 0.43; rand: 0.33; inc: 91; pts- block: 91; total: 5181
+127: scram_11.png
+1093.75 in, expected, obs, diff
+timer	4.00	3.64	-0.36
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.00	7.67	-0.33
+CEVR: ev=37.50; Mag=151.00; Freq: 0.25; rand: 0.20; inc: 151; pts- block: 242; total: 5332
+128: scram_2.png
+1101.42 in, expected, obs, diff
+timer	4.00	2.54	-1.46
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.20	5.77	-1.43
+CEVR: ev=35.75; Mag=143.00; Freq: 0.25; rand: 0.74; inc: 0; pts- block: 242; total: 5332
+129: scram_4.png
+1107.19 in, expected, obs, diff
+timer	4.00	2.56	-1.44
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.90	6.50	-1.40
+CEVR: ev=37.00; Mag=122.00; Freq: 0.30; rand: 0.48; inc: 0; pts- block: 242; total: 5332
+130: scram_9.png
+1113.69 in, expected, obs, diff
+timer	4.00	3.02	-0.98
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	8.10	7.15	-0.95
+CEVR: ev=37.99; Mag=153.00; Freq: 0.25; rand: 0.61; inc: 0; pts- block: 242; total: 5332
+131: scram_19.png
+1120.85 in, expected, obs, diff
+timer	4.00	2.55	-1.45
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.30	5.88	-1.42
+CEVR: ev=37.23; Mag=159.00; Freq: 0.23; rand: 0.86; inc: 0; pts- block: 242; total: 5332
+132: scram_5.png
+1126.73 in, expected, obs, diff
+timer	4.00	2.38	-1.62
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.80	6.22	-1.58
+CEVR: ev=38.21; Mag=95.00; Freq: 0.40; rand: 0.58; inc: 0; pts- block: 242; total: 5332
+133: scram_21.png
+1132.95 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.60	7.18	-0.42
+CEVR: ev=35.66; Mag=80.00; Freq: 0.45; rand: 0.24; inc: 80; pts- block: 322; total: 5412
+134: scram_3.png
+1140.13 in, expected, obs, diff
+timer	4.00	3.70	-0.30
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.30	7.04	-0.26
+CEVR: ev=38.80; Mag=86.00; Freq: 0.45; rand: 0.03; inc: 86; pts- block: 408; total: 5498
+135: scram_14.png
+1147.18 in, expected, obs, diff
+timer	4.00	3.71	-0.29
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.30	7.05	-0.25
+CEVR: ev=37.00; Mag=83.00; Freq: 0.45; rand: 0.17; inc: 83; pts- block: 491; total: 5581
+136: scram_17.png
+1154.23 in, expected, obs, diff
+timer	4.00	3.70	-0.30
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	7.64	-0.26
+CEVR: ev=39.26; Mag=87.00; Freq: 0.45; rand: 0.71; inc: 0; pts- block: 491; total: 5581
+137: scram_12.png
+1161.87 in, expected, obs, diff
+timer	4.00	3.72	-0.28
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.60	8.35	-0.25
+CEVR: ev=37.00; Mag=95.00; Freq: 0.39; rand: 0.47; inc: 0; pts- block: 491; total: 5581
+138: scram_20.png
+1170.22 in, expected, obs, diff
+timer	4.00	3.49	-0.51
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	8.20	7.73	-0.47
+CEVR: ev=35.16; Mag=77.00; Freq: 0.46; rand: 0.68; inc: 0; pts- block: 491; total: 5581
+139: scram_13.png
+1177.96 in, expected, obs, diff
+timer	4.00	3.74	-0.26
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.30	8.08	-0.22
+CEVR: ev=35.62; Mag=130.00; Freq: 0.28; rand: 0.07; inc: 130; pts- block: 621; total: 5711
+140: scram_8.png
+1186.04 in, expected, obs, diff
+timer	4.00	2.80	-1.20
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	6.90	5.73	-1.17
+CEVR: ev=37.00; Mag=96.00; Freq: 0.39; rand: 0.10; inc: 96; pts- block: 717; total: 5807
+141: scram_18.png
+1191.78 in, expected, obs, diff
+timer	4.00	3.47	-0.53
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.00	7.51	-0.49
+CEVR: ev=38.11; Mag=103.00; Freq: 0.37; rand: 0.82; inc: 0; pts- block: 717; total: 5807
+142: scram_10.png
+1199.29 in, expected, obs, diff
+timer	4.00	3.40	-0.60
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.00	7.44	-0.56
+CEVR: ev=37.54; Mag=140.00; Freq: 0.27; rand: 0.15; inc: 140; pts- block: 857; total: 5947
+143: scram_15.png
+1206.73 in, expected, obs, diff
+timer	4.00	2.73	-1.27
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.70	6.47	-1.23
+CEVR: ev=37.53; Mag=141.00; Freq: 0.27; rand: 0.52; inc: 0; pts- block: 857; total: 5947
+144: scram_16.png
+1213.21 in, expected, obs, diff
+timer	4.00	2.72	-1.28
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	8.00	6.76	-1.24
+CEVR: ev=38.36; Mag=141.00; Freq: 0.27; rand: 0.65; inc: 0; pts- block: 857; total: 5947
+145: scram_1.png
+1219.97 in, expected, obs, diff
+timer	4.00	2.78	-1.22
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.80	6.62	-1.18
+CEVR: ev=37.78; Mag=145.00; Freq: 0.26; rand: 0.45; inc: 0; pts- block: 857; total: 5947
+146: scram_7.png
+1226.59 in, expected, obs, diff
+timer	4.00	2.67	-1.33
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.60	6.31	-1.29
+CEVR: ev=36.54; Mag=80.00; Freq: 0.46; rand: 0.83; inc: 0; pts- block: 857; total: 5947
+147: scram_6.png
+1232.90 in, expected, obs, diff
+timer	4.00	3.74	-0.26
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.50	8.28	-0.22
+CEVR: ev=35.69; Mag=109.00; Freq: 0.33; rand: 0.13; inc: 109; pts- block: 966; total: 6056
+148: scram_16.png
+1241.19 in, expected, obs, diff
+timer	4.00	3.17	-0.83
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	8.00	7.21	-0.79
+CEVR: ev=36.03; Mag=111.00; Freq: 0.32; rand: 0.39; inc: 0; pts- block: 966; total: 6056
+149: scram_15.png
+1248.39 in, expected, obs, diff
+timer	4.00	3.15	-0.85
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.80	7.99	-0.81
+CEVR: ev=38.00; Mag=114.00; Freq: 0.33; rand: 0.80; inc: 0; pts- block: 966; total: 6056
+150: scram_8.png
+1256.39 in, expected, obs, diff
+timer	4.00	3.21	-0.79
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.40	6.64	-0.76
+CEVR: ev=35.94; Mag=136.00; Freq: 0.26; rand: 0.40; inc: 0; pts- block: 966; total: 6056
+151: scram_4.png
+1263.03 in, expected, obs, diff
+timer	4.00	2.70	-1.30
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	6.64	-1.26
+CEVR: ev=37.00; Mag=118.00; Freq: 0.31; rand: 0.42; inc: 0; pts- block: 966; total: 6056
+152: scram_1.png
+1269.68 in, expected, obs, diff
+timer	4.00	3.08	-0.92
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	7.90	7.02	-0.88
+CEVR: ev=37.51; Mag=148.00; Freq: 0.25; rand: 0.63; inc: 0; pts- block: 966; total: 6056
+153: scram_5.png
+1276.70 in, expected, obs, diff
+timer	4.00	2.59	-1.41
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.60	6.23	-1.37
+CEVR: ev=36.46; Mag=135.00; Freq: 0.27; rand: 0.43; inc: 0; pts- block: 966; total: 6056
+154: scram_9.png
+1282.93 in, expected, obs, diff
+timer	4.00	2.76	-1.24
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.30	6.10	-1.20
+CEVR: ev=34.71; Mag=76.00; Freq: 0.46; rand: 0.98; inc: 0; pts- block: 966; total: 6056
+155: scram_10.png
+1289.05 in, expected, obs, diff
+timer	4.00	3.74	-0.26
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.30	7.08	-0.22
+CEVR: ev=36.30; Mag=156.00; Freq: 0.23; rand: 0.11; inc: 156; pts- block: 1122; total: 6212
+156: scram_21.png
+1296.13 in, expected, obs, diff
+timer	4.00	2.37	-1.63
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	6.31	-1.59
+CEVR: ev=36.78; Mag=166.00; Freq: 0.22; rand: 0.20; inc: 166; pts- block: 1288; total: 6378
+157: scram_18.png
+1302.44 in, expected, obs, diff
+timer	4.00	2.23	-1.77
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.80	6.07	-1.73
+CEVR: ev=37.00; Mag=170.00; Freq: 0.22; rand: 0.34; inc: 0; pts- block: 1288; total: 6378
+158: scram_11.png
+1308.53 in, expected, obs, diff
+timer	4.00	2.18	-1.82
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.90	6.15	-1.75
+CEVR: ev=38.09; Mag=175.00; Freq: 0.22; rand: 0.92; inc: 0; pts- block: 1288; total: 6378
+159: scram_2.png
+1314.68 in, expected, obs, diff
+timer	4.00	2.18	-1.82
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.60	5.82	-1.78
+CEVR: ev=36.09; Mag=159.00; Freq: 0.23; rand: 0.74; inc: 0; pts- block: 1288; total: 6378
+160: scram_7.png
+1320.51 in, expected, obs, diff
+timer	4.00	2.30	-1.70
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.60	5.94	-1.66
+CEVR: ev=35.94; Mag=68.00; Freq: 0.53; rand: 0.42; inc: 68; pts- block: 1356; total: 6446
+161: scram_13.png
+1326.45 in, expected, obs, diff
+timer	4.00	3.93	-0.07
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.30	7.27	-0.03
+CEVR: ev=37.00; Mag=71.00; Freq: 0.52; rand: 0.94; inc: 0; pts- block: 1356; total: 6446
+162: scram_3.png
+1333.73 in, expected, obs, diff
+timer	4.00	3.92	-0.08
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.10	8.06	-0.04
+CEVR: ev=36.78; Mag=170.00; Freq: 0.22; rand: 0.98; inc: 0; pts- block: 1356; total: 6446
+163: scram_14.png
+1341.79 in, expected, obs, diff
+timer	4.00	2.17	-1.83
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.80	6.01	-1.79
+CEVR: ev=36.49; Mag=142.00; Freq: 0.26; rand: 0.70; inc: 0; pts- block: 1356; total: 6446
+164: scram_19.png
+1347.80 in, expected, obs, diff
+timer	4.00	2.63	-1.37
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.30	5.97	-1.33
+CEVR: ev=37.55; Mag=135.00; Freq: 0.28; rand: 0.54; inc: 0; pts- block: 1356; total: 6446
+165: scram_17.png
+1353.78 in, expected, obs, diff
+timer	4.00	2.82	-1.18
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.60	6.46	-1.14
+CEVR: ev=37.49; Mag=152.00; Freq: 0.25; rand: 0.67; inc: 0; pts- block: 1356; total: 6446
+166: scram_6.png
+1360.24 in, expected, obs, diff
+timer	4.00	2.53	-1.47
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.20	6.77	-1.43
+CEVR: ev=36.17; Mag=130.00; Freq: 0.28; rand: 0.13; inc: 130; pts- block: 1486; total: 6576
+167: scram_20.png
+1367.01 in, expected, obs, diff
+timer	4.00	2.81	-1.19
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.40	7.26	-1.14
+CEVR: ev=38.37; Mag=140.00; Freq: 0.27; rand: 0.17; inc: 140; pts- block: 1626; total: 6716
+168: scram_12.png
+1374.27 in, expected, obs, diff
+timer	4.00	2.79	-1.21
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.90	6.73	-1.17
+CEV: ev=33.22; Mag=44.00; Freq: 0.76; rand: 0.56; inc: 44; pts- block: 44; total: 6760
+169: happy_19.png
+1447.18 in, expected, obs, diff
+timer	4.00	2.50	-1.50
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.00	6.55	-1.45
+CEV: ev=40.27; Mag=49.00; Freq: 0.82; rand: 0.67; inc: 49; pts- block: 93; total: 6809
+170: happy_15.png
+1453.73 in, expected, obs, diff
+timer	4.00	2.29	-1.71
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.40	5.73	-1.67
+CEV: ev=34.98; Mag=52.00; Freq: 0.67; rand: 0.37; inc: 52; pts- block: 145; total: 6861
+171: happy_18.png
+1459.47 in, expected, obs, diff
+timer	4.00	2.80	-1.20
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.70	6.54	-1.16
+CEV: ev=37.00; Mag=61.00; Freq: 0.61; rand: 0.98; inc: 0; pts- block: 145; total: 6861
+172: happy_13.png
+1466.01 in, expected, obs, diff
+timer	4.00	3.02	-0.98
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.50	7.56	-0.94
+CEV: ev=35.31; Mag=63.00; Freq: 0.56; rand: 0.86; inc: 0; pts- block: 145; total: 6861
+173: happy_8.png
+1473.57 in, expected, obs, diff
+timer	4.00	3.18	-0.82
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.40	6.63	-0.77
+CEV: ev=37.53; Mag=70.00; Freq: 0.53; rand: 0.38; inc: 70; pts- block: 215; total: 6931
+174: happy_11.png
+1480.20 in, expected, obs, diff
+timer	4.00	3.28	-0.72
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.10	7.42	-0.68
+CEV: ev=35.58; Mag=75.00; Freq: 0.47; rand: 0.43; inc: 75; pts- block: 290; total: 7006
+175: happy_12.png
+1487.63 in, expected, obs, diff
+timer	4.00	3.49	-0.51
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	7.90	7.43	-0.47
+CEV: ev=37.00; Mag=85.00; Freq: 0.44; rand: 0.12; inc: 85; pts- block: 375; total: 7091
+176: happy_7.png
+1495.06 in, expected, obs, diff
+timer	4.00	3.62	-0.38
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.40	7.06	-0.34
+CEV: ev=37.37; Mag=101.00; Freq: 0.37; rand: 0.23; inc: 101; pts- block: 476; total: 7192
+177: happy_3.png
+1502.13 in, expected, obs, diff
+timer	4.00	3.85	-0.15
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	8.10	7.99	-0.11
+CEV: ev=36.60; Mag=92.00; Freq: 0.40; rand: 0.58; inc: 0; pts- block: 476; total: 7192
+178: happy_20.png
+1510.13 in, expected, obs, diff
+timer	4.00	3.76	-0.24
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.60	8.41	-0.19
+CEV: ev=36.26; Mag=98.00; Freq: 0.37; rand: 0.29; inc: 98; pts- block: 574; total: 7290
+179: happy_9.png
+1518.54 in, expected, obs, diff
+timer	4.00	3.85	-0.15
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.10	7.00	-0.10
+CEV: ev=37.38; Mag=100.00; Freq: 0.38; rand: 0.27; inc: 100; pts- block: 674; total: 7390
+180: happy_17.png
+1525.54 in, expected, obs, diff
+timer	4.00	3.84	-0.16
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.90	7.78	-0.12
+CEV: ev=38.12; Mag=102.00; Freq: 0.37; rand: 0.98; inc: 0; pts- block: 674; total: 7390
+181: happy_6.png
+1533.32 in, expected, obs, diff
+timer	4.00	3.85	-0.15
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.60	7.49	-0.11
+CEV: ev=37.93; Mag=81.00; Freq: 0.47; rand: 0.34; inc: 81; pts- block: 755; total: 7471
+182: happy_2.png
+1540.82 in, expected, obs, diff
+timer	4.00	3.52	-0.48
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.90	7.46	-0.44
+CEV: ev=37.45; Mag=83.00; Freq: 0.45; rand: 0.11; inc: 83; pts- block: 838; total: 7554
+183: happy_4.png
+1548.28 in, expected, obs, diff
+timer	4.00	3.57	-0.43
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	8.40	8.01	-0.39
+CEV: ev=38.80; Mag=86.00; Freq: 0.45; rand: 0.88; inc: 0; pts- block: 838; total: 7554
+184: happy_5.png
+1556.30 in, expected, obs, diff
+timer	4.00	3.57	-0.43
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.90	8.52	-0.38
+CEV: ev=38.40; Mag=82.00; Freq: 0.47; rand: 0.26; inc: 82; pts- block: 920; total: 7636
+185: happy_1.png
+1564.82 in, expected, obs, diff
+timer	4.00	3.52	-0.48
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.00	6.56	-0.44
+CEV: ev=37.46; Mag=81.00; Freq: 0.46; rand: 0.02; inc: 81; pts- block: 1001; total: 7717
+186: happy_14.png
+1571.39 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	7.48	-0.42
+CEV: ev=36.54; Mag=80.00; Freq: 0.46; rand: 0.31; inc: 80; pts- block: 1081; total: 7797
+187: happy_16.png
+1578.87 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	7.49	-0.41
+CEV: ev=35.61; Mag=77.00; Freq: 0.46; rand: 0.18; inc: 77; pts- block: 1158; total: 7874
+188: happy_10.png
+1586.37 in, expected, obs, diff
+timer	4.00	3.53	-0.47
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.40	6.97	-0.43
+CEV: ev=36.62; Mag=96.00; Freq: 0.38; rand: 0.09; inc: 96; pts- block: 1254; total: 7970
+189: happy_21.png
+1593.34 in, expected, obs, diff
+timer	4.00	3.82	-0.18
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.10	7.97	-0.13
+CEV: ev=37.46; Mag=81.00; Freq: 0.46; rand: 0.47; inc: 0; pts- block: 1254; total: 7970
+190: happy_9.png
+1601.31 in, expected, obs, diff
+timer	4.00	3.53	-0.47
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.00	7.58	-0.42
+CEV: ev=37.76; Mag=99.00; Freq: 0.38; rand: 0.70; inc: 0; pts- block: 1254; total: 7970
+191: happy_7.png
+1608.89 in, expected, obs, diff
+timer	4.00	3.82	-0.18
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.20	7.07	-0.13
+CEV: ev=37.35; Mag=106.00; Freq: 0.35; rand: 0.03; inc: 106; pts- block: 1360; total: 8076
+192: happy_18.png
+1615.96 in, expected, obs, diff
+timer	4.00	3.92	-0.08
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.20	7.16	-0.04
+CEV: ev=35.59; Mag=101.00; Freq: 0.35; rand: 0.32; inc: 101; pts- block: 1461; total: 8177
+193: happy_15.png
+1623.13 in, expected, obs, diff
+timer	4.00	3.91	-0.09
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.80	7.76	-0.04
+CEV: ev=37.00; Mag=104.00; Freq: 0.36; rand: 0.65; inc: 0; pts- block: 1461; total: 8177
+194: happy_17.png
+1630.90 in, expected, obs, diff
+timer	4.00	3.90	-0.10
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.60	7.55	-0.05
+CEV: ev=36.64; Mag=102.00; Freq: 0.36; rand: 0.82; inc: 0; pts- block: 1461; total: 8177
+195: happy_3.png
+1638.45 in, expected, obs, diff
+timer	4.00	3.89	-0.11
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.90	7.84	-0.06
+CEV: ev=38.03; Mag=74.00; Freq: 0.51; rand: 0.97; inc: 0; pts- block: 1461; total: 8177
+196: happy_5.png
+1646.29 in, expected, obs, diff
+timer	4.00	3.35	-0.65
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	7.60	7.00	-0.60
+CEV: ev=37.00; Mag=95.00; Freq: 0.39; rand: 0.33; inc: 95; pts- block: 1556; total: 8272
+197: happy_2.png
+1653.29 in, expected, obs, diff
+timer	4.00	3.79	-0.21
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.70	7.54	-0.16
+CEV: ev=35.40; Mag=89.00; Freq: 0.40; rand: 0.61; inc: 0; pts- block: 1556; total: 8272
+198: happy_13.png
+1660.84 in, expected, obs, diff
+timer	4.00	3.75	-0.25
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	7.70	7.50	-0.20
+CEV: ev=38.12; Mag=102.00; Freq: 0.37; rand: 0.42; inc: 0; pts- block: 1556; total: 8272
+199: happy_12.png
+1668.34 in, expected, obs, diff
+timer	4.00	3.84	-0.16
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.20	7.09	-0.11
+CEV: ev=35.53; Mag=97.00; Freq: 0.37; rand: 0.27; inc: 97; pts- block: 1653; total: 8369
+200: happy_11.png
+1675.43 in, expected, obs, diff
+timer	4.00	3.86	-0.14
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.10	8.01	-0.09
+CEV: ev=35.86; Mag=94.00; Freq: 0.38; rand: 0.28; inc: 94; pts- block: 1747; total: 8463
+201: happy_4.png
+1683.45 in, expected, obs, diff
+timer	4.00	3.82	-0.18
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.70	8.57	-0.13
+CEV: ev=36.55; Mag=81.00; Freq: 0.45; rand: 0.53; inc: 0; pts- block: 1747; total: 8463
+202: happy_19.png
+1692.02 in, expected, obs, diff
+timer	4.00	3.57	-0.43
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.60	8.22	-0.38
+CEV: ev=37.00; Mag=98.00; Freq: 0.38; rand: 0.88; inc: 0; pts- block: 1747; total: 8463
+203: happy_6.png
+1700.24 in, expected, obs, diff
+timer	4.00	3.83	-0.17
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.40	7.28	-0.12
+CEV: ev=37.00; Mag=100.00; Freq: 0.37; rand: 0.94; inc: 0; pts- block: 1747; total: 8463
+204: happy_16.png
+1707.53 in, expected, obs, diff
+timer	4.00	3.85	-0.15
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.20	8.10	-0.10
+CEV: ev=37.46; Mag=81.00; Freq: 0.46; rand: 0.96; inc: 0; pts- block: 1747; total: 8463
+205: happy_21.png
+1715.63 in, expected, obs, diff
+timer	4.00	3.54	-0.46
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.80	7.40	-0.40
+CEV: ev=35.16; Mag=57.00; Freq: 0.61; rand: 0.68; inc: 0; pts- block: 1747; total: 8463
+206: happy_8.png
+1723.04 in, expected, obs, diff
+timer	4.00	3.01	-0.99
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	8.00	7.06	-0.94
+CEV: ev=36.27; Mag=100.00; Freq: 0.36; rand: 0.67; inc: 0; pts- block: 1747; total: 8463
+207: happy_10.png
+1730.10 in, expected, obs, diff
+timer	4.00	3.88	-0.12
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.60	7.53	-0.07
+CEV: ev=38.37; Mag=56.00; Freq: 0.69; rand: 0.07; inc: 56; pts- block: 1803; total: 8519
+208: happy_1.png
+1737.63 in, expected, obs, diff
+timer	4.00	2.75	-1.25
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.20	5.99	-1.21
+CEV: ev=36.27; Mag=99.00; Freq: 0.37; rand: 0.22; inc: 99; pts- block: 1902; total: 8618
+209: happy_20.png
+1743.62 in, expected, obs, diff
+timer	4.00	3.87	-0.13
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.10	7.02	-0.08
+CEV: ev=38.04; Mag=73.00; Freq: 0.52; rand: 0.84; inc: 0; pts- block: 1902; total: 8618
+210: happy_14.png
+1750.65 in, expected, obs, diff
+timer	4.00	3.33	-0.67
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.80	7.18	-0.62
+IEV: ev=49.21; Mag=109.00; Freq: 0.45; rand: 0.78; inc: 0; pts- block: 0; total: 8618
+211: scram_1.png
+1820.89 in, expected, obs, diff
+timer	4.00	3.82	-0.18
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.80	7.67	-0.13
+IEV: ev=19.34; Mag=22.00; Freq: 0.89; rand: 0.01; inc: 22; pts- block: 22; total: 8640
+212: scram_2.png
+1828.57 in, expected, obs, diff
+timer	4.00	2.34	-1.66
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.80	6.19	-1.61
+IEV: ev=21.50; Mag=25.00; Freq: 0.87; rand: 0.39; inc: 25; pts- block: 47; total: 8665
+213: scram_20.png
+1834.76 in, expected, obs, diff
+timer	4.00	2.52	-1.48
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.50	6.07	-1.43
+IEV: ev=35.02; Mag=46.00; Freq: 0.75; rand: 0.00; inc: 46; pts- block: 93; total: 8711
+214: scram_19.png
+1840.83 in, expected, obs, diff
+timer	4.00	3.02	-0.98
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.70	6.77	-0.93
+IEV: ev=37.75; Mag=56.00; Freq: 0.68; rand: 0.42; inc: 56; pts- block: 149; total: 8767
+215: scram_21.png
+1847.61 in, expected, obs, diff
+timer	4.00	3.25	-0.75
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.70	7.00	-0.70
+IEV: ev=44.64; Mag=79.00; Freq: 0.57; rand: 0.77; inc: 0; pts- block: 149; total: 8767
+216: scram_16.png
+1854.62 in, expected, obs, diff
+timer	4.00	3.55	-0.45
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.80	7.40	-0.40
+IEV: ev=38.71; Mag=60.00; Freq: 0.64; rand: 0.78; inc: 0; pts- block: 149; total: 8767
+217: scram_11.png
+1862.02 in, expected, obs, diff
+timer	4.00	3.34	-0.66
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.30	6.70	-0.60
+IEV: ev=16.68; Mag=19.00; Freq: 0.89; rand: 0.04; inc: 19; pts- block: 168; total: 8786
+218: scram_10.png
+1868.72 in, expected, obs, diff
+timer	4.00	2.27	-1.73
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.80	6.12	-1.68
+IEV: ev=22.80; Mag=28.00; Freq: 0.83; rand: 0.72; inc: 28; pts- block: 196; total: 8814
+219: scram_9.png
+1874.84 in, expected, obs, diff
+timer	4.00	2.74	-1.26
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.40	6.19	-1.21
+IEV: ev=45.93; Mag=85.00; Freq: 0.54; rand: 0.15; inc: 85; pts- block: 281; total: 8899
+220: scram_3.png
+1881.04 in, expected, obs, diff
+timer	4.00	3.61	-0.39
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.60	7.26	-0.34
+IEV: ev=45.80; Mag=88.00; Freq: 0.52; rand: 0.61; inc: 0; pts- block: 281; total: 8899
+221: scram_13.png
+1888.30 in, expected, obs, diff
+timer	4.00	3.65	-0.35
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.30	8.00	-0.30
+IEV: ev=48.46; Mag=106.00; Freq: 0.46; rand: 0.74; inc: 0; pts- block: 281; total: 8899
+222: scram_15.png
+1896.30 in, expected, obs, diff
+timer	4.00	3.80	-0.20
+ITI	1.30	1.30	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.00	7.86	-0.14
+IEV: ev=18.05; Mag=21.00; Freq: 0.87; rand: 0.92; inc: 0; pts- block: 281; total: 8899
+223: scram_17.png
+1904.16 in, expected, obs, diff
+timer	4.00	2.52	-1.48
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.50	0.50	0.00
+end	7.90	6.47	-1.43
+IEV: ev=30.80; Mag=41.00; Freq: 0.75; rand: 0.77; inc: 0; pts- block: 281; total: 8899
+224: scram_8.png
+1910.64 in, expected, obs, diff
+timer	4.00	3.03	-0.97
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.10	6.18	-0.92
+IEV: ev=36.52; Mag=55.00; Freq: 0.67; rand: 0.29; inc: 55; pts- block: 336; total: 8954
+225: scram_5.png
+1916.83 in, expected, obs, diff
+timer	4.00	3.28	-0.72
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.90	7.24	-0.66
+IEV: ev=34.82; Mag=51.00; Freq: 0.68; rand: 0.58; inc: 51; pts- block: 387; total: 9005
+226: scram_7.png
+1924.06 in, expected, obs, diff
+timer	4.00	3.24	-0.76
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	7.80	7.10	-0.70
+IEV: ev=38.31; Mag=56.00; Freq: 0.69; rand: 0.55; inc: 56; pts- block: 443; total: 9061
+227: scram_4.png
+1931.16 in, expected, obs, diff
+timer	4.00	3.22	-0.78
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.40	6.68	-0.72
+IEV: ev=37.04; Mag=55.00; Freq: 0.68; rand: 0.64; inc: 55; pts- block: 498; total: 9116
+228: scram_6.png
+1937.84 in, expected, obs, diff
+timer	4.00	3.25	-0.75
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	8.10	7.40	-0.70
+IEV: ev=37.89; Mag=55.00; Freq: 0.69; rand: 0.68; inc: 55; pts- block: 553; total: 9171
+229: scram_18.png
+1945.25 in, expected, obs, diff
+timer	4.00	3.23	-0.77
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	8.40	7.68	-0.72
+IEV: ev=42.96; Mag=71.00; Freq: 0.61; rand: 0.95; inc: 0; pts- block: 553; total: 9171
+230: scram_14.png
+1952.93 in, expected, obs, diff
+timer	4.00	3.44	-0.56
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.40	6.90	-0.50
+IEV: ev=49.69; Mag=115.00; Freq: 0.43; rand: 0.71; inc: 0; pts- block: 553; total: 9171
+231: scram_12.png
+1959.84 in, expected, obs, diff
+timer	4.00	3.87	-0.13
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	8.40	8.33	-0.07
+IEV: ev=17.73; Mag=20.00; Freq: 0.87; rand: 0.12; inc: 20; pts- block: 573; total: 9191
+232: scram_15.png
+1968.17 in, expected, obs, diff
+timer	4.00	2.50	-1.50
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.40	1.40	0.00
+end	8.80	7.36	-1.44
+IEV: ev=38.83; Mag=58.00; Freq: 0.67; rand: 0.45; inc: 58; pts- block: 631; total: 9249
+233: scram_19.png
+1975.53 in, expected, obs, diff
+timer	4.00	3.27	-0.73
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.40	7.72	-0.68
+IEV: ev=36.97; Mag=54.00; Freq: 0.69; rand: 0.66; inc: 54; pts- block: 685; total: 9303
+234: scram_5.png
+1983.26 in, expected, obs, diff
+timer	4.00	3.22	-0.78
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	1.00	1.00	0.00
+end	8.20	7.48	-0.72
+IEV: ev=39.82; Mag=59.00; Freq: 0.68; rand: 0.35; inc: 59; pts- block: 744; total: 9362
+235: scram_6.png
+1990.74 in, expected, obs, diff
+timer	4.00	3.25	-0.75
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.90	7.21	-0.69
+IEV: ev=38.11; Mag=55.00; Freq: 0.69; rand: 0.42; inc: 55; pts- block: 799; total: 9417
+236: scram_21.png
+1997.95 in, expected, obs, diff
+timer	4.00	3.21	-0.79
+ITI	1.10	1.10	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.80	7.07	-0.73
+IEV: ev=38.81; Mag=56.00; Freq: 0.69; rand: 0.83; inc: 0; pts- block: 799; total: 9417
+237: scram_11.png
+2005.02 in, expected, obs, diff
+timer	4.00	3.21	-0.79
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	6.80	6.07	-0.73
+IEV: ev=32.64; Mag=45.00; Freq: 0.73; rand: 0.61; inc: 45; pts- block: 844; total: 9462
+238: scram_20.png
+2011.08 in, expected, obs, diff
+timer	4.00	3.10	-0.90
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	1.10	1.10	0.00
+end	7.90	7.06	-0.84
+IEV: ev=38.25; Mag=56.00; Freq: 0.68; rand: 0.54; inc: 56; pts- block: 900; total: 9518
+239: scram_16.png
+2018.15 in, expected, obs, diff
+timer	4.00	3.24	-0.76
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.30	6.60	-0.70
+IEV: ev=39.48; Mag=57.00; Freq: 0.69; rand: 0.26; inc: 57; pts- block: 957; total: 9575
+240: scram_10.png
+2024.75 in, expected, obs, diff
+timer	4.00	3.21	-0.79
+ITI	1.70	1.70	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	7.70	6.97	-0.73
+IEV: ev=35.23; Mag=51.00; Freq: 0.69; rand: 0.12; inc: 51; pts- block: 1008; total: 9626
+241: scram_1.png
+2031.72 in, expected, obs, diff
+timer	4.00	3.21	-0.79
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	8.20	7.46	-0.74
+IEV: ev=39.10; Mag=56.00; Freq: 0.70; rand: 0.65; inc: 56; pts- block: 1064; total: 9682
+242: scram_12.png
+2039.18 in, expected, obs, diff
+timer	4.00	3.19	-0.81
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.60	6.85	-0.75
+IEV: ev=35.79; Mag=51.00; Freq: 0.71; rand: 0.64; inc: 51; pts- block: 1115; total: 9733
+243: scram_14.png
+2046.04 in, expected, obs, diff
+timer	4.00	3.17	-0.83
+ITI	2.00	2.00	0.00
+receipt	1.40	1.40	0.00
+ISI	0.60	0.60	0.00
+end	8.00	7.23	-0.77
+IEV: ev=51.17; Mag=120.00; Freq: 0.43; rand: 0.65; inc: 0; pts- block: 1115; total: 9733
+244: scram_4.png
+2053.27 in, expected, obs, diff
+timer	4.00	3.88	-0.12
+ITI	1.60	1.60	0.00
+receipt	1.40	1.40	0.00
+ISI	0.80	0.80	0.00
+end	7.80	7.74	-0.06
+IEV: ev=41.08; Mag=65.00; Freq: 0.63; rand: 0.72; inc: 0; pts- block: 1115; total: 9733
+245: scram_7.png
+2061.01 in, expected, obs, diff
+timer	4.00	3.39	-0.61
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.10	7.55	-0.55
+IEV: ev=36.96; Mag=54.00; Freq: 0.69; rand: 0.99; inc: 0; pts- block: 1115; total: 9733
+246: scram_8.png
+2068.56 in, expected, obs, diff
+timer	4.00	3.22	-0.78
+ITI	1.90	1.90	0.00
+receipt	1.40	1.40	0.00
+ISI	1.20	1.20	0.00
+end	8.50	7.78	-0.72
+IEV: ev=32.00; Mag=44.00; Freq: 0.73; rand: 0.11; inc: 44; pts- block: 1159; total: 9777
+247: scram_9.png
+2076.34 in, expected, obs, diff
+timer	4.00	3.11	-0.89
+ITI	1.20	1.20	0.00
+receipt	1.40	1.40	0.00
+ISI	0.90	0.90	0.00
+end	7.50	6.66	-0.84
+IEV: ev=31.27; Mag=43.00; Freq: 0.73; rand: 0.06; inc: 43; pts- block: 1202; total: 9820
+248: scram_13.png
+2083.01 in, expected, obs, diff
+timer	4.00	3.11	-0.89
+ITI	1.40	1.40	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.20	6.38	-0.82
+IEV: ev=33.84; Mag=47.00; Freq: 0.72; rand: 0.45; inc: 47; pts- block: 1249; total: 9867
+249: scram_2.png
+2089.39 in, expected, obs, diff
+timer	4.00	3.12	-0.88
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.50	1.50	0.00
+end	7.90	7.08	-0.82
+IEV: ev=33.94; Mag=47.00; Freq: 0.72; rand: 0.76; inc: 0; pts- block: 1249; total: 9867
+250: scram_18.png
+2096.47 in, expected, obs, diff
+timer	4.00	3.13	-0.87
+ITI	1.00	1.00	0.00
+receipt	1.40	1.40	0.00
+ISI	1.30	1.30	0.00
+end	7.70	6.88	-0.82
+IEV: ev=35.34; Mag=49.00; Freq: 0.72; rand: 0.77; inc: 0; pts- block: 1249; total: 9867
+251: scram_17.png
+2103.36 in, expected, obs, diff
+timer	4.00	3.13	-0.87
+ITI	1.50	1.50	0.00
+receipt	1.40	1.40	0.00
+ISI	0.40	0.40	0.00
+end	7.30	6.50	-0.80
+IEV: ev=38.98; Mag=56.00; Freq: 0.70; rand: 0.97; inc: 0; pts- block: 1249; total: 9867
+252: scram_3.png
+2109.86 in, expected, obs, diff
+timer	4.00	3.19	-0.81
+ITI	1.80	1.80	0.00
+receipt	1.40	1.40	0.00
+ISI	0.70	0.70	0.00
+end	7.90	7.15	-0.75
+Great Job! Your score so far is 9867 points\n\nLet's take a break
