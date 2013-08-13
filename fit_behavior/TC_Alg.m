@@ -61,6 +61,7 @@ if strcmp(model, 'noemo')
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(7); % param for alternative exp models of rt swings
     meandiff = params(8);
+    
 elseif strcmp(model, 'emoexplore')
     %EMOEXPLORE params 10 x 1 <numeric>
     %
@@ -91,6 +92,7 @@ elseif strcmp(model, 'emoexplore')
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(9); % param for alternative exp models of rt swings
     meandiff = params(10);
+    
 elseif strcmp(model, 'emogonogo')
     %EMOGONOGO: model parameter initialization
     %Params 12 x 1 <numeric>
@@ -103,8 +105,8 @@ elseif strcmp(model, 'emogonogo')
     %   ,7:  alpha2_fear      #learning rate for fear negative prediction errors (avoid)
     %   ,8:  alpha2_happy     #learning rate for happy negative prediction errors (avoid)
     %   ,9:  K                #baseline response speed (person mean RT?)
-    %   ,10:  scale           #nu: going for the gold (modulating RT toward highest payoff)
-    %   ,11:  exp_alt         #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,10: scale            #nu: going for the gold (modulating RT toward highest payoff)
+    %   ,11: exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
     %   ,12: meandiff         #rho parameter: weight for expected reward of fast versus slow
     
     lambda = params(1);
@@ -120,11 +122,43 @@ elseif strcmp(model, 'emogonogo')
         alpha2=params(6);
     end
     alphaV =  0.1; % just set this to avoid degeneracy
-    K = params(5);
-    scale = params(6);
+    K = params(9);
+    scale = params(10);
     decay = 1;  % decay counts for beta distribution 1= nodecay
-    exp_alt = params(7); % param for alternative exp models of rt swings
-    meandiff = params(8);
+    exp_alt = params(11); % param for alternative exp models of rt swings
+    meandiff = params(12);
+    
+elseif strcmp(model, 'emonogo')
+    %EMONOGO: initial fit of emogonogo suggested that the go parameters (PPE) had little variation.
+    %         Thus, allow just no go learning rate to vary by condition (scrambled, fear, happy)
+    %Params 10 x 1 <numeric>
+    %   ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
+    %   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+    %   ,3:  alpha1           #learning rate for positive prediction errors (approach)
+    %   ,4:  alpha2_scram     #learning rate for scrambled negative prediction errors (avoid)
+    %   ,5:  alpha2_fear      #learning rate for fear negative prediction errors (avoid)
+    %   ,6:  alpha2_happy     #learning rate for happy negative prediction errors (avoid)
+    %   ,7:  K                #baseline response speed (person mean RT?)
+    %   ,8:  scale            #nu: going for the gold (modulating RT toward highest payoff)
+    %   ,9:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,10: meandiff         #rho parameter: weight for expected reward of fast versus slow
+    
+    lambda = params(1);
+    explore = params(2);
+    alpha1 = params(3);
+    if strcmp(emoNames{emo}, 'happy')
+        alpha2=params(6);
+    elseif strcmp(emoNames{emo}, 'fear')
+        alpha2=params(5);
+    elseif strcmp(emoNames{emo}, 'scram')
+        alpha2=params(4);
+    end
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(7);
+    scale = params(8);
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(9); % param for alternative exp models of rt swings
+    meandiff = params(10);
 end
 
 %vary params 

@@ -7,14 +7,18 @@ global emoNames;
 
 blocks = [ret_all.block];
 
+%create directory for each subject
+if ~exist(['../outputs/figures/S' num2str(subjid)], 'dir'); mkdir(['../outputs/figures/S' num2str(subjid)]); end
+
 %set(figure(1), 'color', 'white');
 %hold off
+
+fig = figure('visible', 'off');
 
 %% plot each block separately
 for b = 1:length(blocks)
 
     ntrials=length(ret_all(b).rtobs);
-    figure;
     plot(1:ntrials, smooth(ret_all(b).rtpred,1),'--', ... %% smooth with window of 1? thats no smoothing at all.
         1:ntrials, smooth(ret_all(b).rtobs,1),'-', ...
         'LineWidth', 2);
@@ -25,16 +29,18 @@ for b = 1:length(blocks)
     ylabel('RT (ms)',  'FontSize', 24);
     xlabel('Trial', 'FontSize', 24);
     set(gca, 'Box', 'off' );
-    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
+    saveas(fig, ['../outputs/figures/S' num2str(subjid) '/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_block' num2str(blocks(b)) '.jpg']);
 end
 
-close all;
+close(fig);
 
-%% plot each reward function separatly 
+%% plot each reward function separately 
+
+fig = figure('visible', 'off');
 
 %scrsz = get(0,'ScreenSize');
 %h=figure('Position',[1 scrsz(4)/2 800 600]);
-set(figure(1), 'color', 'white');
+set(fig, 'color', 'white');
 %sort condition
 Emo_block = [];
 Rew_block = [];
@@ -75,16 +81,15 @@ for b=1:4
     %set(gca, 'LooseInset', get(gca,'TightInset'));
 end
 mtit(strcat('Subject: ',num2str(subjid)),'xoff',0,'yoff',+0.02,'fontsize',16,'fontweight','bold');
-print(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' 'RewardByEmotion'], '-djpeg100  ', '-r300')
-close all;
+print(fig, ['../outputs/figures/S' num2str(subjid) '/S' num2str(subjid) '_' model '_' 'RewardByEmotion'], '-djpeg100  ', '-r300')
+close(fig);
 
 %% plot exploration parameter
 
-
+fig = figure('visible', 'off');
 for b = 1:length(blocks)
 
     ntrials=length(ret_all(b).rtobs);
-    figure;
     plot(2:ntrials-1, 20*(ret_all(b).explore(2:ntrials-1)),'-k', ... % *20 is from MF
         2:ntrials-1, ret_all(b).rtobs(2:ntrials-1)-ret_all(b).rtobs(1:ntrials-2),'-b', ...
         'LineWidth', 2);
@@ -95,9 +100,10 @@ for b = 1:length(blocks)
     ylabel('RT (ms)',  'FontSize', 24);
     xlabel('Trial', 'FontSize', 24);
     set(gca, 'Box', 'off' );
-    saveas(gcf, ['../outputs/figures/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_' emoNames{ret_all(b).emo} '_RTSwing.jpg']);
+    saveas(fig, ['../outputs/figures/S' num2str(subjid) '/S' num2str(subjid) '_' model '_' rewFuncNames{ret_all(b).rewFunc}  '_' emoNames{ret_all(b).emo} '_RTSwing.jpg']);
 end
 
+close(fig);
 close all;
 
 

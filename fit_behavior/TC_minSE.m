@@ -73,7 +73,7 @@ for s = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop through e
         ret.block = blocks(b);
         
         % When fitting multiple blocks within a given subject, use expected value from last trial
-        %   of block t as the expected value of the first trial for block t + 1.
+        % of block t as the expected value of the first trial for block t + 1.
         priors.V = ret.ev(end);
         
         ret_all = [ret_all; ret];
