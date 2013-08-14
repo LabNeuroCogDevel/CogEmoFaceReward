@@ -3,6 +3,37 @@ library(plyr)
 library(ggplot2)
 library(reshape2)
 library(gdata)
+
+##compare fits across subjects and models
+fitFiles <- list.files(path="fit_behavior", pattern="SubjsSummary.*", full.names = TRUE)
+allM <- c()
+for (f in fitFiles) {
+    model <- sub(pattern="^.*SubjsSummary_(.*)\\.txt", replacement="\\1", x=f, perl=TRUE)
+    p <- read.table(f, header=TRUE, sep="\t")
+    p$nparams <- length(which(names(p) %notin% c("Subject", "Session", "ignore", "SSE", "model")))
+    p <- subset(p, select=c("Subject", "SSE", "nparams"))
+    p$ntrials <- 42 #fixed
+    p$Subject <- factor(as.integer(p$Subject))
+    p$model <- factor(model)
+    allM <- rbind(allM, p)
+}
+
+allM$AIC <- with(allM, ntrials*(log(2*pi*(SSE/ntrials))+1) + 2*nparams)
+
+allM <- ddply(allM, .(Subject), function(subdf) {
+    minAIC <- min(subdf$AIC)
+    minSSE <- min(subdf$SSE)
+    subdf$AICdiff <- subdf$AIC - minAIC
+    subdf$SSEdiff <- subdf$SSE - minSSE
+    subdf
+})
+    
+ggplot(allM, aes(x=Subject, y=SSE, color=model)) + geom_point(size=3)
+ggplot(allM, aes(x=Subject, y=AICdiff, color=model)) + geom_point(size=3) + theme(axis.text.x=element_text(angle=90))
+ggplot(allM, aes(x=Subject, y=SSEdiff, color=model)) + geom_point(size=3) + theme(axis.text.x=element_text(angle=90))
+
+ggplot(allM, aes(x=model, y=SSE)) + geom_boxplot()
+
 learningParams <- read.table("fit_behavior/SubjsSummary_emoexplore.txt", header=TRUE)
 behav <- read.xls("data/clock_demographics_questionnaires.xls", sheet="Sheet1", skip=1)
 learningParams <- rename(learningParams, c(Subject="LunaID"))

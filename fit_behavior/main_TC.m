@@ -204,6 +204,8 @@ for m = 1:length(models)
         hdr = {'Subject','Session','lambda','explore_scram', 'explore_fear', 'explore_happy', 'alphaG','alphaN','K','nu','ignore','rho','SSE'};
     elseif strcmp(model, 'emogonogo')
         hdr = {'Subject','Session','lambda','explore','alphaG_scram','alphaG_fear','alphaG_happy','alphaN_scram','alphaN_fear', 'alphaN_happy', 'K','nu','ignore','rho','SSE'};
+    elseif strcmp(model, 'emonogo')
+        hdr = {'Subject','Session','lambda','explore','alphaG', 'alphaN_scram', 'alphaN_fear', 'alphaN_happy', 'K','nu','ignore','rho','SSE'};
     end
     
     txt=sprintf('%s\t',hdr{:});
