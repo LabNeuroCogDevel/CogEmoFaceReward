@@ -12,7 +12,7 @@ for (f in fitFiles) {
     p <- read.table(f, header=TRUE, sep="\t")
     p$nparams <- length(which(names(p) %notin% c("Subject", "Session", "ignore", "SSE", "model")))
     p <- subset(p, select=c("Subject", "SSE", "nparams"))
-    p$ntrials <- 42 #fixed
+    p$ntrials <- 504 #fixed: 12 runs of 42 trials
     p$Subject <- factor(as.integer(p$Subject))
     p$model <- factor(model)
     allM <- rbind(allM, p)
@@ -28,14 +28,48 @@ allM <- ddply(allM, .(Subject), function(subdf) {
     subdf
 })
     
-ggplot(allM, aes(x=Subject, y=SSE, color=model)) + geom_point(size=3)
-ggplot(allM, aes(x=Subject, y=AICdiff, color=model)) + geom_point(size=3) + theme(axis.text.x=element_text(angle=90))
-ggplot(allM, aes(x=Subject, y=SSEdiff, color=model)) + geom_point(size=3) + theme(axis.text.x=element_text(angle=90))
+png("analysis/Subject_SSE_byModel.png", width=8, height=6, units="in", res=300)
+ggplot(allM, aes(x=Subject, y=SSE, color=model)) + geom_jitter(size=2, position = position_jitter(width = .3, height=0)) + xlab("Subject") + ylab("SSE") +
+    theme(axis.text.x=element_text(angle=90)) + scale_color_brewer(palette="Dark2") + coord_flip() + theme_bw(base_size=14)
+dev.off()
 
-ggplot(allM, aes(x=model, y=SSE)) + geom_boxplot()
+png("analysis/Avg_SSE_byModel.png", width=8, height=6, units="in", res=300)
+ggplot(allM, aes(x=model, y=SSE)) + geom_boxplot() + xlab("Model") + ylab("SSE") +
+    theme(axis.text.x=element_text(angle=90))
+dev.off()
+
+png("analysis/Avg_AIC_byModel.png", width=8, height=6, units="in", res=300)
+ggplot(allM, aes(x=model, y=AIC)) + geom_boxplot() + xlab("Model") + ylab("AIC") +
+    theme(axis.text.x=element_text(angle=90))
+dev.off()
+
+tapply(allM$AIC, allM$model, mean)
+tapply(allM$AIC, allM$model, sd)
+
+library(nlme)
+modelDiffs <- lme(AIC ~ model, random = ~1 | Subject, data=allM)
+#library(lme4)
+#modelDiffs <- lmer(AIC ~ model + (1 | Subject), data=allM)
+anova(modelDiffs)
+summary(modelDiffs)
+library(multcomp)
+summary(glht(modelDiffs, linfct=mcp(model="Tukey")))
+
+png("analysis/Subject_AICdiff_byModel.png", width=8, height=6, units="in", res=300)
+ggplot(allM, aes(x=Subject, y=AICdiff, color=model)) + geom_jitter(size=2, position = position_jitter(width = .3, height=0)) + xlab("Subject") + ylab("AIC difference (from best)") +
+    theme(axis.text.x=element_text(angle=90)) + scale_color_brewer(palette="Dark2") + coord_flip() + theme_bw(base_size=14)
+dev.off()
+
+png("analysis/Subject_SSEdiff_byModel.png", width=8, height=6, units="in", res=300)
+ggplot(allM, aes(x=Subject, y=AICdiff, color=model)) + geom_jitter(size=2, position = position_jitter(width = .3, height=0)) + xlab("Subject") + ylab("SSE difference (from best)") +
+    theme(axis.text.x=element_text(angle=90)) + scale_color_brewer(palette="Dark2") + coord_flip() + theme_bw(base_size=14)
+dev.off()
+
+
+
 
 learningParams <- read.table("fit_behavior/SubjsSummary_emoexplore.txt", header=TRUE)
-behav <- read.xls("data/clock_demographics_questionnaires.xls", sheet="Sheet1", skip=1)
+behav <- read.xls("data/clock_questionnaires_n36.xls", sheet="Sheet1", skip=1)
 learningParams <- rename(learningParams, c(Subject="LunaID"))
 behav <- merge(learningParams, behav[,c("LunaID", "AgeAtVisit", "Urg", "PosUrg", "SS")], by="LunaID")
 
