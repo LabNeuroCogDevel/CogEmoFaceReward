@@ -20,6 +20,14 @@ for (f in fitFiles) {
 
 allM$AIC <- with(allM, ntrials*(log(2*pi*(SSE/ntrials))+1) + 2*nparams)
 
+##for compatibility with spm_BMS.m (Bayesian Model Selection),
+##need a subjects x models AIC matrix
+AICmat <- do.call(cbind, lapply(split(allM, allM$model), "[[", "AIC"))
+
+library(R.matlab)
+writeMat(con="AICmatrix_n36.mat", AICmat=AICmat, mnames=levels(allM$model))
+
+
 allM <- ddply(allM, .(Subject), function(subdf) {
     minAIC <- min(subdf$AIC)
     minSSE <- min(subdf$SSE)
