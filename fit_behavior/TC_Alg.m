@@ -203,7 +203,7 @@ elseif strcmp(model, 'emogonogosticky')
     %   ,7:  alpha2_fear      #learning rate for fear negative prediction errors (avoid)
     %   ,8:  alpha2_happy     #learning rate for happy negative prediction errors (avoid)
     %   ,9:  K                #baseline response speed (person mean RT?)
-    %   ,10: sticky_decay          #d: decay parameter influencing the degree to which prior RTs continue to affect current RTs
+    %   ,10: sticky_decay     #d: decay parameter influencing the degree to which prior RTs continue to affect current RTs
     %   ,11: exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
     %   ,12: meandiff         #rho parameter: weight for expected reward of fast versus slow
     
