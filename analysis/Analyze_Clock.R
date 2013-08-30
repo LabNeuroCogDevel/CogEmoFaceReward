@@ -113,9 +113,22 @@ learningParams <- read.table("../fit_behavior/SubjsSummary_emoexploresticky.txt"
 behav <- read.xls("clock_questionnaires_n36.xls", sheet="Sheet1", skip=1)
 learningParams <- rename(learningParams, c(Subject="LunaID"))
 behav <- merge(learningParams, behav[,c("LunaID", "AgeAtVisit", "Urg", "PosUrg", "SS")], by="LunaID")
+behav$LunaID <- factor(behav$LunaID)
 
 #explore by emotion
 explore.melt <- melt(behav[,c("LunaID", "AgeAtVisit", "SS", "explore_scram", "explore_fear", "explore_happy")], id.vars=c("LunaID", "AgeAtVisit", "SS"))
+
+#non-parametric repeated measures test for explore parameter
+friedman.test(value ~ variable | LunaID, data = explore.melt)
+library(ez)
+
+tapply(explore.melt$value, explore.melt$variable, mean)
+ezANOVA(explore.melt, dv="value", wid="LunaID", within="variable")
+summary(lm(value ~ variable, data = explore.melt))
+
+library(nlme)
+anova(lme(value ~ variable, random=~1 | LunaID, data=explore.melt))
+
 
 png("Explore_by_emotion.png", width=12, height=10, units="in", res=300)
 ggplot(explore.melt, aes(x=value)) + geom_histogram(binwidth=1000) + facet_wrap(~variable) + ggtitle("Exploration parameter by emotion")
@@ -135,16 +148,75 @@ ggplot(behav, aes(x=AgeAtVisit, y=rho)) + geom_point() + stat_smooth(se=FALSE, m
 ##More simple checks and analyses of RTs
 ##Build big data frame of subjects, trials, RTs, and conditions
 
-tcMats <- list.files(path="../subjects", pattern=".*_tc\\.mat", full.names=TRUE)
-
 ##sadly, readMat is very slow!
-for (f in tcMats) {
-    sdata <- readMat(f)
-    sdf <- data.frame(subject=as.vector(sdata$subject[[1L]]),
-                      sex=as.vector(sdata$subject[[2L]]),
-                      condition=unlist(lapply(sdata$order, "[[", 1), use.names=FALSE),
+##tcMats <- list.files(path="../subjects", pattern=".*_tc\\.mat", full.names=TRUE)
+## for (f in tcMats) {
+##     sdata <- readMat(f)
+##     sdf <- data.frame(subject=as.vector(sdata$subject[[1L]]),
+##                       sex=as.vector(sdata$subject[[2L]]),
+##                       condition=unlist(lapply(sdata$order, "[[", 1), use.names=FALSE),
                       
 
-                      )
-    browser()
+##                       )
+##     browser()
+## }
+
+tcFiles <- list.files(path="../subjects", pattern=".*_tc\\.txt", full.names=TRUE)
+
+allData <- list()
+for (f in tcFiles) {
+    subject <- sub("^.*/(\\d+)_tc\\.txt$", "\\1", f, perl=TRUE)
+    sdata <- read.table(f, header=TRUE, comment.char="#")
+    sdata$Null <- NULL #delete dummy column
+    sdata$Subject <- factor(subject)
+    allData[[f]] <- sdata
 }
+
+##rearrange column headers for readability
+allData <- do.call(rbind, allData)
+row.names(allData) <- NULL
+allData <- allData[,c("Subject", "Run", "Block", "Trial", "Func", "Emotion", "Mag", "Freq", "ScoreInc", "EV", "RT", "Image")]
+
+##verify that each subject completed 42 trials for each Func x Emotion condition
+with(allData, table(Subject, Func, Emotion))
+
+##compute trial within a block
+allData$TrialRel <- unlist(lapply(split(allData, f=list(allData$Subject, allData$Func, allData$Emotion)), function(l) { return(1:nrow(l)) } ))
+##allData$TrialRel2 <- 1:42 ##shouldn't this be identical and easier? :) Just use recycling
+
+pdf("AllSubjRTs.pdf", width=11, height=8)
+for (s in split(allData, allData$Subject)) {
+    g <- ggplot(s, aes(x=TrialRel, y=RT)) + geom_line() + facet_grid(Emotion ~ Func) + ggtitle(s$Subject[1L])
+    print(g)
+}
+dev.off()
+
+##look at first-half versus last-half RTs for each condition per subject
+RTagg <- ddply(allData, .(Subject, Func, Emotion), function(subdf) {
+    firstHalf <- subset(subdf, TrialRel <= 0.5*floor(nrow(subdf)))
+    lastHalf <- subset(subdf, TrialRel > 0.5*floor(nrow(subdf)))
+    agg <- data.frame(RTh1=mean(firstHalf$RT, na.rm=TRUE),
+                      RTh2=mean(lastHalf$RT, na.rm=TRUE))
+    return(agg)  ##subsetting factors automatically added to data.frame
+})
+
+for (s in split(RTagg, list(RTagg$Emotion, RTagg$Func))) {
+    cat("Func: ", as.character(s$Func[1L]), ", Emo: ", as.character(s$Emotion[1L]), "\n")
+    print(t.test(s$RTh1, s$RTh2, paired=TRUE))
+}
+
+aggMelt <- melt(RTagg, id.vars=c("Subject", "Func", "Emotion"))
+png("Split block RT averages.png", width=6, height=6, units="in", res=300)
+ggplot(aggMelt, aes(x=variable, y=value)) + geom_boxplot() + facet_grid(Func ~ Emotion) + ylab("Average RT") + xlab("1st half or 2nd half of block")
+dev.off()
+
+library(tables)
+
+tabular(RTh1 + RTh2 ~ (mean+sd)*Emotion*Func, data=RTagg)
+
+#easier to read
+library(gplots)
+
+png("Descriptives of RTs by Half.png", width=8, height=4, units="in", res=300)
+textplot(tabular(Emotion*Func ~ (RTh1 + RTh2)*(mean+sd+min+max), data=RTagg), show.rownames = FALSE, show.colnames = FALSE)
+dev.off()
