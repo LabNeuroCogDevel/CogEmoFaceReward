@@ -39,7 +39,7 @@ NoGo(1) = priors.NoGo; %initialize NoGo for first trial
 %V_fast = V(1); V_slow = V(1); %no differentiation of slow vs. fast to start
 %joint_ent=1.0; %unused at the moment.
 
-if strcmp(model, 'noemo')
+if strcmp(model, 'noemo') || strcmp(model, 'noemo_scram')
     %NOEMO params 8 x 1 <numeric>
     %    ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
     %    ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
@@ -63,7 +63,7 @@ if strcmp(model, 'noemo')
     exp_alt = params(7); % param for alternative exp models of rt swings
     meandiff = params(8);
     
-elseif strcmp(model, 'noemosticky')
+elseif strcmp(model, 'noemosticky') || strcmp(model, 'noemosticky_scram')
     %NOEMOSTICKY params 8 x 1 <numeric>
     %    ,1:  lambda           #weight for sticky choice (weight influencing prior RTs' effect on
     %                              current RT. This is a decaying function of RT history; see sticky_decay)
