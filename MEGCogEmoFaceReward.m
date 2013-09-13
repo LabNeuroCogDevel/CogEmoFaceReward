@@ -57,6 +57,13 @@
 %  [MH] block change done by mod trialsInBlock, was hard coded
 %  [x] merge with other changes on github
 %
+% 2013/09/13
+%   split off for MEG.
+%   [] add trigger code
+%   [] adust response logging for MEG button gloves
+%   [] check if screen resolution need to change for MEG screen projection
+%   [] midnt need separate fixation function for ITI and ISI for triggers
+%
 function CogEmoFaceReward
   %% CogEmoFaceReward
   % WF 2012-10-05
@@ -110,7 +117,7 @@ function CogEmoFaceReward
   txtfid      = 0; %just so we know the file pntr's not a private nested function var
   
   receiptDuration  = 1.4; %show feedback for 1400ms
-  timerDuration    = 4;
+  timerDuration    = 4; %clock circles for 4 seconds?
   
   % initialize total points earned
   % incremented as a function (inc,dec,const)
@@ -132,15 +139,21 @@ function CogEmoFaceReward
   end
   fclose(fid);
 
+% sample of FaceITI.csv
+% "facenum","ITI","ISI","block","emotion","reward"
+% 10,1900,700,1,"fear","CEV"
+% 4,2000,400,1,"fear","CEV"
+% 8,1400,600,1,"fear","CEV"
+% 21,2000,900,1,"fear","CEV"
 
   %% start recording data
   % sets txtfid, subject.*, start, etc  
 
-  totalSessions = 2; %broken into first and second halves
+  totalSessions = 2; %broken into first and second halves, im MEG this is where we can separate blocks?
   halfwaypt=floor(length(experiment{blockC})/totalSessions); % 252
   
   % how long (trials) is a block
-  [~,blockchangeidx] = unique(experiment{blockC});
+  [~,blockchangeidx] = unique(experiment{blockC}); %where does blockC come from?
   trialsPerBlock     = unique(diff(blockchangeidx)); % 42
   if(length(trialsPerBlock) > 1) 
       fprintf('Whoa!? different trial lengths? I dont know whats goign on!')
@@ -339,7 +352,9 @@ function CogEmoFaceReward
         timing.start=checktime-StartOfRunTime;
         
         %% face (4s) + ITI + score + ISI
-
+        
+        %need trigger for face (reward*emo), ITI, score(reward*emo), ITI
+        
         % show face, record time to spacebar
         %dispRspTime=tic;
         rspnstime = faceWithTimer;
