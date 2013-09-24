@@ -17,7 +17,7 @@
 %     Is this a restart/want to load old file (y or n)? y
 %
 % TODO/DONE
-%
+%  [ ] initialize parallel if we are using MEG/fMRI
 %  [ ] response box -- http://docs.psychtoolbox.org/CMUBox
 %  [ ] time of score presentation -- NULL is actually a wait time? 0-12secs
 %      most frequent is 2 in Frank code
@@ -57,14 +57,7 @@
 %  [MH] block change done by mod trialsInBlock, was hard coded
 %  [x] merge with other changes on github
 %
-% 2013/09/13
-%   split off for MEG.
-%   [] add trigger code
-%   [] adust response logging for MEG button gloves
-%   [] check if screen resolution need to change for MEG screen projection
-%   [] midnt need separate fixation function for ITI and ISI for triggers
-%
-function CogEmoFaceReward
+function CogEmoFaceReward(varargin)
   %% CogEmoFaceReward
   % WF 2012-10-05
   % 
@@ -86,10 +79,13 @@ function CogEmoFaceReward
   %
   % This used 'KbDemo' as template
   
-  %screenResolution=[640 480]; %basic VGA
-  %screenResolution=[1600 1200];
-  %screenResolution=[1440 900]; %new eyelab room
-  screenResolution=[1680 1050]; %mac laptop
+  %% Settings:
+  % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
+  %    sets opts.trigger=1 if MEG
+  getopts(varargin); % defines opts structure
+  
+  %% apply settings and setup starting info
+  screenResolution=opts.screen;
   
   % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
@@ -117,7 +113,7 @@ function CogEmoFaceReward
   txtfid      = 0; %just so we know the file pntr's not a private nested function var
   
   receiptDuration  = 1.4; %show feedback for 1400ms
-  timerDuration    = 4; %clock circles for 4 seconds?
+  timerDuration    = 4;
   
   % initialize total points earned
   % incremented as a function (inc,dec,const)
@@ -139,21 +135,19 @@ function CogEmoFaceReward
   end
   fclose(fid);
 
-% sample of FaceITI.csv
-% "facenum","ITI","ISI","block","emotion","reward"
-% 10,1900,700,1,"fear","CEV"
-% 4,2000,400,1,"fear","CEV"
-% 8,1400,600,1,"fear","CEV"
-% 21,2000,900,1,"fear","CEV"
+  % defines triggers as a struct
+  % trigger.(reward function).(emotion).(face or score)
+  % plus trigger.(ITI,ISI,done)
+  trigger=defineTrigger();
 
   %% start recording data
   % sets txtfid, subject.*, start, etc  
 
-  totalSessions = 2; %broken into first and second halves, im MEG this is where we can separate blocks?
+  totalSessions = 2; %broken into first and second halves
   halfwaypt=floor(length(experiment{blockC})/totalSessions); % 252
   
   % how long (trials) is a block
-  [~,blockchangeidx] = unique(experiment{blockC}); %where does blockC come from?
+  [~,blockchangeidx] = unique(experiment{blockC});
   trialsPerBlock     = unique(diff(blockchangeidx)); % 42
   if(length(trialsPerBlock) > 1) 
       fprintf('Whoa!? different trial lengths? I dont know whats goign on!')
@@ -343,7 +337,10 @@ function CogEmoFaceReward
      %% THE BIG LOOP -- for all remaining trials or to the halfwaypt
      for i=start:length(experiment{facenumC})
         
-
+        emo=experiment{emotionC}{i};
+        rew=experiment{rewardC}{i};
+        face=experiment{facenumC}(i);
+        
         %% debug, start time keeping
         % start of time debuging global var
         checktime=GetSecs();
@@ -352,11 +349,11 @@ function CogEmoFaceReward
         timing.start=checktime-StartOfRunTime;
         
         %% face (4s) + ITI + score + ISI
-        
-        %need trigger for face (reward*emo), ITI, score(reward*emo), ITI
-        
+
         % show face, record time to spacebar
         %dispRspTime=tic;
+        
+        sendTrigger(trigger.(rew).(emo).face)
         rspnstime = faceWithTimer;
         %dispRspTime=toc(dispRspTime)*10^3 % this time 
         % is shorter than rspnstime!!? how
@@ -366,21 +363,23 @@ function CogEmoFaceReward
         %
         % math done in seconds then convereted to ms for fixation()
         dispRspTime=GetSecs() - checktime;
-        fixation( (timerDuration - dispRspTime )*10^3/2);
+        fixation( (timerDuration - dispRspTime )*10^3/2, trigger.ITI);
         setTimeDiff('timer'); %build times (debug timing)
          
         % show first fixation
-        fixation(experiment{ITIC}(i));
+        % N.B. to the subj, this is the same fixation cross that's already
+        %      up
+        fixation(experiment{ITIC}(i),trigger.ITI);
         
         setTimeDiff('ITI'); %build times (debug timing)
 
         % show score
-        scoreRxt(rspnstime,experiment{rewardC}{i});
+        scoreRxt(rspnstime,rew,trigger.(rew).(emo).score);
         
         setTimeDiff('receipt'); %build times (debug timing)
         
         % show second fixation
-        fixation(experiment{ISIC}(i));
+        fixation(experiment{ISIC}(i),trigger.ISI);
         
         setTimeDiff('ISI'); %build times (debug timing)
         
@@ -389,8 +388,7 @@ function CogEmoFaceReward
         %nonPresTime=tic;
         
         %% write to data file
-        emo=experiment{emotionC}{i};
-        face=experiment{facenumC}(i);
+
         
         %set the output of the order structure
         trial = { experiment{rewardC}{i} subject.run_num i experiment{blockC}(i) 0 t_start F_Mag inc F_Freq ev rspnstime emo };
@@ -441,6 +439,7 @@ function CogEmoFaceReward
         %%%%%%%%%%%%%%%% halfwaypt break!
         if i==halfwaypt 
             msgAndCloseEverything(['Great Job! Your score so far is ', num2str(score) ,' points\n\nLet''s take a break']);
+            sendTrigger(trigger.done)
             return
         end
         
@@ -500,6 +499,7 @@ function CogEmoFaceReward
   catch
      Screen('CloseAll');
      psychrethrow(psychlasterror);
+     sendTrigger(trigger.done)
   end
   
   % close the screen
@@ -521,6 +521,7 @@ function CogEmoFaceReward
        Screen('CloseAll');
        PsychPortAudio('Close');
        sca
+       sendTrigger(trigger.done)
     end
 
    %% print time since last check
@@ -655,7 +656,8 @@ function CogEmoFaceReward
 
 
    %% Display a red cross for ITI (ms) time
-   function fixation(waittime)
+   % vargargin is the code to send to the parallel port if one is open
+   function fixation(waittime,varargin)
         % grab time here, so we can subtract the time it takes to draw
         % from the time we are actually waiting
         starttime=tic ;
@@ -667,6 +669,12 @@ function CogEmoFaceReward
         DrawFormattedText(w,'+','center','center',[ 255 0 0]);
         Screen(w,'TextSize', oldFontSize);
         drawRect;
+        %% send code before flip
+        % varargin is code to send
+        if(~isempty(varargin))
+            sendTrigger(varargin{1})
+        end
+        %% flip screan
         Screen('Flip', w);
         drawTime=toc(starttime);
         WaitSecs(waittime-drawTime);
@@ -698,7 +706,7 @@ function CogEmoFaceReward
 
 
    %% score based on a response time and Rew Func (as string, eg. 'CEV')
-   function scoreRxt(RT,func)
+   function scoreRxt(RT,func,varargin)
        startScoreTime=tic;
        %trial start time
        t_start = (GetSecs - scannerStart)/TR;
@@ -739,6 +747,8 @@ function CogEmoFaceReward
         Screen('TextSize', w, 22);
         DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,blockTotal),'center','center',black);
 
+        % varagin will be trigger, send if we have it
+        if(~isempty(varargin)), sendTrigger(varargin{1}), end
         
         Screen('Flip', w);
         WaitSecs(receiptDuration-toc(startScoreTime));
@@ -916,6 +926,148 @@ function CogEmoFaceReward
         end
 
     end
+
+    function trigger=defineTrigger()
+        %% set triggers (for MEG)
+        % %%% divide codes into 3 sections
+        % %%% 0-20 is for ITI and ISI
+        % %%% remaing first half is for face onset (identifies emotionXreward)
+        % %%% last half is for score onset (also tied to emotionXreward)
+        %   trigger.ITI=10;
+        %   trigger.ISI=15;
+        %   trigger.done=255;
+        %   numcodes=floor(255 - (255)/2)-20; % first section reserved for fixation intervals, last reserved for score
+        %   triglen=ceil(numcodes/ ( length(unique(experiment{emotionC}))*length(unique(experiment{rewardC})) ) );
+        %   i=1;
+        %   for e=unique(experiment{emotionC})'
+        %       for rew=unique(experiment{rewardC})
+        %           fprintf('%s-%s\n',rew{1},e{1})
+        %           trigger.(rew{1}).(e{1}).face  = 20+i*triglen;
+        %           trigger.(rew{1}).(e{1}).score = 20+i*triglen + numcodes;
+        %           i=i+1;
+        %       end
+        %   end
+
+        % fixation periods 0-20
+        trigger.ITI= 10;
+        trigger.ISI= 15;
+        trigger.done=255;
+        %face 25-130
+        trigger.CEV.fear.face  = 29;
+        trigger.CEVR.fear.face = 38;
+        trigger.DEV.fear.face  = 47;
+        trigger.IEV.fear.face  = 56;
+        trigger.CEV.happy.face = 65;
+        trigger.CEV.scram.face = 101;
+        trigger.CEVR.happy.face = 74;
+        trigger.DEV.happy.face  = 83;
+        trigger.IEV.happy.face  = 92;
+        trigger.CEVR.scram.face = 110;
+        trigger.DEV.scram.face  = 119;
+        trigger.IEV.scram.face  = 128;
+        % score 135 - 235 -- face+107
+        trigger.CEV.fear.score  = 136;
+        trigger.CEVR.fear.score = 145;
+        trigger.DEV.fear.score  = 154;
+        trigger.IEV.fear.score  = 163;
+        trigger.CEV.happy.score = 172;
+        trigger.CEVR.happy.score= 181;
+        trigger.DEV.happy.score = 190;
+        trigger.IEV.happy.score = 199;
+        trigger.CEV.scram.score = 208;
+        trigger.CEVR.scram.score= 217;
+        trigger.DEV.scram.score = 226;
+        trigger.IEV.scram.score = 235;
+    end
+
+  
+    function initTriggerSender()
+      fprintf('initTriggerSender: not yet coded to establish trigger sender\n')
+      
+      %% Parallel port, Windows + DAQ Legacy Interface only
+      %opts.port = digitalio('parallel','lpt1');
+      %addline(opts.port,0:7,'out')
+      
+      %% Serial Port
+      % % see instrhwinfo('serial')
+      % % windows
+      % opts.port = fopen(serial('COM1') )
+      %  % OSX
+      %  % serial('/dev/tty/KeySerial1')
+      %  % Linux
+      %  % serial('/dev/ttys0')
+      
+    end
+
+    function sendTrigger(trigger)
+      % only send a trigger if we are set up to do so
+      if(opts.trigger~=1), return,   end
+      
+      %% Parallel Port
+      %putvalue(opts.port,trigger)
+      
+      %% Serial Port
+      %fprintf(opts.port,'%d',trigger);
+      
+      %% Testing
+      if(opts.DEBUG==1)
+        fprintf('sent %d @ %02d:%02d:%02d\n',trigger,  subsref(clock(),substruct('()',{4:6})) )
+      end
+    end
+
+    % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
+    function getopts(o)
+      opts.trigger=0;
+      opts.DEBUG=0;
+      opts.ports=0; % handle for serial/lpt port
+      opts.screen=[1680 1050];
+      i=1;
+      while(i<=length(o))
+          switch o{i}
+              case {'DEBUG'}
+                  opts.DEBUG=1;
+                  opts.screen=[800 600];
+              case {'screen'}
+                  i=i+1;
+                  if isa(o{i},'char')
+                      
+                    % CogEmoFaceReward('screen','mac laptop')
+                    switch o{i}
+                        case {'mac laptop'}
+                            opts.screen=[1680 1050]; %mac laptop
+                        case {'VGA'}
+                            opts.screen=[640 480]; %basic VGA
+                        case {'eyelab'}
+                            opts.screen=[1440 900]; %new eyelab room
+                        otherwise
+                            fprintf('dont know what %s is\n',o{i});
+                    end
+                    
+                  %CogEmoFaceReward('screen',[800 600])
+                  else
+                    opts.screen=o{i};    
+                  end    
+                  
+                  
+              case {'MEG'}
+                  opts.MEG=1;
+                  opts.trigger=1;
+                  initTriggerSender()
+                  % override any other codes
+                  sendTrigger(0)
+                  
+              otherwise
+                  fprintf('unknown option #%d\n',i)
+          end
+          
+       i=i+1;    
+      
+      end
+      
+      disp(opts)
+    end
+
+
 
 end
 
