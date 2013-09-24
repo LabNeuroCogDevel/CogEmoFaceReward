@@ -57,7 +57,7 @@
 %  [MH] block change done by mod trialsInBlock, was hard coded
 %  [x] merge with other changes on github
 %
-function CogEmoFaceReward(varargin)
+function MEGCogEmoFaceReward(varargin)
   %% CogEmoFaceReward
   % WF 2012-10-05
   % 
@@ -984,11 +984,16 @@ function CogEmoFaceReward(varargin)
     function initTriggerSender()
       fprintf('initTriggerSender: not yet coded to establish trigger sender\n')
       
+      %% Parallel Port -- windows only, preinstalled driver
+      % see windows-lpt/README.txt
+      addpath(genpath('windows-lpt')); % add outp function to write to port
+      opts.port=hex2dec('378');
+      
       %% Parallel port, Windows + DAQ Legacy Interface only
       %opts.port = digitalio('parallel','lpt1');
       %addline(opts.port,0:7,'out')
       
-      %% Serial Port
+      %% Serial Port - via matlab
       % % see instrhwinfo('serial')
       % % windows
       % opts.port = fopen(serial('COM1') )
@@ -997,17 +1002,30 @@ function CogEmoFaceReward(varargin)
       %  % Linux
       %  % serial('/dev/ttys0')
       
+      %% Serial Port via psychtoolbox
+      % % http://docs.psychtoolbox.org/IOPort
+      % [ opts.port , error ] = IOPort('OpenSerialPort','COM1')
+      % % for linux use /dev/ttyS0; OSX use  /dev/something
+      
+      
     end
 
     function sendTrigger(trigger)
       % only send a trigger if we are set up to do so
       if(opts.trigger~=1), return,   end
       
-      %% Parallel Port
+      %% Parallel Port - windows
+      outp(opts.port,trigger)
+      
+      %% Parallel Port - Legacy
       %putvalue(opts.port,trigger)
       
-      %% Serial Port
+      
+      %% Serial Port -- any
       %fprintf(opts.port,'%d',trigger);
+      
+      %% Serial Port psychtoolbox
+      % [nwritten, when, errmsg, prewritetime, postwritetime, lastchecktime] = IOPort31('Write32', opts.port, trigger,blocking=1);
       
       %% Testing
       if(opts.DEBUG==1)
