@@ -1,23 +1,31 @@
 % CogEmo Face Reward Task:
 %
+%  usage: 
+%   CogEmoFaceReward()
+%   CogEmoFaceReward('DEBUG','MEG','NODAQ','screen',[800 1024])
 %
-%  usage:
-%    http://arnold/dokuwiki/doku.php?id=howto:experiments:cogemofacereward
+%    1. will prompt for subject id, gender, runnum
+%    2. show instructions in psychtoolbox screen 
+%    3. ITI -> Face with 4s "clock" -> ISI -> Score -> ITI
+%       will send trigger at ITI, ISI, Face, and Score if 'MEG' is given
 %
-%  cd B:/bea_res/Personal/Will/CogEmoFaceReward
-%  CogEmoFaceReward
+%     ** esc key during clock will exit paradigm **
+%
+%  Requires: 
+%     psychtoolbox
+%     ltp trigger code sending requries DAQ toolbox (works on legacy 32bit matlabs only!)
 %
 %  Testing:
-%  load subjects/test_tc.mat                                          % load everything the presentation saves
-%  trialnum=597                                                       % set the trial number to be tested
-%  subject.run_num=2                                                  % trial number > mid-way (300), trial==2
-%  save('subjects/test_tc.mat','order','trialnum','subject','score'); % save new settings
-%  CogEmoFaceReward
-%     Enter the subject ID number: test
-%     Is this a restart/want to load old file (y or n)? y
+%    load subjects/test_tc.mat                                          % load everything the presentation saves
+%    trialnum=597                                                       % set the trial number to be tested
+%    subject.run_num=2                                                  % trial number > mid-way (300), trial==2
+%    save('subjects/test_tc.mat','order','trialnum','subject','score'); % save new settings
+%    CogEmoFaceReward
+%       Enter the subject ID number: test
+%       Is this a restart/want to load old file (y or n)? y
 %
 % TODO/DONE
-%  [ ] initialize parallel if we are using MEG/fMRI
+%  [x] initialize parallel if we are using MEG/fMRI
 %  [ ] response box -- http://docs.psychtoolbox.org/CMUBox
 %  [ ] time of score presentation -- NULL is actually a wait time? 0-12secs
 %      most frequent is 2 in Frank code
@@ -57,6 +65,17 @@
 %  [MH] block change done by mod trialsInBlock, was hard coded
 %  [x] merge with other changes on github
 %
+% 2013/09/25 -- adapt for MEG
+%  [WF] send codes over LPT port to indicate phase of trial
+%  [WF] add photodiode in DEBUG option to test timing
+%  ---- these edits brought refactoring of settings via 'opts' struct
+%       set via function call
+%        * screen resolution
+%        * debugging settings (photodiode, screen resolution, fprintfs
+%        * MEG/send ltp trigger codes
+%       see getopts()
+%
+
 function MEGCogEmoFaceReward(varargin)
   %% CogEmoFaceReward
   % WF 2012-10-05
@@ -83,6 +102,9 @@ function MEGCogEmoFaceReward(varargin)
   % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
   %    sets opts.trigger=1 if MEG
   getopts(varargin); % defines opts structure
+  
+  %% initialize trigger code sending on lpt port (skipped unless MEG)
+  initTriggerSender()
   
   %% apply settings and setup starting info
   screenResolution=opts.screen;
@@ -156,7 +178,9 @@ function MEGCogEmoFaceReward(varargin)
 
   totalBlocks = length(experiment{blockC})/trialsPerBlock; % 12
 
-  getSubjInfo
+  % prompt for subject info
+  % or ask to resume task
+  getSubjInfo()
 
   % print the top of output file
   if start == 1
@@ -207,10 +231,18 @@ function MEGCogEmoFaceReward(varargin)
          Screen('TextFont', w, 'Arial');
          Screen('TextSize', w, 22);
      %end
+     
   
      % Set colors.
      black = BlackIndex(w);
-     %white = WhiteIndex(w);
+     white = WhiteIndex(w);
+     
+     
+     % MEG photodiode settings
+     FacePhotodiodeColor=white;
+     ScorePhotodiodeColor=[204 204 204];
+     emptyPhotodiodeColor=black;
+
      
      % Enable unified mode of KbName, so KbName accepts identical key names on
      % all operating systems:
@@ -504,7 +536,8 @@ function MEGCogEmoFaceReward(varargin)
   
   % close the screen
   sca
-
+  % clear trigger
+  sendTrigger(0)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           support functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -548,6 +581,9 @@ function MEGCogEmoFaceReward(varargin)
            rgbcolorIDX=experiment{blockC}(t);
        end
        Screen('FrameRect', w, blockColors(rgbcolorIDX,:), [], 25);
+       
+       drawPhotodiodeBox(emptyPhotodiodeColor)
+       % draw box for photodiode, opposite luminocity as when face is on
     end
 
 
@@ -618,6 +654,13 @@ function MEGCogEmoFaceReward(varargin)
 %             Screen('DrawText',w,num2str(F),  F_offRect(1),  F_offRect(2), [ 0 0 0]);
 %             Screen('DrawText',w,num2str(M*F),EV_offRect(1), EV_offRect(2),[ 0 0 0]);
 %         end
+        
+        
+        % draw grey box for photodiode
+        % this will help messure latence between lpt port and 
+        % Photodiode
+        drawPhotodiodeBox(FacePhotodiodeColor) 
+        
         
         % display screen
         Screen('Flip', w);
@@ -750,6 +793,11 @@ function MEGCogEmoFaceReward(varargin)
         % varagin will be trigger, send if we have it
         if(~isempty(varargin)), sendTrigger(varargin{1}), end
         
+        
+        % draw box for photodiode, opposite luminocity as when face is on
+        drawPhotodiodeBox(ScorePhotodiodeColor) 
+       
+        % draw screen
         Screen('Flip', w);
         WaitSecs(receiptDuration-toc(startScoreTime));
     
@@ -982,17 +1030,24 @@ function MEGCogEmoFaceReward(varargin)
 
   
     function initTriggerSender()
-      fprintf('initTriggerSender: not yet coded to establish trigger sender\n')
+      
+      % only initialize if we need to send triggers
+      if(opts.trigger~=1), return,   end
       
       %% Parallel Port -- windows only, preinstalled driver
       % see windows-lpt/README.txt
-      addpath(genpath('windows-lpt')); % add outp function to write to port
-      opts.port=hex2dec('378');
+      %addpath(genpath('windows-lpt')); % add outp function to write to port
+      %opts.port=hex2dec('378');
       
       %% Parallel port, Windows + DAQ Legacy Interface only
-      %opts.port = digitalio('parallel','lpt1');
-      %addline(opts.port,0:7,'out')
-      
+      if(opts.USEDAQ==1)
+          handle = digitalio('parallel','lpt1');
+          addline(handle,0:7,'out');
+          opts.port = daqgetfield(dio,'uddobject'); % speed up write by caching handle
+          % http://psychtoolbox.org/faqttltrigger
+      else 
+          fprintf('initTriggerSender: not yet coded to establish trigger sender\n')
+      end
       %% Serial Port - via matlab
       % % see instrhwinfo('serial')
       % % windows
@@ -1007,7 +1062,8 @@ function MEGCogEmoFaceReward(varargin)
       % [ opts.port , error ] = IOPort('OpenSerialPort','COM1')
       % % for linux use /dev/ttyS0; OSX use  /dev/something
       
-      
+      % override any other codes
+      sendTrigger(0)
     end
 
     function sendTrigger(trigger)
@@ -1015,11 +1071,13 @@ function MEGCogEmoFaceReward(varargin)
       if(opts.trigger~=1), return,   end
       
       %% Parallel Port - windows
-      outp(opts.port,trigger)
+      %outp(opts.port,trigger)
       
       %% Parallel Port - Legacy
-      %putvalue(opts.port,trigger)
-      
+      if(opts.USEDAQ==1)
+        putvalue(opts.port,0);      % weird addition prevention heres 
+        putvalue(opts.port,trigger);
+      end
       
       %% Serial Port -- any
       %fprintf(opts.port,'%d',trigger);
@@ -1070,10 +1128,9 @@ function MEGCogEmoFaceReward(varargin)
               case {'MEG'}
                   opts.MEG=1;
                   opts.trigger=1;
-                  initTriggerSender()
-                  % override any other codes
-                  sendTrigger(0)
-                  
+                  opts.USEDAQ=1;
+              case {'NODAQ'}
+                  opts.USEDAQ=0;
               otherwise
                   fprintf('unknown option #%d\n',i)
           end
@@ -1083,6 +1140,14 @@ function MEGCogEmoFaceReward(varargin)
       end
       
       disp(opts)
+    end
+
+    function drawPhotodiodeBox(color)
+       photodiodeRect=[0 0 75 75];
+       % draw box for photodiode, opposite luminocity as when face is on
+       if(opts.DEBUG==1 && opts.MEG==1)
+         Screen('FillRect',w,color,photodiodeRect) 
+       end
     end
 
 
