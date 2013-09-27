@@ -39,7 +39,7 @@ NoGo(1) = priors.NoGo; %initialize NoGo for first trial
 %V_fast = V(1); V_slow = V(1); %no differentiation of slow vs. fast to start
 %joint_ent=1.0; %unused at the moment.
 
-if strcmp(model, 'noemo')
+if strcmp(model, 'noemo') || strcmp(model, 'noemo_scram')
     %NOEMO params 8 x 1 <numeric>
     %    ,1:  lambda           #weight for previous trial RT (autocorrelation of RT_t with RT_t-1)
     %    ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
@@ -58,6 +58,32 @@ if strcmp(model, 'noemo')
     alphaV =  0.1; % just set this to avoid degeneracy
     K = params(5);
     scale = params(6);
+    sticky_decay = -1; %not relevant
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(7); % param for alternative exp models of rt swings
+    meandiff = params(8);
+    
+elseif strcmp(model, 'noemosticky') || strcmp(model, 'noemosticky_scram')
+    %NOEMOSTICKY params 8 x 1 <numeric>
+    %    ,1:  lambda           #weight for sticky choice (weight influencing prior RTs' effect on
+    %                              current RT. This is a decaying function of RT history; see sticky_decay)
+    %    ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+    %                              about fast vs. slow responses
+    %    ,3:  alpha1           #learning rate for positive prediction errors (approach)
+    %    ,4:  alpha2           #learning rate for negative prediction errors (avoid)
+    %    ,5:  K                #baseline response speed (person mean RT?)
+    %    ,6:  sticky_decay          #d: decay parameter influencing the degree to which prior RTs continue to affect current RTs
+    %    ,7:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %    ,8:  meandiff         #rho parameter: weight for expected reward of fast versus slow
+
+    lambda = params(1);
+    explore = params(2);
+    alpha1 =  params(3);
+    alpha2 = params(4);
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(5);
+    scale = -1; %going for the gold not relevant for sticky choice
+    sticky_decay = params(6);
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(7); % param for alternative exp models of rt swings
     meandiff = params(8);
@@ -89,6 +115,40 @@ elseif strcmp(model, 'emoexplore')
     alphaV =  0.1; % just set this to avoid degeneracy
     K = params(7);
     scale = params(8);
+    sticky_decay = -1; %not relevant
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(9); % param for alternative exp models of rt swings
+    meandiff = params(10);
+    
+elseif strcmp(model, 'emoexploresticky')
+    %EMOEXPLORESTICKY params 10 x 1 <numeric>
+    %
+    %   ,1:  lambda           #weight for sticky choice (weight influencing prior RTs' effect on
+    %                              current RT. This is a decaying function of RT history; see sticky_decay)
+    %   ,2:  explore_scram    #epsilon parameter for scrambled: how much should RT be modulated by greater relative uncertainty
+    %   ,3:  explore_fear     #epsilon parameter for fearful: how much should RT be modulated by greater relative uncertainty
+    %   ,4:  explore_happy    #epsilon parameter for happy: how much should RT be modulated by greater relative uncertainty
+    %   ,5:  alpha1           #learning rate for positive prediction errors (approach)
+    %   ,6:  alpha2           #learning rate for negative prediction errors (avoid)
+    %   ,7:  K                #baseline response speed (person mean RT?)
+    %   ,8:  sticky_decay     #d: decay parameter influencing the degree to which prior RTs continue to affect current RTs
+    %   ,9:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,10: meandiff         #rho parameter: weight for expected reward of fast versus slow
+    
+    lambda = params(1);
+    if strcmp(emoNames{emo}, 'happy')
+        explore=params(4);
+    elseif strcmp(emoNames{emo}, 'fear')
+        explore=params(3);
+    elseif strcmp(emoNames{emo}, 'scram')
+        explore = params(2);
+    end
+    alpha1 =  params(5);
+    alpha2 = params(6);
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(7);
+    scale = -1; %going for the gold not relevant for sticky choice
+    sticky_decay = params(8);
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(9); % param for alternative exp models of rt swings
     meandiff = params(10);
@@ -124,6 +184,45 @@ elseif strcmp(model, 'emogonogo')
     alphaV =  0.1; % just set this to avoid degeneracy
     K = params(9);
     scale = params(10);
+    sticky_decay = -1; %not relevant
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(11); % param for alternative exp models of rt swings
+    meandiff = params(12);
+    
+    
+elseif strcmp(model, 'emogonogosticky')
+    %EMOGONOGOSTICKY: model parameter initialization
+    %Params 12 x 1 <numeric>
+    %   ,1:  lambda           #weight for sticky choice (weight influencing prior RTs' effect on
+    %                              current RT. This is a decaying function of RT history; see sticky_decay)
+    %   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+    %   ,3:  alpha1_scram     #learning rate for scrambled positive prediction errors (approach)
+    %   ,4:  alpha1_fear      #learning rate for fear positive prediction errors (approach)
+    %   ,5:  alpha1_happy     #learning rate for happy positive prediction errors (approach)
+    %   ,6:  alpha2_scram     #learning rate for scrambled negative prediction errors (avoid)
+    %   ,7:  alpha2_fear      #learning rate for fear negative prediction errors (avoid)
+    %   ,8:  alpha2_happy     #learning rate for happy negative prediction errors (avoid)
+    %   ,9:  K                #baseline response speed (person mean RT?)
+    %   ,10: sticky_decay     #d: decay parameter influencing the degree to which prior RTs continue to affect current RTs
+    %   ,11: exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,12: meandiff         #rho parameter: weight for expected reward of fast versus slow
+    
+    lambda = params(1);
+    explore = params(2);
+    if strcmp(emoNames{emo}, 'happy')
+        alpha1=params(5);
+        alpha2=params(8);
+    elseif strcmp(emoNames{emo}, 'fear')
+        alpha1=params(4);
+        alpha2=params(7);
+    elseif strcmp(emoNames{emo}, 'scram')
+        alpha1=params(3);
+        alpha2=params(6);
+    end
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(9);
+    scale = -1; %not relevant
+    sticky_decay = params(10);
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(11); % param for alternative exp models of rt swings
     meandiff = params(12);
@@ -156,6 +255,41 @@ elseif strcmp(model, 'emonogo')
     alphaV =  0.1; % just set this to avoid degeneracy
     K = params(7);
     scale = params(8);
+    sticky_decay = -1; %not relevant
+    decay = 1;  % decay counts for beta distribution 1= nodecay
+    exp_alt = params(9); % param for alternative exp models of rt swings
+    meandiff = params(10);
+    
+elseif strcmp(model, 'emonogosticky')
+    %EMONOGOSTICKY: initial fit of emogonogo suggested that the go parameters (PPE) had little variation.
+    %         Thus, allow just no go learning rate to vary by condition (scrambled, fear, happy)
+    %Params 10 x 1 <numeric>
+    %   ,1:  lambda           #weight for sticky choice (weight influencing prior RTs' effect on
+    %                              current RT. This is a decaying function of RT history; see sticky_decay)
+    %   ,2:  explore          #epsilon parameter: how much should RT be modulated by greater relative uncertainty
+    %   ,3:  alpha1           #learning rate for positive prediction errors (approach)
+    %   ,4:  alpha2_scram     #learning rate for scrambled negative prediction errors (avoid)
+    %   ,5:  alpha2_fear      #learning rate for fear negative prediction errors (avoid)
+    %   ,6:  alpha2_happy     #learning rate for happy negative prediction errors (avoid)
+    %   ,7:  K                #baseline response speed (person mean RT?)
+    %   ,8:  sticky_decay          #d: decay parameter influencing the degree to which prior RTs continue to affect current RTs
+    %   ,9:  exp_alt          #alternative exponential models for RT swings (not sure of its use yet)
+    %   ,10: meandiff         #rho parameter: weight for expected reward of fast versus slow
+    
+    lambda = params(1);
+    explore = params(2);
+    alpha1 = params(3);
+    if strcmp(emoNames{emo}, 'happy')
+        alpha2=params(6);
+    elseif strcmp(emoNames{emo}, 'fear')
+        alpha2=params(5);
+    elseif strcmp(emoNames{emo}, 'scram')
+        alpha2=params(4);
+    end
+    alphaV =  0.1; % just set this to avoid degeneracy
+    K = params(7);
+    scale = -1; %not relevant
+    sticky_decay = params(8);
     decay = 1;  % decay counts for beta distribution 1= nodecay
     exp_alt = params(9); % param for alternative exp models of rt swings
     meandiff = params(10);
@@ -206,8 +340,18 @@ cnt_speed=0; cnt_slow=0;
 
 RT_new      = RTobs(1); % just for init
 RT_last     = RTobs(1); % just for init
-RT_last2    = RTobs(1); % just for init
-RT_last3    = RTobs(1); % just for init
+sticky      = 0;        % initialize sticky choice
+
+if scale == -1
+    %sticky choice model
+    %not sure why these are zeroed at initialization for sticky choice
+    RT_last2    = 0; % just for init
+    RT_last3    = 0; % just for init
+else
+    %regular TC model including nu (going for gold)
+    RT_last2    = RTobs(1); % just for init
+    RT_last3    = RTobs(1); % just for init
+end
 bestRT      = avg_RT;   % just for init
 
 var_short = alph_short*b_short/(((alph_short+b_short)^2)*(alph_short+b_short+1));
@@ -248,6 +392,7 @@ for trial = 2:numTrials
         RT_last = RT_new;
     else
         RT_last = RTobs(lasttrial);
+        if scale == -1, sticky = RT_last + sticky_decay*sticky; end %update sticky choice if used
         if trial > 2, RT_last2 = RTobs(trial-2); end
         if trial > 3, RT_last3 = RTobs(trial-3); end
     end
@@ -413,8 +558,15 @@ for trial = 2:numTrials
     
     RT_avg = RT_avg + alphaV*(RT_last-RT_avg); %update average RT locally...
     
-    RT_new = K + lambda*RT_last - Go_new + NoGo_new  +exp1 + 0*regress ...
-        + meandiff*(mean_long-mean_short) + scale*(bestRT-avg_RT)+ Noise*(rand-0.5);
+    if scale == -1
+        %sticky model: scale effect of prior RTs (decayed) on current RT by lambda
+        %model does not include going for the gold (scale) update.
+        RT_new = K + lambda*sticky - Go_new + NoGo_new  +exp1 + 0*regress ...
+            + meandiff*(mean_long-mean_short) + Noise*(rand-0.5);
+    else
+        RT_new = K + lambda*RT_last - Go_new + NoGo_new  +exp1 + 0*regress ...
+            + meandiff*(mean_long-mean_short) + scale*(bestRT-avg_RT)+ Noise*(rand-0.5);
+    end
     
     if RTobs(trial)==0, RT_new = 0; end; %% don't try to predict response failures, which are counted as 0 in e-prime
     

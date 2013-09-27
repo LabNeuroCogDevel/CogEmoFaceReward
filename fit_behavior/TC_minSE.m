@@ -1,9 +1,16 @@
-function [totalSqErr, ret_all] = TC_minSE(params, trialData, model)
+function [totalSqErr, ret_all] = TC_minSE(params, trialData, model, emoSubset)
+
+if nargin < 4, emoSubset = -1; end
 
 global tdef;
 global trialsPerBlock;
 
 totalSqErr=0;
+
+%if requested, subset the trialData to only include certain emotions
+if emoSubset(1) > -1
+    trialData = trialData(find(ismember(trialData(:,tdef.emo), emoSubset)), :);
+end
 
 %function can fit either single subject data with one or more sessions or
 %group data with many subjects (potentially with many sessions per subject)
