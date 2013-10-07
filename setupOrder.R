@@ -1,4 +1,5 @@
 ####
+## FOR BEHAVIORAL PILOT
 # randomize events to be inserted into eprime lists
 #
 #   |------------------------------------------|
