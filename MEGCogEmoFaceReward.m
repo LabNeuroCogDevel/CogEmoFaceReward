@@ -108,6 +108,10 @@ function MEGCogEmoFaceReward(varargin)
   
   %% apply settings and setup starting info
   screenResolution=opts.screen;
+
+  % if MEG, we want to display white,black,gray boxes for the photodiode
+  %  what width should that box have?
+  photodiodeWidth=25
   
   % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
@@ -146,6 +150,8 @@ function MEGCogEmoFaceReward(varargin)
   %% set order of trials
   %  read in order of things
   % note, only one of these (Frank had 8)
+  % TODO: abstact to different inputs
+  %    fid=fopen(opts.TrialCSV)
   fid=fopen('FaceITI.csv');
   indexes={1,2,3,4,5,6};
   [ facenumC, ITIC, ISIC, blockC, emotionC, rewardC ] = indexes{:};
@@ -251,11 +257,10 @@ function MEGCogEmoFaceReward(varargin)
      % Set keys.
      %spaceKey  = KbName('SPACE');
      escKey  = KbName('ESCAPE');
-     %% TODO: how to get '^' for getting scanner start
-     scannerStart = GetSecs;
+
+     %what keys are okay to press
+     acceptableKeyPresses = [ KbName('space') KbName('1') ];
   
-     
-    
      %% preload textures
      % makes assumption that images for every face of every facenumber
      % exists
@@ -274,24 +279,22 @@ function MEGCogEmoFaceReward(varargin)
      % http://docs.psychtoolbox.org/PsychPortAudio
      % http://wiki.stdout.org/matlabcookbook/Presenting%20auditory%20stimuli/Playing%20sounds/
      
-     InitializePsychSound;
-     [wavedata, sndFreq] = wavread('incorrect.wav');
-     wavedata=wavedata';
-     nrchannels = size(wavedata,1);
-     % 2nd to last arg should be sndFreq, but portaudio returns error w/it
-     pahandle= PsychPortAudio('Open', [], [], [], [], nrchannels);
-     PsychPortAudio('FillBuffer',pahandle,wavedata);
+     if(opts.sound)
+      InitializePsychSound;
+      [wavedata, sndFreq] = wavread('incorrect.wav');
+      wavedata=wavedata';
+      nrchannels = size(wavedata,1);
+      % 2nd to last arg should be sndFreq, but portaudio returns error w/it
+      pahandle= PsychPortAudio('Open', [], [], [], [], nrchannels);
+      PsychPortAudio('FillBuffer',pahandle,wavedata);
+     else
+      fprintf('NOT USING SOUND\n');
+     end
      
      
      
 
      %% Instructions 
-%         [ 'You will see a clock face.\n' ...
-%           'Its arm will make a full turn over the course of 4 seconds.\n' ...
-%           'Press the button to win points before the arm makes a full turn.\n' ...
-%           'Try to win as many points as you can!\n\n' ...
-%           'Press any key to read more instructions' ...
-%         ]          
      Instructions = { ...
         [ 'For this game, you will see a dot moving around a picture.\n\n'...
           'The dot will make a full revolution over the course of ' num2str(timerDuration) ' seconds.\n\n' ...
@@ -360,6 +363,10 @@ function MEGCogEmoFaceReward(varargin)
      i=start; % fixation calls drawRect which uses i to get the block number
      fixation(1500);
      
+
+     %% TODO: how/when to get '^' for getting scanner start
+     scannerStart = GetSecs();
+    
      %% debug, timing
      StartOfRunTime=GetSecs();
 
@@ -386,6 +393,7 @@ function MEGCogEmoFaceReward(varargin)
         %dispRspTime=tic;
         
         sendTrigger(trigger.(rew).(emo).face)
+        % face with timer will flip screen first
         rspnstime = faceWithTimer;
         %dispRspTime=toc(dispRspTime)*10^3 % this time 
         % is shorter than rspnstime!!? how
@@ -405,7 +413,7 @@ function MEGCogEmoFaceReward(varargin)
         
         setTimeDiff('ITI'); %build times (debug timing)
 
-        % show score
+        % show score -- will send trigger and show box for diode before flip if needed
         scoreRxt(rspnstime,rew,trigger.(rew).(emo).score);
         
         setTimeDiff('receipt'); %build times (debug timing)
@@ -635,26 +643,7 @@ function MEGCogEmoFaceReward(varargin)
 
         
         %% super debug mode -- show EV for reponse times
-%         for rt = 0:500:3500
-%             [M, F] = getScore(rt,experiment{rewardC}{i});
-%             
-%             M_xOffset = (200) * cos(initialDotPosition - 2*pi * rt/durationMS);
-%             M_yOffset = (200) * sin(initialDotPosition - 2*pi * rt/durationMS);
-%             M_offRect = OffsetRect(centeredspotRect, M_xOffset, M_yOffset);
-%             
-%             F_xOffset = (300) * cos(initialDotPosition - 2*pi * rt/durationMS);
-%             F_yOffset = (300) * sin(initialDotPosition - 2*pi * rt/durationMS);
-%             F_offRect = OffsetRect(centeredspotRect, F_xOffset, F_yOffset);
-%            
-%             EV_xOffset = (400) * cos(initialDotPosition - 2*pi * rt/durationMS);
-%             EV_yOffset = (400) * sin(initialDotPosition - 2*pi * rt/durationMS);
-%             EV_offRect = OffsetRect(centeredspotRect, EV_xOffset, EV_yOffset);
-%             
-%             Screen('DrawText',w,num2str(M),  M_offRect(1),  M_offRect(2), [ 0 0 0]);
-%             Screen('DrawText',w,num2str(F),  F_offRect(1),  F_offRect(2), [ 0 0 0]);
-%             Screen('DrawText',w,num2str(M*F),EV_offRect(1), EV_offRect(2),[ 0 0 0]);
-%         end
-        
+        % superDebug()
         
         % draw grey box for photodiode
         % this will help messure latence between lpt port and 
@@ -665,6 +654,7 @@ function MEGCogEmoFaceReward(varargin)
         % display screen
         Screen('Flip', w);
         
+        % check for escape's
         [ keyIsDown, seconds, keyCode ] = KbCheck;
         
         if keyIsDown
@@ -688,8 +678,10 @@ function MEGCogEmoFaceReward(varargin)
      %    fprintf('warning: RT is %f\n', elapsedMS*10^8);
           % play the sound in pahandle once, start now, dont wait for
           % playback to start
-          fprintf('playing sound\n');
-          PsychPortAudio('Start', pahandle, 1, 0, 0);
+          if(opts.sound)
+           fprintf('playing sound\n');
+           PsychPortAudio('Start', pahandle, 1, 0, 0);
+          end
     end
      %fprintf('\n Submitted @ %f\n',elapsedMS);
      
@@ -740,7 +732,12 @@ function MEGCogEmoFaceReward(varargin)
               error('quit early (on %d)\n',i)
            end
           
-          if(keyIsDown && any(keyCode)); break; end %any() is redudant
+          % go on any key
+          % if(keyIsDown && any(keyCode)); break; end %any() is redudant
+
+          % specify keys
+          if(keyIsDown && any(keyCode(acceptableKeyPresses))); break; end 
+
           WaitSecs(.001);
       end
       Screen('Flip', w); % change the screen so we don't hold down space
@@ -1094,9 +1091,11 @@ function MEGCogEmoFaceReward(varargin)
     % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
     function getopts(o)
       opts.trigger=0;
+      opts.TrialCSV='FaceITI.csv';
       opts.DEBUG=0;
       opts.ports=0; % handle for serial/lpt port
       opts.screen=[1680 1050];
+      opts.sound=1;
       i=1;
       while(i<=length(o))
           switch o{i}
@@ -1129,6 +1128,8 @@ function MEGCogEmoFaceReward(varargin)
                   opts.MEG=1;
                   opts.trigger=1;
                   opts.USEDAQ=1;
+                  opts.sound=0;
+                  opts.TrialCSV='FaceITI.MEG.csv';
               case {'NODAQ'}
                   opts.USEDAQ=0;
               otherwise
@@ -1143,12 +1144,42 @@ function MEGCogEmoFaceReward(varargin)
     end
 
     function drawPhotodiodeBox(color)
-       photodiodeRect=[0 0 75 75];
        % draw box for photodiode, opposite luminocity as when face is on
        if(opts.DEBUG==1 && opts.MEG==1)
-         Screen('FillRect',w,color,photodiodeRect) 
+         % Put box on all corners
+         Screen('FillRect',w,color,[ 0 0 photodiodeWidth  photodiodeWidth ]) 
+         Screen('FillRect',w,color,[ screenResolution-25 0 photodiodeWidth  photodiodeWidth ]) 
+         Screen('FillRect',w,color,[ 0 screenResolution-25 photodiodeWidth  photodiodeWidth ]) 
+         Screen('FillRect',w,color,[ screenResolution-25 screenResolution-25 photodiodeWidth  photodiodeWidth ]) 
+         % or just draw one big one
+         %photodiodeRect=[0 0 75 75];
+         %Screen('FillRect',w,color,photodiodeRect) 
        end
     end
+
+
+%% super debug mode -- show EV for reponse times
+%    function superDebug()
+%         for rt = 0:500:3500
+%             [M, F] = getScore(rt,experiment{rewardC}{i});
+%             
+%             M_xOffset = (200) * cos(initialDotPosition - 2*pi * rt/durationMS);
+%             M_yOffset = (200) * sin(initialDotPosition - 2*pi * rt/durationMS);
+%             M_offRect = OffsetRect(centeredspotRect, M_xOffset, M_yOffset);
+%             
+%             F_xOffset = (300) * cos(initialDotPosition - 2*pi * rt/durationMS);
+%             F_yOffset = (300) * sin(initialDotPosition - 2*pi * rt/durationMS);
+%             F_offRect = OffsetRect(centeredspotRect, F_xOffset, F_yOffset);
+%            
+%             EV_xOffset = (400) * cos(initialDotPosition - 2*pi * rt/durationMS);
+%             EV_yOffset = (400) * sin(initialDotPosition - 2*pi * rt/durationMS);
+%             EV_offRect = OffsetRect(centeredspotRect, EV_xOffset, EV_yOffset);
+%             
+%             Screen('DrawText',w,num2str(M),  M_offRect(1),  M_offRect(2), [ 0 0 0]);
+%             Screen('DrawText',w,num2str(F),  F_offRect(1),  F_offRect(2), [ 0 0 0]);
+%             Screen('DrawText',w,num2str(M*F),EV_offRect(1), EV_offRect(2),[ 0 0 0]);
+%         end
+%    end
 
 
 
