@@ -26,12 +26,16 @@
 
 randUnifConstrain <- function(len, vals, targetMean) {
    sampVec <- sample(vals, len, replace=TRUE)
-   while (mean(sampVec) != targetMean) sampVec <- sample(vals, len, replace=TRUE)
+   while (mean(sampVec) != targetMean){
+     #print(mean(sampVec)-targetMean)
+     sampVec <- sample(vals, len, replace=TRUE)
+   }
    return(sampVec)
 }
 
 numFaces   <- 21  # length(glob('faces/happy_*png')) # number of distinct faces
-numPresent <- 42  # number of presentations of a reward_emotion combo
+# number of presentations of a reward_emotion combo
+numPresent <- 63  # 42  for behav, multiple of numFaces for easy calculations
 numRep     <- 1   # how many times will we show the same reward_emotion combo
 emotions   <- c("happy","fear","scram") #emotions   <- c("happy","neutral","fear")
 #rewardFuns <- c("DEV", "IEV", "CEVR", "CEV") #rewardFuns <- c("DEV","IEV","CEV", "CEVR")
@@ -106,17 +110,18 @@ conditionGrid <- conditionGrid[c(1,    #happy DEV
 #           reward=sample(   rep( rewardFuns, numTrials/length(rewardFuns)), numTrials )
 #        )
 
-ITI.min <- 1000; ITI.max <- 2000; ITI.mean <- 1500;
+# constant ITI for MEG
+ITI.min <- 300;  ITI.max <- 300; ITI.mean <- 300;
 
-# constant ISI for MEG
-ISI.min <- 300;  ISI.max <- 300; ISI.mean <- 300;
+ISI.min <- 1000; ISI.max <- 1500; ISI.mean <- 1250;
+
 
 faceRepeats=numTrials*numPresent/numFaces
 blocklist <- data.frame(
               facenum = as.vector(sapply(1:faceRepeats, function(x){ sample(1:numFaces,numFaces)  })), 
-              ITI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI.min,ITI.max,by=100), ITI.mean)   })),
-              ISI    = 300,
-              #ISI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ISI.min,ISI.max,by=100), ISI.mean)   })),
+              #ITI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ITI.min,ITI.max,by=100), ITI.mean)   })),
+              ITI    = 300,
+              ISI    = as.vector(sapply(1:numTrials, function(x){ randUnifConstrain(numPresent,seq(ISI.min,ISI.max,by=50), ISI.mean)   })),
               block   = rep(1:numTrials, each=numPresent),
               emotion = rep(conditionGrid$emotion, each=numPresent),
               reward  = rep(conditionGrid$reward , each=numPresent)
