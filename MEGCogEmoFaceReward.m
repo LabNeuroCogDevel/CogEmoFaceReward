@@ -111,7 +111,7 @@ function MEGCogEmoFaceReward(varargin)
 
   % if MEG, we want to display white,black,gray boxes for the photodiode
   %  what width should that box have?
-  photodiodeWidth=25
+  photodiodeWidth=25;
   
   % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
@@ -175,7 +175,7 @@ function MEGCogEmoFaceReward(varargin)
   halfwaypt=floor(length(experiment{blockC})/totalSessions); % 252
   
   % how long (trials) is a block
-  [~,blockchangeidx] = unique(experiment{blockC});
+  [junk,blockchangeidx] = unique(experiment{blockC});
   trialsPerBlock     = unique(diff(blockchangeidx)); % 42
   if(length(trialsPerBlock) > 1) 
       fprintf('Whoa!? different trial lengths? I dont know whats goign on!')
@@ -259,7 +259,7 @@ function MEGCogEmoFaceReward(varargin)
      escKey  = KbName('ESCAPE');
 
      %what keys are okay to press
-     acceptableKeyPresses = [ KbName('space') KbName('1') ];
+     acceptableKeyPresses = [ KbName('space') KbName('1!') ];
   
      %% preload textures
      % makes assumption that images for every face of every facenumber
@@ -491,7 +491,8 @@ function MEGCogEmoFaceReward(varargin)
 
             Screen('TextSize', w, 22);
             %% give subj a 60 second break with countdown            
-            for cdown = 60:-1:1
+            if(~ opts.MEG ) 
+              for cdown = 60:-1:1
                 % says e.g. 5 of 6 on first session
                 % then     10 of 12 on the second
                 DrawFormattedText(w, ...
@@ -501,6 +502,15 @@ function MEGCogEmoFaceReward(varargin)
                     ],'center','center',black);               
                 Screen('Flip',w);
                 WaitSecs(1.0);
+              end
+            else
+                DrawFormattedText(w, ...
+                    [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
+                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks*subject.run_num/totalSessions) ...
+                    '\n\nTake a break\n\n'
+                    ],'center','center',black);               
+                Screen('Flip',w);
+                waitForResponse('space');
             end
             
             drawRect(i+1);
@@ -661,10 +671,9 @@ function MEGCogEmoFaceReward(varargin)
             if(keyCode(escKey)); 
                 msgAndCloseEverything(['Quit on trial ' num2str(i)]);
                 error('quit early (on %d)\n',i)
-            end
-            %if keyCode(spaceKey)
+            elseif any(keyCode(acceptableKeyPresses))
                 break
-            %end
+            end
         end
         
         % Wait 1 ms before checking the keyboard again to prevent
@@ -723,7 +732,14 @@ function MEGCogEmoFaceReward(varargin)
 
 
    %% wait for a response
-    function seconds = waitForResponse
+    function seconds = waitForResponse(varargin)
+      %% sometimes we only want a specfic set of keys
+      if(~isempty(varargin))
+       usekeys=KbName(varargin{1});
+      else
+       usekeys=acceptableKeyPresses;
+      end
+      
       while(1)
           [ keyIsDown, seconds, keyCode ] = KbCheck;
           
@@ -736,7 +752,7 @@ function MEGCogEmoFaceReward(varargin)
           % if(keyIsDown && any(keyCode)); break; end %any() is redudant
 
           % specify keys
-          if(keyIsDown && any(keyCode(acceptableKeyPresses))); break; end 
+          if(keyIsDown && any(keyCode(usekeys))); break; end 
 
           WaitSecs(.001);
       end
@@ -1146,11 +1162,14 @@ function MEGCogEmoFaceReward(varargin)
     function drawPhotodiodeBox(color)
        % draw box for photodiode, opposite luminocity as when face is on
        if(opts.DEBUG==1 && opts.MEG==1)
+         
+        diodeboxes= [0 0 photodiodeWidth  photodiodeWidth; ...
+                     screenResolution(1)-photodiodeWidth 0 screenResolution(1)  photodiodeWidth; ...
+                     0 screenResolution(2)-photodiodeWidth photodiodeWidth  screenResolution(2); ...
+                     screenResolution(1)-photodiodeWidth screenResolution(2)-photodiodeWidth screenResolution(1)  screenResolution(2) ]';  
+           
          % Put box on all corners
-         Screen('FillRect',w,color,[ 0 0 photodiodeWidth  photodiodeWidth ]) 
-         Screen('FillRect',w,color,[ screenResolution-25 0 photodiodeWidth  photodiodeWidth ]) 
-         Screen('FillRect',w,color,[ 0 screenResolution-25 photodiodeWidth  photodiodeWidth ]) 
-         Screen('FillRect',w,color,[ screenResolution-25 screenResolution-25 photodiodeWidth  photodiodeWidth ]) 
+         Screen('FillRect',w,color,diodeboxes) 
          % or just draw one big one
          %photodiodeRect=[0 0 75 75];
          %Screen('FillRect',w,color,photodiodeRect) 
