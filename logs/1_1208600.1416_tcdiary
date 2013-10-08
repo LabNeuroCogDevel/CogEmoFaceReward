@@ -1,0 +1,28 @@
+NOTE: odd subject, order reversed of input csv!
+PTB-INFO: Most graphics cards will not support proper syncing to vertical retrace when
+PTB-INFO: running in windowed mode (non-fullscreen). If PTB aborts with 'Synchronization failure'
+PTB-INFO: you can disable the sync test via call to Screen('Preference', 'SkipSyncTests', 2); .
+PTB-INFO: You won't get proper stimulus onset timestamps though, so windowed mode may be of limited use.
+PTB-WARNING: ==============================================================================================================================
+PTB-WARNING: WINDOWS DWM DESKTOP COMPOSITOR IS ACTIVE! ALL FLIP STIMULUS ONSET TIMESTAMPS WILL BE VERY LIKELY UNRELIABLE AND LESS ACCURATE!
+PTB-WARNING: STIMULUS ONSET TIMING WILL BE UNRELIABLE AS WELL, AND GRAPHICS PERFORMANCE MAY BE SEVERELY REDUCED! STIMULUS IMAGES MAY NOT
+PTB-WARNING: SHOW UP AT ALL! DO NOT USE THIS MODE FOR RUNNING REAL EXPERIMENT SESSIONS WITH ANY REQUIREMENTS FOR ACCURATE TIMING!
+PTB-WARNING: ==============================================================================================================================
+
+WARNING: Couldn't compute a reliable estimate of monitor refresh interval! Trouble with VBL syncing?!?
+
+
+----- ! PTB - ERROR: SYNCHRONIZATION FAILURE ! ----
+
+One or more internal checks (see Warnings above) indicate that synchronization
+of Psychtoolbox to the vertical retrace (VBL) is not working on your setup.
+
+This will seriously impair proper stimulus presentation and stimulus presentation timing!
+Please read 'help SyncTrouble' for information about how to solve or work-around the problem.
+You can force Psychtoolbox to continue, despite the severe problems, by adding the command
+Screen('Preference', 'SkipSyncTests', 1); at the top of your script, if you really know what you are doing.
+
+
+NOT USING SOUND
+sent 47 @ 12:23:6.761000e+00
+Quit on trial 43
