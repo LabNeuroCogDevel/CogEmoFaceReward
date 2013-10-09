@@ -85,7 +85,6 @@ allM <- ddply(allM, .(Subject), function(subdf) {
     subdf
 })
 
-
 png("Subject_SSE_byModel.png", width=8, height=6, units="in", res=300)
 ggplot(allM, aes(x=Subject, y=SSE, color=model)) + geom_jitter(size=2, position = position_jitter(width = .3, height=0)) + xlab("Subject") + ylab("SSE") +
     theme(axis.text.x=element_text(angle=90)) + scale_color_brewer(palette="Dark2") + coord_flip() + theme_bw(base_size=14)
