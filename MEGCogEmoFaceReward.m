@@ -111,7 +111,8 @@ function MEGCogEmoFaceReward(varargin)
 
   % if MEG, we want to display white,black,gray boxes for the photodiode
   %  what width should that box have?
-  photodiodeWidth=25;
+  frameWidth=50;
+  photodiodeWidth=frameWidth;
   
   % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
@@ -151,8 +152,8 @@ function MEGCogEmoFaceReward(varargin)
   %  read in order of things
   % note, only one of these (Frank had 8)
   % TODO: abstact to different inputs
-  %    fid=fopen(opts.TrialCSV)
-  fid=fopen('FaceITI.csv');
+  fid=fopen(opts.TrialCSV);
+  %fid=fopen('FaceITI_MEG.csv');
   indexes={1,2,3,4,5,6};
   [ facenumC, ITIC, ISIC, blockC, emotionC, rewardC ] = indexes{:};
   experiment=textscan(fid,'%d,%d,%d,%d,%q','HeaderLines',1);
@@ -259,7 +260,7 @@ function MEGCogEmoFaceReward(varargin)
      escKey  = KbName('ESCAPE');
 
      %what keys are okay to press
-     acceptableKeyPresses = [ KbName('space') KbName('1!') ];
+     acceptableKeyPresses = [ KbName('space') KbName('2@') ];
   
      %% preload textures
      % makes assumption that images for every face of every facenumber
@@ -298,28 +299,24 @@ function MEGCogEmoFaceReward(varargin)
      Instructions = { ...
         [ 'For this game, you will see a dot moving around a picture.\n\n'...
           'The dot will make a full revolution over the course of ' num2str(timerDuration) ' seconds.\n\n' ...
-          'Press any key to win points before the dot makes a full turn.\n\n' ...
+          'Press right index finger to win points before the dot makes a full turn.\n\n' ...
           'Try to win as many points as you can!\n\n' ...
-          'Press any key to continue' ...
         ], ...
         [ 'Sometimes you will win lots of points and sometimes you will win less.\n\n ' ...
           'The time at which you respond affects\n' ...
           'the number of points you win.\n\n' ...
           'If you don''t respond by the end of the turn,\n' ...
           'you will not win any points.\n\n' ...
-          'Press any key to continue' ...
         ], ...
         [ 'When the color of the screen border changes,\n' ...
           'the game has changed. Try responding at different\n' ...
           'times in order to learn how to get the most points.\n\n' ...
-          'Press any key to continue' ...
         ], ...
         [ 
           'Hint: Try to respond at different times\n' ... 
           'in order to learn how to get the most points.\n\n' ...
           'Note: The total length of the experiment does not change\n' ... 
           'and is not affected by when you respond.\n\n' ...
-          'Press any key to begin' ...
         ]
       }; 
     
@@ -329,8 +326,10 @@ function MEGCogEmoFaceReward(varargin)
      InstructionsBetween = [ ...
          'Next, you will see a new set of pictures.\n' ...
          'Try responding at different times in order to learn\n' ...
-         'how to win the most points with this new set.\n\n' ...
-         'Press any key when you are ready' ];
+         'how to win the most points with this new set.\n\n'];
+     if(~opts.MEG)
+         InstructionsBetween = [  InstructionsBetween 'Press any key when you are ready' ];
+     end
      
      % is the first time loading?
      % we know this by where we are set to start (!=1 if loaded from mat)
@@ -339,7 +338,7 @@ function MEGCogEmoFaceReward(varargin)
          for instnum = 1:length(Instructions)
              DrawFormattedText(w, Instructions{instnum},'center','center',black);
              Screen('Flip', w);
-             waitForResponse;
+             waitForResponse('space');
          end
 
         % inialize the order of events only if we arn't resuming
@@ -350,14 +349,16 @@ function MEGCogEmoFaceReward(varargin)
      else
          DrawFormattedText(w, ['Welcome Back!\n\n' InstructionsBetween],'center','center',black);
          Screen('Flip', w);
-         waitForResponse;
+         waitForResponse('space');
      end
      
      %% give subj a countdown and fixation
-     for cdown = 3:-1:1
-         DrawFormattedText(w, ['Beginning in\n\n' num2str(cdown)],'center','center',black);
-         Screen('Flip',w);
-         WaitSecs(1.0);
+     if(~ opts.MEG)
+         for cdown = 3:-1:1
+             DrawFormattedText(w, ['Beginning in\n\n' num2str(cdown)],'center','center',black);
+             Screen('Flip',w);
+             WaitSecs(1.0);
+         end
      end
      
      i=start; % fixation calls drawRect which uses i to get the block number
@@ -476,11 +477,14 @@ function MEGCogEmoFaceReward(varargin)
         
         
         
-        %%%%%%%%%%%%%%%% halfwaypt break!
-        if i==halfwaypt 
-            msgAndCloseEverything(['Great Job! Your score so far is ', num2str(score) ,' points\n\nLet''s take a break']);
-            sendTrigger(trigger.done)
-            return
+        %%%%%%%%%%%%%%%% halfwaypt break! 
+        % not for MEG
+        if(~opts.MEG)
+            if i==halfwaypt 
+                msgAndCloseEverything(['Great Job! Your score so far is ', num2str(score) ,' points\n\nLet''s take a break']);
+                sendTrigger(trigger.done)
+                return
+            end
         end
         
                  
@@ -517,7 +521,7 @@ function MEGCogEmoFaceReward(varargin)
             DrawFormattedText(w, InstructionsBetween,'center','center',black);
             blockTotal=0; %reset block score for new block
             Screen('Flip', w);
-            waitForResponse;
+            waitForResponse('space');
 
         end
         
@@ -598,7 +602,7 @@ function MEGCogEmoFaceReward(varargin)
        else
            rgbcolorIDX=experiment{blockC}(t);
        end
-       Screen('FrameRect', w, blockColors(rgbcolorIDX,:), [], 25);
+       Screen('FrameRect', w, blockColors(rgbcolorIDX,:), [], frameWidth);
        
        drawPhotodiodeBox(emptyPhotodiodeColor)
        % draw box for photodiode, opposite luminocity as when face is on
@@ -822,7 +826,7 @@ function MEGCogEmoFaceReward(varargin)
         subject.subj_id = input('Enter the subject ID number: ','s');
         
 
-        filename = ['subjects/' subject.subj_id '_tc'];
+        filename = ['subjects/MEG_' subject.subj_id '_tc'];
 
         % is the subject new? should we resume from existing?
         % set t accordingly, maybe load subject structure 
@@ -876,12 +880,70 @@ function MEGCogEmoFaceReward(varargin)
                 %   clear subject, and load from mat file
                 if strcmp(resume,'y')
                     
+                    %% from which block
+                    
                     clear subject
                     start=localVar.trialnum;
                     subject=localVar.subject;
 
                     order=localVar.order;
                     score=localVar.score;
+
+                    % restart from the last fully completed block
+                    order_completed=order( cellfun(@(x) length(x)>1,order) );
+
+                    [val,startpos] = unique(cell2mat(cellfun(@(x) x(4),order_completed)),'first');
+                    [val,endpos]   = unique(cell2mat(cellfun(@(x) x(4),order_completed)),'last');
+                    incompleteblock=val(find( endpos - startpos < trialsPerBlock-1) );
+                    % there should only be one incomplete block
+                    if(length(incompleteblock) > 1)
+                       incompleteblock
+                       error('too many incompleted blocks!')
+                    elseif(length(incompleteblock == 1))
+                      
+                       % move start back
+                       toremove=find(cellfun(@(x) x{4}==incompleteblock,order_completed));
+                       start=localVar.trialnum - length(toremove) +1; % we will start on the first of the removed
+                       fprintf('starting trial moved from %d to %d\n',localVar.trialnum, start)
+
+                       %% start chopping the incomplete block
+                       fprintf('chopping off incomplete block "%d"\n', incompleteblock);
+                       fprintf('originally completed trials: %d\t', length(order_completed))
+
+                       % replace all rows of the incomplete block
+                       for i=1:length(toremove)
+                         order{toremove(i)}= [];
+                       end
+                      
+
+                       order_completed=order(cellfun(@(x) length(x)>1,order));
+                       fprintf('new length: %d\n', length(order_completed))
+                       fprintf('have completed blocks:\n')
+                       disp( unique(cell2mat(cellfun(@(x) x(4),order_completed)),'last') )
+
+                       
+                       
+                    else
+                      % don't need to do anything order is perfect!
+                      % we killed right on a new block
+                      fprintf('resuming right were we left off!\n')
+
+                      if(mod( start-1, trialsPerBlock) ~= 0)
+                       fprintf('.. but maybe we need to increase trial to start on (%d)\n', start);
+                       start=start+1; % we never incremented the trial position when we exited
+                      end
+                    end
+                    
+                    % sanity check -- length should be a multiple of trialsPerBlock
+                    if(mod( length(order_completed), trialsPerBlock) ~= 0)
+                      error('trial length is off: mod(%d,%d) ~= 0',length(order_completed), trialsPerBlock)
+                    end
+                    if(mod( start-1, trialsPerBlock) ~= 0)
+                      error('last completed trial is off: mod(%d,%d) ~= 0',start-1, trialsPerBlock)
+                    end
+
+                    fprintf('RESUMING ON PRESENTED BLOCK # %d\n', (start-1)/trialsPerBlock + 1); 
+
                 
                 % otherwise, move the existing txt file to a backup
                 % and we'll fill in the subject info below
@@ -1056,10 +1118,10 @@ function MEGCogEmoFaceReward(varargin)
       if(opts.USEDAQ==1)
           handle = digitalio('parallel','lpt1');
           addline(handle,0:7,'out');
-          opts.port = daqgetfield(dio,'uddobject'); % speed up write by caching handle
+          opts.port = daqgetfield(handle,'uddobject'); % speed up write by caching handle
           % http://psychtoolbox.org/faqttltrigger
       else 
-          fprintf('initTriggerSender: not yet coded to establish trigger sender\n')
+          fprintf('initTriggerSender: disabled\n')
       end
       %% Serial Port - via matlab
       % % see instrhwinfo('serial')
@@ -1106,12 +1168,18 @@ function MEGCogEmoFaceReward(varargin)
 
     % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
     function getopts(o)
-      opts.trigger=0;
-      opts.TrialCSV='FaceITI.csv';
-      opts.DEBUG=0;
+      
+      %% MEG BY DEFAULT
       opts.ports=0; % handle for serial/lpt port
-      opts.screen=[1680 1050];
-      opts.sound=1;
+      opts.DEBUG=0;
+      opts.MEG=1;
+      opts.trigger=1;
+      opts.USEDAQ=1;
+      opts.sound=0;
+      opts.screen=[1280 1024];
+      opts.TrialCSV='FaceITI_MEG.csv';
+      
+      %% PARSE REST
       i=1;
       while(i<=length(o))
           switch o{i}
@@ -1145,9 +1213,17 @@ function MEGCogEmoFaceReward(varargin)
                   opts.trigger=1;
                   opts.USEDAQ=1;
                   opts.sound=0;
-                  opts.TrialCSV='FaceITI.MEG.csv';
+                  opts.TrialCSV='FaceITI_MEG.csv';
+
+              case {'fMRI'}
+                  opts.trigger=0;
+                  opts.TrialCSV='FaceITI.csv';
+                  opts.screen=[1680 1050];
+                  opts.sound=1;
+
               case {'NODAQ'}
                   opts.USEDAQ=0;
+
               otherwise
                   fprintf('unknown option #%d\n',i)
           end
@@ -1161,7 +1237,7 @@ function MEGCogEmoFaceReward(varargin)
 
     function drawPhotodiodeBox(color)
        % draw box for photodiode, opposite luminocity as when face is on
-       if(opts.DEBUG==1 && opts.MEG==1)
+       if(opts.MEG==1)
          
         diodeboxes= [0 0 photodiodeWidth  photodiodeWidth; ...
                      screenResolution(1)-photodiodeWidth 0 screenResolution(1)  photodiodeWidth; ...
