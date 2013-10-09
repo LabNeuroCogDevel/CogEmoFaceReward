@@ -84,6 +84,9 @@ function CogEmoFaceReward
   %screenResolution=[1440 900]; %new eyelab room
   screenResolution=[1680 1050]; %mac laptop
   
+  %buyer beware: do not uncomment this for production use
+  %Screen('Preference', 'SkipSyncTests', 1);
+  
   % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
