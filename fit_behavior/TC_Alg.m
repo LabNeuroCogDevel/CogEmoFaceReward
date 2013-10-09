@@ -304,6 +304,9 @@ Noise=0;
 dist_type = 'beta';
 
 mean_s = 0; mean_f = 0;
+%initial variances of fast/slow resps for kalman filter
+%just init to rewvar so initial lr = 0.5
+vars = (std(Reward))^2;varf = (std(Reward))^2;
 
 % GENERATIVE model just pick some params to generate data
 global generative;

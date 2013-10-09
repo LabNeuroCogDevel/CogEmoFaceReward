@@ -6,6 +6,15 @@ library(gdata)
 
 source(file.path(getMainDir(), "Miscellaneous", "Global_Functions.R"))
 
+#questionnaire data
+behav <- read.xls("clock_questionnaires_n36.xlsx", sheet="Sheet1", skip=1)
+behav$LunaID <- factor(behav$LunaID)
+
+
+png("AgeHist.png", width=700, height=500, res=300)
+ggplot(behav, aes(x=AgeAtVisit)) + geom_histogram(binwidth=2) + xlab("Age at Visit") + ylab("Count") + theme_bw(base_size=12)
+dev.off()
+
 ##compare fits across subjects and models
 fitFiles <- list.files(path="../fit_behavior", pattern="SubjsSummary.*", full.names = TRUE)
 allM <- list()
@@ -14,7 +23,7 @@ for (f in fitFiles) {
     p <- read.table(f, header=TRUE, sep="\t")
     p$nparams <- length(which(names(p) %notin% c("Subject", "Session", "ignore", "SSE", "model")))
     ##p <- subset(p, select=c("Subject", "SSE", "nparams"))
-    if (model == "noemo_scram") {
+    if (model == "noemo_scram" || model=="noemosticky_scram") {
       p$ntrials <- 168 #fixed: 4 runs of 42 trials
     } else { 
       p$ntrials <- 504 #fixed: 12 runs of 42 trials 
@@ -29,6 +38,7 @@ allM <- do.call(rbind.fill, allM)
 allM$AIC <- with(allM, ntrials*(log(2*pi*(SSE/ntrials))+1) + 2*nparams)
 
 nosticky <- gdata::drop.levels(subset(allM, model %in% levels(allM$model)[!grepl("sticky", levels(allM$model), fixed=TRUE)]))
+noscram <- gdata::drop.levels(subset(allM, model %in% levels(allM$model)[!grepl("scram", levels(allM$model), fixed=TRUE)]))
 
 ##identify subjects who had a positive epsilon in at least one non-sticky model
 posEpsSubjects <- unique(unlist(subset(nosticky, (explore > 0 | (explore_scram > 0 | explore_fear > 0 | explore_happy > 0)), select=Subject)))
@@ -38,7 +48,8 @@ posEps <- gdata::drop.levels(subset(nosticky, Subject %in% posEpsSubjects))
 
 ##for compatibility with spm_BMS.m (Bayesian Model Selection),
 ##need a subjects x models AIC matrix
-AICmat <- do.call(cbind, lapply(split(allM, allM$model), "[[", "AIC"))
+#AICmat <- do.call(cbind, lapply(split(allM, allM$model), "[[", "AIC"))
+AICmat <- do.call(cbind, lapply(split(noscram, noscram$model), "[[", "AIC"))
 
 AICmat_posEps <- do.call(cbind, lapply(split(posEps, posEps$model), "[[", "AIC"))
 
@@ -49,18 +60,22 @@ AICmat <- -1*AICmat
 AICmat_posEps <- -1*AICmat_posEps
 
 library(R.matlab)
-##writeMat(con="AICmatrix_n36.mat", AICmat=AICmat, mnames=levels(allM$model))
-writeMat(con="AICmatrix_n36.mat", AICmat=AICmat_posEps, mnames=levels(posEps$model))
+#writeMat(con="AICmatrix_n36.mat", AICmat=AICmat, mnames=levels(allM$model))
+writeMat(con="AICmatrix_n36.mat", AICmat=AICmat, mnames=levels(noscram$model))
+#writeMat(con="AICmatrix_n36.mat", AICmat=AICmat_posEps, mnames=levels(posEps$model))
 
 ##run SPM BMS in MATLAB
-system("matlab -nodisplay < computeBMSprobs.m")
+#system("matlab -nodisplay < computeBMSprobs.m")
+system("/Applications/MATLAB_R2013b.app/bin/matlab -nodisplay < computeBMSprobs.m")
 
 BMSresults <- readMat(con="AICresults_n36.mat")
 
 ##form into a data.frame
+#BMSresults <- with(BMSresults, data.frame(model=unlist(mnames), alpha=as.vector(alpha), expr=as.vector(expr), xp=as.vector(xp), mAIC=apply(AICmat, 2, mean)))
 BMSresults <- with(BMSresults, data.frame(model=unlist(mnames), alpha=as.vector(alpha), expr=as.vector(expr), xp=as.vector(xp), mAIC=apply(AICmat, 2, mean)))
 
-print(BMSresults)
+library(xtable)
+print(xtable(BMSresults[order(BMSresults$mAIC),]), include.rownames=FALSE)
 
 allM <- ddply(allM, .(Subject), function(subdf) {
     minAIC <- min(subdf$AIC)
@@ -132,11 +147,10 @@ plot(~ AICchange + epsChange, noemo)
 learning_emoexplore <- read.table("../fit_behavior/SubjsSummary_emoexploresticky.txt", header=TRUE)
 learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemosticky.txt", header=TRUE)
 #learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemo_scram.txt", header=TRUE)
-behav <- read.xls("clock_questionnaires_n36.xls", sheet="Sheet1", skip=1)
-behav$LunaID <- factor(behav$LunaID)
 
 learning_emoexplore <- rename(learning_emoexplore, c(Subject="LunaID"))
-learning_emoexplore <- merge(learning_emoexplore, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS")], by="LunaID")
+learning_emoexplore <- merge(learning_emoexplore, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
+            "RIST.INDEZ", "SSS_Total", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
 
 learning_noemo <- rename(learning_noemo, c(Subject="LunaID"))
 learning_noemo <- merge(learning_noemo, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
@@ -148,18 +162,55 @@ learning_noemo$exploreGt0 <- sapply(learning_noemo$explore, function(x) { ifelse
 cor.test(~ exploreGt0 + AgeAtVisit, learning_noemo)
 cor.test(~ explore + AgeAtVisit, learning_noemo)
 cor.test(~ explorePos + AgeAtVisit, learning_noemo)
+cor.test(~ explore + DERS_Total, learning_noemo)
+cor.test(~ alphaG + SSS_Total, learning_noemo)
+cor.test(~ alphaN + SSS_Total, learning_noemo)
+
+#go and no go learning rates
+cor.test(~ alphaG + AgeAtVisit, learning_noemo)
+cor.test(~ alphaN + AgeAtVisit, learning_noemo)
+
+ggplot(learning_noemo, aes(x=AgeAtVisit, y=alphaG)) + geom_point() + stat_smooth()
+ggplot(learning_noemo, aes(x=AgeAtVisit, y=alphaN)) + geom_point() + stat_smooth()
+
 
 ggplot(learning_noemo, aes(x=AgeAtVisit, y=exploreGt0)) + geom_point()
 
 corstarsl(learning_noemo, omit=c("LunaID", "Session", "ignore"))
+corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
 
 #explore by emotion
 explore.melt <- melt(learning_emoexplore[,c("LunaID", "AgeAtVisit", "UPPS_SS", "UPPS_Urg", "UPPS_PosUrg", 
             "explore_scram", "explore_fear", "explore_happy")], id.vars=c("LunaID", "AgeAtVisit", "UPPS_SS", "UPPS_Urg", "UPPS_PosUrg"))
 
+learning_emoexplore$explore_HappyMScramble <- with(learning_emoexplore, explore_happy - explore_scram)
+learning_emoexplore$explore_FearMScramble <- with(learning_emoexplore, explore_fear - explore_scram)
+
+
+hms <- ggplot(learning_emoexplore, aes(x=factor(1:36), y=sort(explore_HappyMScramble))) + geom_bar(stat="identity") +
+        coord_flip() + theme_bw(base_size=16) + xlab("Subject") + ylab("Explore (Happy - Scrambled)") +
+        theme(axis.text.y=element_blank())
+print(hms)
+
+fms <- ggplot(learning_emoexplore, aes(x=factor(1:36), y=sort(explore_FearMScramble))) + geom_bar(stat="identity") +
+        coord_flip() + theme_bw(base_size=16) + xlab("Subject") + ylab("Explore (Fear - Scrambled)") + 
+        theme(axis.text.y=element_blank())
+print(fms)
+
+
+
+library(gridExtra)
+pdf("Within-subjects EmoExplore Diffs from Scrambled.pdf", width=11, height=6)
+grid.arrange(hms, fms, ncol=2)
+dev.off()
+
 #non-parametric repeated measures test for explore parameter
 friedman.test(value ~ variable | LunaID, data = explore.melt)
 library(ez)
+
+library(lme4)
+
+summary(glmer(value > 0 ~ variable | LunaID, data = explore.melt, family=binomial))
 
 tapply(explore.melt$value, explore.melt$variable, mean)
 ezANOVA(explore.melt, dv="value", wid="LunaID", within="variable")
@@ -170,14 +221,34 @@ anova(lm(value ~ variable*AgeAtVisit*UPPS_Urg, data = explore.melt))
 
 library(nlme)
 anova(lme(value ~ variable, random=~1 | LunaID, data=explore.melt))
+anova(lme(value ~ variable*AgeAtVisit, random=~1 | LunaID, data=explore.melt))
+
 summary(lme(value ~ variable*AgeAtVisit*UPPS_Urg, random=~1 | LunaID, data=explore.melt))
-anova(lme(value ~ variable*AgeAtVisit*UPPS_Urg, random=~1 | LunaID, data=explore.melt))
+anova(lme(value ~ variable*scale(AgeAtVisit)*scale(UPPS_Urg), random=~1 | LunaID, data=explore.melt))
 anova(lme(value ~ variable*AgeAtVisit*UPPS_PosUrg, random=~1 | LunaID, data=explore.melt))
 anova(lme(value ~ variable*AgeAtVisit*UPPS_SS, random=~1 | LunaID, data=explore.melt))
 
+#ageUrg <- lmer(value ~ variable*AgeAtVisit*UPPS_Urg + (1 | LunaID), explore.melt)
+ageUrg <- lmer(value ~ variable*UPPS_Urg + (1 | LunaID), explore.melt)
+summary(ageUrg)
+anova(ageUrg)
+
+cm <- lmerCellMeans(ageUrg, divide="AgeAtVisit")
+cm <- lmerCellMeans(ageUrg)
+
+ggplot(cm, aes(x=UPPS_Urg, y=value, shape=AgeAtVisit, color=variable)) + scale_color_brewer("Emotion") + ylab("Explore") +
+    xlab("Negative Urgency") + scale_shape("Age At Visit") + geom_line() + geom_point()
+
+pdf("UPPS Urgency by Emotion Exploration.pdf", width=9, height=6)
+ggplot(cm, aes(x=UPPS_Urg, y=value, color=variable, ymin=value-se, ymax=value+se)) + scale_color_brewer("Emotion", palette="Dark2") + ylab("Explore") +
+    xlab("Negative Urgency") + geom_line() + geom_point() + geom_errorbar() + theme_bw(base_size=16) +
+    geom_hline(yintercept=0)
+dev.off()
+
 
 png("Explore_by_emotion.png", width=12, height=10, units="in", res=300)
-ggplot(explore.melt, aes(x=value)) + geom_histogram(binwidth=1000) + facet_wrap(~variable) + ggtitle("Exploration parameter by emotion")
+ggplot(explore.melt, aes(x=value)) + geom_histogram(binwidth=2000) + 
+        facet_wrap(~variable) + ggtitle("Exploration parameter by emotion")
 dev.off()
 
 #plot scatter plot of exploration by condition and age
@@ -226,31 +297,107 @@ for (f in tcFiles) {
 allData <- do.call(rbind, allData)
 row.names(allData) <- NULL
 allData <- allData[,c("Subject", "Run", "Block", "Trial", "Func", "Emotion", "Mag", "Freq", "ScoreInc", "EV", "RT", "Image")]
+allData <- plyr::rename(allData, c(Subject="LunaID"))
 
 ##verify that each subject completed 42 trials for each Func x Emotion condition
-with(allData, table(Subject, Func, Emotion))
+with(allData, table(LunaID, Func, Emotion))
 
 ##compute trial within a block
-allData$TrialRel <- unlist(lapply(split(allData, f=list(allData$Subject, allData$Func, allData$Emotion)), function(l) { return(1:nrow(l)) } ))
+allData$TrialRel <- unlist(lapply(split(allData, f=list(allData$LunaID, allData$Func, allData$Emotion)), function(l) { return(1:nrow(l)) } ))
 ##allData$TrialRel2 <- 1:42 ##shouldn't this be identical and easier? :) Just use recycling
 
+
+allData <- merge(allData, behav[,c("LunaID", "AgeAtVisit")], by="LunaID")
+allData$Half <- factor(sapply(allData$TrialRel, function(x) { ifelse(x > 21, "H2", "H1")}))
+
 pdf("AllSubjRTs.pdf", width=11, height=8)
-for (s in split(allData, allData$Subject)) {
-    g <- ggplot(s, aes(x=TrialRel, y=RT)) + geom_line() + facet_grid(Emotion ~ Func) + ggtitle(s$Subject[1L])
+for (s in split(allData, allData$LunaID)) {
+    g <- ggplot(s, aes(x=TrialRel, y=RT)) + geom_line() + facet_grid(Emotion ~ Func) + ggtitle(s$LunaID[1L])
     print(g)
 }
 dev.off()
 
-allData <- ddply(allData, .(Subject, Block), function(subdf) {
+pdf("AllSubjRTHist.pdf", width=11, height=8)
+ggplot(allData, aes(x=RT)) + geom_histogram(binwidth=250) + facet_grid(Emotion ~ Func) + ggtitle("All Subjects")
+for (s in split(allData, allData$LunaID)) {
+  g <- ggplot(s, aes(x=RT)) + geom_histogram(binwidth=250) + facet_grid(Emotion ~ Func) + ggtitle(s$LunaID[1L])
+  print(g)
+}
+dev.off()
+
+#Look at expected value as a function of emotion and reward contingency.
+#This is pure expected value (i.e., for a given RT, just frequency * magnitude) and is not based on subjects' reward history.
+#Consequently, this is our best estimate of "good performance"
+evMixedAll <- lmer(EV ~ Func*Emotion + (1|LunaID), allData)
+evMixedH1 <- lmer(EV ~ Func*Emotion + (1|LunaID), subset(allData, TrialRel <= 21))
+evMixedH2 <- lmer(EV ~ Func*Emotion + (1|LunaID), subset(allData, TrialRel > 21))
+cmAll <- lmerCellMeans(evMixedAll)
+cmH1 <- lmerCellMeans(evMixedH1)
+cmH2 <- lmerCellMeans(evMixedH2)
+
+pdf("Average EV.pdf", width=9, height=7)
+ggplot(cmAll, aes(x=Func, y=EV, color=Emotion, group=Emotion, ymin=plo, ymax=phi)) + geom_point(size=5) + geom_errorbar(width=0.5) + ggtitle("All Trials")
+ggplot(cmH1, aes(x=Func, y=EV, color=Emotion, group=Emotion, ymin=plo, ymax=phi)) + geom_point(size=5) + geom_errorbar(width=0.5) + ggtitle("First Half")
+ggplot(cmH2, aes(x=Func, y=EV, color=Emotion, group=Emotion, ymin=plo, ymax=phi)) + geom_point(size=5) + geom_errorbar(width=0.5) + ggtitle("Second Half")
+dev.off()
+
+#look at how EV is modulated by Age
+evMixedAllAge <- lmer(EV ~ Func*Emotion*AgeAtVisit + (1|LunaID), allData)
+evMixedAllAgeHalf <- lmer(EV ~ Func*Emotion*AgeAtVisit*Half + (1|LunaID), allData)
+evMixedH1Age <- lmer(EV ~ Func*Emotion*AgeAtVisit + (1|LunaID), subset(allData, TrialRel <= 21))
+evMixedH2Age <- lmer(EV ~ Func*Emotion*AgeAtVisit + (1|LunaID), subset(allData, TrialRel > 21))
+cmAllAge <- lmerCellMeans(evMixedAllAge, n.cont=10)
+cmAllAgeHalf <- lmerCellMeans(evMixedAllAgeHalf, n.cont=10)
+cmH1Age <- lmerCellMeans(evMixedH1Age, n.cont=10)
+cmH2Age <- lmerCellMeans(evMixedH2Age, n.cont=10)
+
+
+pdf("Average EV with Age.pdf", width=9, height=7)
+ggplot(cmAllAgeHalf, aes(x=AgeAtVisit, y=EV, color=Emotion, ymin=plo, ymax=phi)) + facet_grid(Func~Half, scales="free_y") + geom_point(size=5) + geom_errorbar(width=0.5) + geom_line(size=1) + ggtitle("All Trials")
+ggplot(cmAllAge, aes(x=AgeAtVisit, y=EV, color=Func, ymin=plo, ymax=phi)) + facet_wrap(~Emotion) + geom_point(size=5) + geom_errorbar(width=0.5) + geom_line(size=1) + ggtitle("All Trials")
+ggplot(cmH1Age, aes(x=AgeAtVisit, y=EV, color=Func, ymin=plo, ymax=phi)) + facet_wrap(~Emotion) + geom_point(size=5) + geom_errorbar(width=0.5) + geom_line(size=1) + ggtitle("First Half")
+ggplot(cmH2Age, aes(x=AgeAtVisit, y=EV, color=Func, ymin=plo, ymax=phi)) + facet_wrap(~Emotion) + geom_point(size=5) + geom_errorbar(width=0.5) + geom_line(size=1) + ggtitle("Second Half")
+dev.off()
+
+allData <- ddply(allData, .(LunaID, Block), function(subdf) {
       #for complete safety, re-sort by trial so that smooth is proper
       subdf <- subdf[order(subdf$TrialRel),]
       subdf$RTSpline <- smooth.spline(x=subdf$TrialRel, y=subdf$RT)$y
       subdf$RTLoess0p2 <- lowess(x=subdf$TrialRel, y=subdf$RT, f = 0.2)$y
+      subdf$EVSpline <- smooth.spline(x=subdf$TrialRel, y=subdf$EV)$y
+      subdf$EVLoess0p2 <- lowess(x=subdf$TrialRel, y=subdf$EV, f = 0.2)$y
       return(subdf)
     })
 
-##look at first-half versus last-half RTs for each condition per subject
-RTagg <- ddply(allData, .(Subject, Func, Emotion), function(subdf) {
+#look at trial-by-trial changes in smoothed EV as a function of emotion, age, and contingency
+#treat trial as factor for a moment just to get the cell means by trial (not assuming a smooth interaction
+#with age)
+allData$TrialRelFac <- factor(allData$TrialRel) 
+evMixedTrial <- lmer(EVSpline ~ Func*Emotion*TrialRelFac*AgeAtVisit + (1|LunaID), allData)
+cmMixedTrial <- lmerCellMeans(evMixedTrial, n.cont=10, divide="AgeAtVisit")
+
+pdf("Estimated EV over Trials by Age, Function, and Emotion.pdf", width=14, height=11)
+ggplot(cmMixedTrial, aes(x=TrialRelFac, y=EVSpline, color=AgeAtVisit, ymin=plo, ymax=phi)) +
+    geom_point(size=4) +
+    geom_errorbar(width=0.25) +
+    facet_grid(Func~Emotion)
+dev.off()
+    
+#similar idea for RT     
+rtMixedTrial <- lmer(RTSpline ~ Func*Emotion*TrialRelFac*AgeAtVisit + (1|LunaID), allData)
+cmMixedTrial <- lmerCellMeans(rtMixedTrial, n.cont=10, divide="AgeAtVisit")
+
+pdf("Estimated RT over Trials by Age, Function, and Emotion.pdf", width=14, height=11)
+ggplot(cmMixedTrial, aes(x=TrialRelFac, y=RTSpline, color=AgeAtVisit, ymin=plo, ymax=phi)) +
+    geom_point(size=4) +
+    geom_errorbar(width=0.25) +
+    facet_grid(Func~Emotion) +
+    ggtitle("Average RT over trials by Age, Function and Emotion")
+dev.off()
+
+
+##look at first-half versus last-half RTs for each condition per LunaID
+RTagg <- ddply(allData, .(LunaID, Func, Emotion), function(subdf) {
       firstHalf <- subset(subdf, TrialRel <= 0.5*floor(nrow(subdf)))
       lastHalf <- subset(subdf, TrialRel > 0.5*floor(nrow(subdf)))
       h1 <- data.frame(mRT=mean(firstHalf$RT, na.rm=TRUE),
@@ -280,7 +427,7 @@ for (s in split(RTagg, list(RTagg$Emotion, RTagg$Func))) {
   print(t.test(mRTSpline ~ half, s, paired=TRUE))
 }
 
-aggMelt <- melt(RTagg, id.vars=c("Subject", "Func", "Emotion", "half"))
+aggMelt <- melt(RTagg, id.vars=c("LunaID", "Func", "Emotion", "half"))
 png("Split block RT averages.png", width=6, height=6, units="in", res=300)
 ggplot(aggMelt, aes(x=half, y=value)) + geom_boxplot() + facet_grid(variable ~ Func*Emotion) + ylab("Average RT") + xlab("1st half or 2nd half of block")
 dev.off()
@@ -295,13 +442,13 @@ library(gplots)
 
 library(lme4)
 
-RTagg <- plyr::rename(RTagg, c(Subject="LunaID"))
+RTagg <- plyr::rename(RTagg, c(LunaID="LunaID"))
 RTagg <- merge(RTagg, behav[,c("LunaID", "AgeAtVisit", "ADI_Emotional", "ADI_Behavioral", "ADI_Cognitive", 
             "UPPS_Urg", "UPPS_Prem", "UPPS_Pers", "UPPS_SS", "UPPS_PosUrg", "UPPS_Total", "RIST.INDEZ")], by="LunaID")
 
 summary(lmer(mRTSpline ~ Emotion*Func*half*ADI_Emotional + (1 | LunaID), RTagg))
 
-rtModel <- lmer(RTSpline ~ Emotion*Func*TrialRel + (1 + TrialRel | Subject), allData)
+rtModel <- lmer(RTSpline ~ Emotion*Func*TrialRel + (1 + TrialRel | LunaID), allData)
 anova(rtModel)
 rtPred <- lmerCellMeans(rtModel)
 
@@ -310,4 +457,18 @@ ggplot(rtPred, aes(x=TrialRel, y=RTSpline, color=Func)) + facet_wrap(~Emotion) +
 png("Descriptives of RTs by Half.png", width=8, height=4, units="in", res=300)
 textplot(tabular(Emotion*Func ~ (RTh1 + RTh2)*(mean+sd+min+max), data=RTagg), show.rownames = FALSE, show.colnames = FALSE)
 dev.off()
+
+#look at CEV vs. CEVR probability-magnitude tradeoff
+cevH1 <- gdata::drop.levels(subset(RTagg, Func=="CEV" & half=="1"))
+cevrH1 <- gdata::drop.levels(subset(RTagg, Func=="CEVR" & half=="1"))
+
+pmBias <- data.frame(cevH1[,c("LunaID", "Emotion", "AgeAtVisit")], pmTradeoff=cevrH1$mRT - cevH1$mRT)
+tapply(pmBias$pmTradeoff, pmBias$Emotion, mean)
+
+summary(aov(lm(pmTradeoff ~ Emotion, pmBias)))
+summary(lm(pmTradeoff ~ Emotion, pmBias))
+
+summary(lm(pmTradeoff ~ Emotion*AgeAtVisit, pmBias))
+library(car)
+Anova(lm(pmTradeoff ~ Emotion*AgeAtVisit, pmBias))
 
