@@ -75,28 +75,18 @@
 %        * MEG/send ltp trigger codes
 %       see getopts()
 %
+% 2013/10/28
+%  [WF] !!! ADD PROPRITY, use untiltime
+%  [WF] use preset random order (specified in MEGorder/unused
+%         move file to MEGorder/used when used)
+%  [WF] remove counterbalence -- simple reverse of order could cause ugly
+%       ITI+ISI mismatches for matching 
+%  [WF] run number is yyyymmdd because there is only one run
+%  [WF] remove quick response extra wait
 
 function MEGCogEmoFaceReward(varargin)
   %% CogEmoFaceReward
   % WF 2012-10-05
-  % 
-  % read from FaceITI.csv 
-  %  get facenum,ITIs,emotion, and reward for each presentation
-  %
-  % 40 presentations per emotion_reward trial
-  % 20 faces repeated twice for each
-  % there are 3 emotions {fear,neut,happy} and three reward functions {inc,dec,const}
-  % each emotion_reward trial is done twice
-  % 40*2*(3*3) = 720 presentations
-  %
-  % each presentation can last upto 4 seconds
-  % the subject can hit space at any time
-  % reward is calcluated based on the time allowed to elapse and the current reward function
-  %
-  % score function from M. Frank
-  % output emulates that of his timeconflict.m
-  %
-  % This used 'KbDemo' as template
   
   %% Settings:
   % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
@@ -120,25 +110,12 @@ function MEGCogEmoFaceReward(varargin)
      
   
   start       = 1;
-  TR          = 1.0;
-  %Set3 from Color Brewer
-  %only provides 12 colors
-%   blockColors = [141 211 199; ...
-%       255 255 179; ...
-%       190 186 218; ...
-%       251 128 114; ...
-%       128 177 211; ...
-%       253 180 98; ...
-%       179 222 105; ...
-%       252 205 229; ...
-%       217 217 217; ...
-%       188 128 189; ...
-%       204 235 197; ...
-%       255 237 111];
+
+
   blockColors = round(255*hsv(24)); % a different color for each block of trials
   blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
   txtfid      = 0; %just so we know the file pntr's not a private nested function var
-  
+
   receiptDuration  = 1.4; %show feedback for 1400ms
   timerDuration    = 4;
   
@@ -147,24 +124,16 @@ function MEGCogEmoFaceReward(varargin)
   score = 0;
   blockTotal = 0;
   
-  
-  %% set order of trials
-  %  read in order of things
-  % note, only one of these (Frank had 8)
-  % TODO: abstact to different inputs
-  fid=fopen(opts.TrialCSV);
-  %fid=fopen('FaceITI_MEG.csv');
+  %% set order of trials 
+  % experiment order file indexes
   indexes={1,2,3,4,5,6};
   [ facenumC, ITIC, ISIC, blockC, emotionC, rewardC ] = indexes{:};
-  experiment=textscan(fid,'%d,%d,%d,%d,%q','HeaderLines',1);
-   % ugly unpack of " "," "
-  for i=1:length(experiment{5})
-      experiment{6}{i} = experiment{5}{i}(findstr(experiment{5}{i},',')+2:end);
-      experiment{5}{i} = experiment{5}{i}(1:findstr(experiment{5}{i},',')-1    );
-  end
-  fclose(fid);
-
-  % defines triggers as a struct
+  %  read in order of things
+  experiment=getorderfile();
+    
+  
+  
+  %% defines triggers as a struct
   % trigger.(reward function).(emotion).(face or score)
   % plus trigger.(ITI,ISI,done)
   trigger=defineTrigger();
@@ -172,7 +141,7 @@ function MEGCogEmoFaceReward(varargin)
   %% start recording data
   % sets txtfid, subject.*, start, etc  
 
-  totalSessions = 2; %broken into first and second halves
+  totalSessions = opts.totalSessions; %broken into first and second halves
   halfwaypt=floor(length(experiment{blockC})/totalSessions); % 252
   
   % how long (trials) is a block
@@ -189,26 +158,30 @@ function MEGCogEmoFaceReward(varargin)
   % or ask to resume task
   getSubjInfo()
 
+
+  
   % print the top of output file
   if start == 1
     fprintf(txtfid,'#Subj:\t%s\n', subject.subj_id);
     fprintf(txtfid,'#Run:\t%i\n',  subject.run_num); 
     fprintf(txtfid,'#Age:\t%i\n',  subject.age);
     fprintf(txtfid,'#Gender:\t%s\n',subject.gender);
+    
+  end
+  
+  % move order file into used if we've used it
+  if (strfind(opts.TrialCSV,'unused') )
+    % move the order file from unusused to used
+    [rootdir, csvfilename, csvext]=fileparts(opts.TrialCSV);
+    neworderfilename=[ 'MEGorder/used/' subject.subj_id '_' csvfilename csvext ];
+    movefile(opts.TrialCSV,neworderfilename);  
+    subject.orderCSV=neworderfilename;
+    % for f in MEGorder/used/*csv; do cp $f MEGorder/unused/${f##*_}
   end
   
   % always print date .. even though it'll mess up reading data if put in the middle
   fprintf(txtfid,'#%s\n',date);
-  
-  %% Counter balance 
-  % by reversing order for odd subjects
-  if mod(str2double(subject.subj_id),2)==1
-      fprintf('NOTE: odd subject, order reversed of input csv!\n')
-      for i=1:length(experiment)
-          experiment{i}=experiment{i}(end:-1:1);
-      end
-  end
-  
+    
   %% debug timing -- get expected times
   % add the ITI,ISI, timer duration, and score presentation
   %expectedTime = sum(cell2mat(experiment([ITIC ISIC])),2)/10^3 + timerDuration + receiptDuration;
@@ -340,6 +313,7 @@ function MEGCogEmoFaceReward(varargin)
              Screen('Flip', w);
              waitForResponse('space');
          end
+         getReady()
 
         % inialize the order of events only if we arn't resuming
         order=cell(length(experiment{facenumC}),1);
@@ -350,6 +324,7 @@ function MEGCogEmoFaceReward(varargin)
          DrawFormattedText(w, ['Welcome Back!\n\n' InstructionsBetween],'center','center',black);
          Screen('Flip', w);
          waitForResponse('space');
+         getReady()
      end
      
      %% give subj a countdown and fixation
@@ -375,6 +350,7 @@ function MEGCogEmoFaceReward(varargin)
    
      
      %% THE BIG LOOP -- for all remaining trials or to the halfwaypt
+     lowerPriority=Priority(MaxPriority(w));
      for i=start:length(experiment{facenumC})
         
         emo=experiment{emotionC}{i};
@@ -403,13 +379,15 @@ function MEGCogEmoFaceReward(varargin)
         % add RT/2 to fixation time -- prev. added all of remainder
         %
         % math done in seconds then convereted to ms for fixation()
-        dispRspTime=GetSecs() - checktime;
-        fixation( (timerDuration - dispRspTime )*10^3/2, trigger.ITI);
+        %% REMOVE this penetly for going quick
+        %dispRspTime=GetSecs() - checktime;
+        %fixation( (timerDuration - dispRspTime )*10^3/2, trigger.ITI);
         setTimeDiff('timer'); %build times (debug timing)
          
         % show first fixation
         % N.B. to the subj, this is the same fixation cross that's already
         %      up
+        % dispRspTime + 1/2
         fixation(experiment{ITIC}(i),trigger.ITI);
         
         setTimeDiff('ITI'); %build times (debug timing)
@@ -495,33 +473,26 @@ function MEGCogEmoFaceReward(varargin)
 
             Screen('TextSize', w, 22);
             %% give subj a 60 second break with countdown            
-            if(~ opts.MEG ) 
-              for cdown = 60:-1:1
+
+            for cdown = 60:-1:1
                 % says e.g. 5 of 6 on first session
                 % then     10 of 12 on the second
                 DrawFormattedText(w, ...
                     [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
-                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks*subject.run_num/totalSessions) ...
+                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks) ...
                     '\n\nNext game will begin in\n\n' num2str(cdown) ...
                     ],'center','center',black);               
                 Screen('Flip',w);
                 WaitSecs(1.0);
-              end
-            else
-                DrawFormattedText(w, ...
-                    [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
-                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks*subject.run_num/totalSessions) ...
-                    '\n\nTake a break\n\n'
-                    ],'center','center',black);               
-                Screen('Flip',w);
-                waitForResponse('space');
             end
+           
             
             drawRect(i+1);
             DrawFormattedText(w, InstructionsBetween,'center','center',black);
             blockTotal=0; %reset block score for new block
             Screen('Flip', w);
             waitForResponse('space');
+            getReady();
 
         end
         
@@ -552,31 +523,39 @@ function MEGCogEmoFaceReward(varargin)
 
   catch
      Screen('CloseAll');
+     Priority(0); % set priority to normal
      psychrethrow(psychlasterror);
      sendTrigger(trigger.done)
   end
   
+  % set priority to normal
+  Priority(0); 
   % close the screen
   sca
   % clear trigger
-  sendTrigger(0)
+  sendTrigger(0);
+  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           support functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function msgAndCloseEverything(message)
+       Priority(0); % set priority to normal 
        DrawFormattedText(w, [message '\n\n push any key but esc to quit'],...
            'center','center',black);
        fprintf('%s\n',message)
        Screen('Flip', w);
        waitForResponse;
-       diary off;	%stop diary
+       diary off;	      %stop diary
        fclose('all');	%close data file
        Screen('Close')
        Screen('CloseAll');
-       PsychPortAudio('Close');
+       if(opts.sound)
+         PsychPortAudio('Close');
+       end
        sca
        sendTrigger(trigger.done)
+       return
     end
 
    %% print time since last check
@@ -733,7 +712,13 @@ function MEGCogEmoFaceReward(varargin)
         %disp([waittime, experiment{ITIC}(i), experiment{ISIC}(i), 4000 - rspnstime, rspnstime ])
    end
    
-
+   %% get ready screen so experementer knows they're going to start
+   function getReady()
+     Screen('TextSize', w, 22);
+     DrawFormattedText(w, 'Get Ready!' ,'center','center',black);               
+     Screen('Flip',w);
+     waitForResponse('space');
+   end
 
    %% wait for a response
     function seconds = waitForResponse(varargin)
@@ -769,7 +754,7 @@ function MEGCogEmoFaceReward(varargin)
    function scoreRxt(RT,func,varargin)
        startScoreTime=tic;
        %trial start time
-       t_start = (GetSecs - scannerStart)/TR;
+       t_start = (GetSecs - scannerStart);
        
        [F_Mag F_Freq] = getScore(RT,func);
 
@@ -825,6 +810,9 @@ function MEGCogEmoFaceReward(varargin)
         % skip the questions if we provide var ourself
         subject.subj_id = input('Enter the subject ID number: ','s');
         
+        %run number is the date yyyymmdd
+        c=clock();
+        subject.run_num=c(1)*10000+c(2)*100+c(3);
 
         filename = ['subjects/MEG_' subject.subj_id '_tc'];
 
@@ -854,26 +842,8 @@ function MEGCogEmoFaceReward(varargin)
                         localVar.subject.subj_id, subject.subj_id);
                 end
                 
-                % we have a mat, but did we stop when we should have?
-                if  localVar.subject.run_num == 1 && ...
-                   localVar.trialnum == halfwaypt;
-                    
-                    fprintf('incrementing run_num and assuming reload\n');
-                    resume = 'y';
-                    localVar.subject.run_num=2;
-                    localVar.trialnum=halfwaypt+1; 
-                    % need to increment trial here 
-                    % b/c we exit before incrementing i earlier
-                    % and we'll get stuck in a one trial loop otherwise
-                
-                % no where we expect, maybe psychtoolbox crashed
-                % prompt if we want to restart
-                else
-                    fprintf('not auto resuming b/c run=%d and trail=%d\n\n',...
-                        localVar.subject.run_num,localVar.trialnum)
-                    resume = lower(input('Want to load previous session (y or n)? ','s'));
-                end
-       
+                resume = lower(input('Want to load previous session (y or n)? ','s'));
+               
                 %
                 % if we auto incremented run_num
                 % or decided to resume
@@ -883,11 +853,16 @@ function MEGCogEmoFaceReward(varargin)
                     %% from which block
                     
                     clear subject
+                    disp(localVar), disp(localVar.subject);
+                    
                     start=localVar.trialnum;
                     subject=localVar.subject;
 
                     order=localVar.order;
                     score=localVar.score;
+                    % set expereiment order with old file
+                    opts.TrialCSV=localVar.subject.orderCSV;
+                    experiment=getorderfile();
 
                     % restart from the last fully completed block
                     order_completed=order( cellfun(@(x) length(x)>1,order) );
@@ -956,7 +931,7 @@ function MEGCogEmoFaceReward(varargin)
          end
         
         %% fill out the subject struct if any part of it is still empty
-        for attribCell={'gender','age','run_num'}
+        for attribCell={'gender','age'}
             % make a normal string
             attrib = cell2mat(attribCell);
 
@@ -972,13 +947,8 @@ function MEGCogEmoFaceReward(varargin)
 
         %% age should be a number
         if ischar(subject.age);     subject.age    =str2double(subject.age);    end
-        if ischar(subject.run_num); subject.run_num=str2double(subject.run_num);end
+        %if ischar(subject.run_num); subject.run_num=str2double(subject.run_num);end
 
-        if start==1 && subject.run_num==2; 
-            fprintf('WARNING: new subject, but run number 2 means start from the top\n')
-            fprintf('there is no good way to do the first part again\n')
-            start=halfwaypt+1;
-        end
 
         %% set sex to a standard
         if ismember(lower(subject.gender),{'male';'dude';'guy';'m';'1'} )
@@ -1162,27 +1132,44 @@ function MEGCogEmoFaceReward(varargin)
       
       %% Testing
       if(opts.DEBUG==1)
-        fprintf('sent %d @ %02d:%02d:%02d\n',trigger,  subsref(clock(),substruct('()',{4:6})) )
+        fprintf('sent %d @ %02d:%02d.%f\n',trigger,  subsref(clock(),substruct('()',{4:6})) )
       end
     end
-
+    
+    %parse order file
+    function experiment=getorderfile()
+      fprintf('using %s\n', opts.TrialCSV);
+      fid=fopen(opts.TrialCSV);
+      %fid=fopen('FaceITI_MEG.csv');
+      %indexes={1,2,3,4,5,6};
+      %[ facenumC, ITIC, ISIC, blockC, emotionC, rewardC ] = indexes{:};
+      experiment=textscan(fid,'%d,%d,%d,%d,%q','HeaderLines',1);
+       % ugly unpack of " "," "
+      for i=1:length(experiment{5})
+          experiment{6}{i} = experiment{5}{i}(findstr(experiment{5}{i},',')+2:end);
+          experiment{5}{i} = experiment{5}{i}(1:findstr(experiment{5}{i},',')-1    );
+      end
+      fclose(fid);
+    end
     % get options: MEG, DEBUG, screen=[x y], 'mac laptop','VGA','eyelab'
     function getopts(o)
       
       %% MEG BY DEFAULT
       opts.ports=0; % handle for serial/lpt port
       opts.DEBUG=0;
-      opts.MEG=1;
-      opts.trigger=1;
-      opts.USEDAQ=1;
-      opts.sound=0;
+      opts.test=0;
+      useMEG();
+
       opts.screen=[1280 1024];
-      opts.TrialCSV='FaceITI_MEG.csv';
+      
       
       %% PARSE REST
       i=1;
       while(i<=length(o))
           switch o{i}
+              case {'TEST'}
+                  opts.test=1;
+                  % set order
               case {'DEBUG'}
                   opts.DEBUG=1;
                   opts.screen=[800 600];
@@ -1209,11 +1196,7 @@ function MEGCogEmoFaceReward(varargin)
                   
                   
               case {'MEG'}
-                  opts.MEG=1;
-                  opts.trigger=1;
-                  opts.USEDAQ=1;
-                  opts.sound=0;
-                  opts.TrialCSV='FaceITI_MEG.csv';
+                  useMEG()
 
               case {'fMRI'}
                   opts.trigger=0;
@@ -1230,6 +1213,16 @@ function MEGCogEmoFaceReward(varargin)
           
        i=i+1;    
       
+      end
+      
+      function useMEG()
+          opts.MEG=1;
+          opts.trigger=1;
+          opts.USEDAQ=1;
+          opts.sound=0;
+          opts.totalSessions=1;
+          opts.TrailCSV=dir('MEGorder/unused/*csv');
+          opts.TrialCSV=['MEGorder/unused/' opts.TrailCSV(1).name];
       end
       
       disp(opts)
