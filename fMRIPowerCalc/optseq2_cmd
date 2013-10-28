@@ -1,0 +1,8 @@
+#!/bin/bash
+#264 TRs with 50 2-second trials yields a 38% task / 62% rest split.
+#max 11-second ITI gives good efficiency without too much boredom
+#null min of 1 second is used to enforce the 1-second feedback period after response (which is a NULL wrt clock trial)
+optseq2 --ntp 264 --tr 1.0 --psdwin 0 21 1 --ev evt1 2 50 --nkeep 320 --o clock_t264_p38 --nsearch 5000000 --polyfit 2 --sum summary_t264_p38.log --tnullmax 11 --tnullmin 1
+
+#old code where we were forcing 1-second min ITI, but the power curves were generated using 0-second min ITI. So, accidentally chose 55% instead of 38% above
+#optseq2 --ntp 293 --tr 1.0 --psdwin 0 21 1 --ev evt1 2 50 --nkeep 160 --o clock_t293_p55 --nsearch 1000000 --polyfit 2 --sum summary_t293_p55.log --tnullmax 12 --tnullmin 1

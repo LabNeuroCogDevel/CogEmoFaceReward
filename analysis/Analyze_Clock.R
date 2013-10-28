@@ -305,9 +305,20 @@ with(allData, table(LunaID, Func, Emotion))
 allData$TrialRel <- unlist(lapply(split(allData, f=list(allData$LunaID, allData$Func, allData$Emotion)), function(l) { return(1:nrow(l)) } ))
 ##allData$TrialRel2 <- 1:42 ##shouldn't this be identical and easier? :) Just use recycling
 
-
 allData <- merge(allData, behav[,c("LunaID", "AgeAtVisit")], by="LunaID")
 allData$Half <- factor(sapply(allData$TrialRel, function(x) { ifelse(x > 21, "H2", "H1")}))
+
+##compute median reaction time across subjects
+allSubjAgg <- ddply(allData, .(LunaID, Func), function(subdf) {
+    subdf <- subset(subdf, RT > 80)
+    med <- median(subdf$RT, na.rm=TRUE)
+    return(c(med=med))
+})
+
+with(allSubjAgg, tapply(med, Func, median))
+with(allSubjAgg, tapply(med, Func, max))
+max(allSubjAgg$med)
+
 
 pdf("AllSubjRTs.pdf", width=11, height=8)
 for (s in split(allData, allData$LunaID)) {
