@@ -3,7 +3,7 @@ function [ keyIsDown, seconds, keyCode ] = KbCheck()
  % get time of first kbcheck and compare to KBResponse matrix
  %   [ time_after_first_kbcheck keycode_to_send ]
  % if first column > duration since first kbcheck
- global LastKBCheck KBcounter KBResponse;
+ global LastKBCheck KBcounter KBResponse speedincrease;
  keyIsDown=0;
  keyCode=zeros(1,256);
  % initialize globals if needed
@@ -16,8 +16,10 @@ function [ keyIsDown, seconds, keyCode ] = KbCheck()
      LastKBCheck=GetSecs();
 
  end
-
-  seconds=GetSecs();
+ if(isempty(speedincrease))
+     speedincrease=1;
+ end
+ seconds=GetSecs();
   
  % if we are out of KBResponses
  % panic and throw escapes and spaces
@@ -35,7 +37,7 @@ function [ keyIsDown, seconds, keyCode ] = KbCheck()
  
 
  
- if(seconds-LastKBCheck > KBResponse(KBcounter,1) )
+ if(seconds-LastKBCheck > KBResponse(KBcounter,1)) %/speedincrease )
    keyCode(KBResponse(KBcounter,2))=1;
    keyIsDown=1;
    KBcounter = KBcounter+1;
