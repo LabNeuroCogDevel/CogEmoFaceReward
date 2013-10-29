@@ -474,18 +474,13 @@ function MEGCogEmoFaceReward(varargin)
             Screen('TextSize', w, 22);
             %% give subj a 60 second break with countdown            
 
-            for cdown = 60:-1:1
-                % says e.g. 5 of 6 on first session
-                % then     10 of 12 on the second
-                DrawFormattedText(w, ...
-                    [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
-                    'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks) ...
-                    '\n\nNext game will begin in\n\n' num2str(cdown) ...
-                    ],'center','center',black);               
-                Screen('Flip',w);
-                WaitSecs(1.0);
-            end
-           
+
+            DrawFormattedText(w, ...
+                [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
+                'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks)
+                ],'center','center',black);               
+            Screen('Flip',w);
+            waitForResponse('space');
             
             drawRect(i+1);
             DrawFormattedText(w, InstructionsBetween,'center','center',black);
