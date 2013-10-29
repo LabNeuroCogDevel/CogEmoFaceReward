@@ -1,4 +1,6 @@
 % in function so add path doesn't mess up other things
+% TODO: check score!
+% remove next game "begin in"
 function test = TestEM()
     % TestEM: run fake people - 20131029 - WF
     %  this function co-ops WaitSecs, input, and KbCheck
@@ -11,56 +13,103 @@ function test = TestEM()
     %  * experiment can be sped up with speedincrease var
     
     %% setup
-    addpath(genpath('private_testing'))
+    addpath(genpath('private_testing'));
+    KbName('UnifyKeyNames');
     global  LastKBCheck KBcounter KBResponse inputCounter initInput speedincrease;
-    speedincrease=4;
+    speedincrease=8;
+    % % task info % %
+    testSubjNum='1'; % string, not num
+    subjmat=['subjects/MEG_' testSubjNum '_tc.mat'];
+    % num trials per block
     trialsPerBlock=63;
-    
-    % are we using the right functions?
-    %which KbCheck
-    %which input
+    blocksPerRun=8;
+    % how to run it
+    function success=runParadigm()
+        try 
+            MEGCogEmoFaceReward('DEBUG','NODAQ')
+            success=1;
+        catch
+            fprintf('Presentation died -- early quit I hope\n')
+            success=0;
+        end
+    end
+    % go for a block: 
+    blockresponses=[ ...
+        ... ITI + first cirlce + ISI + score
+        repmat([4/speedincrease KbName('2@')],trialsPerBlock,1); ...
+        2 KbName('SPACE'); ... "score and n/total progress"
+        2 KbName('SPACE'); ... "bew block is new pictures"
+        2 KbName('SPACE'); ... "get ready"
+        
+        ];
 
     %% a MEG run
+    % 0. complete run to test everything out
     % 1. start but exit after 2 trials
     % 2. start again, dont resume, quit after 2 trials
     % 3. start again, resume (should be on block one), quit on block 2
     % 4. resume at the start of the second block
-    subjmat='subjects/MEG_1_tc.mat';
-    if(exist(subjmat,'file'))
-        delete(subjmat);
-    end
     
-    %% 1. fresh start, 2 trials
-    %Enter the subject ID number: 1
-    %Enter subject's gender: 2
-    %Enter subject's age: 12
+    % remove test subj if file exists
+    if(exist(subjmat,'file')),  delete(subjmat),  end
+    %% 0. run through
     inputCounter=1;  KBcounter=1;
-    initInput={'1','Female', '12'};
+    initInput={testSubjNum,'Female', '12'};
     KBResponse=[...
      0 KbName('SPACE'); ... initial instructions
      0 KbName('SPACE'); ... win/loose
      0 KbName('SPACE'); ... color boxes
      0 KbName('SPACE'); ... hint
      0 KbName('SPACE'); ... get ready
-     5/speedincrease KbName('SPACE');... ITI + first cirlce 
-     5/speedincrease KbName('SPACE');... ISI+score+ITI+circle
-     5/speedincrease KbName('SPACE');... ISI+score+ITI+circle
+     blockresponses;
+     blockresponses;
+     blockresponses;
+     blockresponses;
+     blockresponses;
+     blockresponses;
+     blockresponses;
+     repmat([4/speedincrease KbName('SPACE')],trialsPerBlock,1); ...
+     2 KbName('SPACE'); ... final score
+     ];
+    test.zero_completed = runParadigm();
+    taskout=load(subjmat);
+    test.zero_subjnum    = strcmp(taskout.subject.subj_id,testSubjNum);
+    test.zero_gender     = strcmp(taskout.subject.gender,'female');
+    test.zero_age        = taskout.subject.age == 12;
+    test.zero_trial      = taskout.trialnum == trialsPerBlock*blocksPerRun;
+    test.zero_trialsaved = ~isempty(taskout.order{end});
+    test.zero_score      = taskout.score>2000;
+    test.zero_counterUsed = KBcounter == size(KBResponse,1);
+
+    
+    %% 1. fresh start, 2 trials
+    %Enter the subject ID number: 1
+    %Enter subject's gender: 2
+    %Enter subject's age: 12
+    if(exist(subjmat,'file')),  delete(subjmat),  end
+    inputCounter=1;  KBcounter=1;
+    initInput={testSubjNum,'Female', '12'};
+    KBResponse=[...
+     0 KbName('SPACE'); ... initial instructions
+     0 KbName('SPACE'); ... win/loose
+     0 KbName('SPACE'); ... color boxes
+     0 KbName('SPACE'); ... hint
+     0 KbName('SPACE'); ... get ready
+     5/speedincrease KbName('2@');... ITI + first cirlce 
+     5/speedincrease KbName('2@');... ISI+score+ITI+circle
+     5/speedincrease KbName('2@');... ISI+score+ITI+circle
      0 KbName('ESCAPE');... WANT TO BE DONE
      0 KbName('SPACE');  ... and exit
      ];
-    try
-      MEGCogEmoFaceReward('DEBUG','NODAQ')
-    catch 
-       fprintf('Presentation died -- early quit I hope\n');
-    end
     
+    runParadigm();
     % check saved output against expectation
     taskout=load(subjmat);
-    test.one_subjnum    = taskout.subject.subj_id == 1;
-    test.one_gender     = taskout.subject.gender == 'female';
+    test.one_subjnum    = strcmp(taskout.subject.subj_id,testSubjNum);
+    test.one_gender     = strcmp(taskout.subject.gender,'female');
     test.one_age        = taskout.subject.age == 12;
     test.one_trial      = taskout.trialnum == 3;
-    test.one_trialsaved =~ isempty(taskout.order{3}) & isempty(taskout.order{4});
+    test.one_trialsaved = ~isempty(taskout.order{3}) & isempty(taskout.order{4});
     
     %% 2. try again, 1/2 fresh
     % Enter the subject ID number: 1
@@ -68,7 +117,7 @@ function test = TestEM()
     % Enter subject's gender: Male
     % Enter subject's age: 12
     inputCounter=1;  KBcounter=1;
-    initInput={'1','n', 'Male', '16'};
+    initInput={testSubjNum,'n', 'Male', '16'};
     KBResponse=[...
      0 KbName('SPACE'); ... instructions1
      0 KbName('SPACE'); ... win loose
@@ -80,12 +129,11 @@ function test = TestEM()
      0 KbName('SPACE');  ... and exit
      ];
  
-    try MEGCogEmoFaceReward('DEBUG','NODAQ'), catch,fprintf('Presentation died -- early quit I hope\n'), end
-    
+    runParadigm();
     
     % check saved output against expectation
     taskout=load(subjmat)
-    test.two_subjnum    = taskout.subject.subj_id == 1;
+    test.two_subjnum    = strcmp(taskout.subject.subj_id,testSubjNum);
     test.two_gender     = strcmp(taskout.subject.gender,'male');
     test.two_age        = taskout.subject.age == 16;
     test.two_trial      = taskout.trialnum == trialsPerBlock-1;
@@ -105,7 +153,7 @@ function test = TestEM()
      0 KbName('ESCAPE');... WANT TO BE DONE
      0 KbName('SPACE');  ... and exit
      ];
-    try MEGCogEmoFaceReward('DEBUG','NODAQ'), catch,fprintf('Presentation died -- early quit I hope\n'), end
+    runParadigm();
     taskout=load(subjmat)
     test.four_trial      = taskout.trialnum == trialsPerBlock+2;
     test.four_trialsaved =~ isempty(taskout.order{trialsPerBlock+2}) & isempty(taskout.order{trialsPerBlock+2});
@@ -121,7 +169,7 @@ function test = TestEM()
      0 KbName('ESCAPE');... WANT TO BE DONE
      0 KbName('SPACE'); ... and exit
      ];
-    try MEGCogEmoFaceReward('DEBUG','NODAQ'), catch,fprintf('Presentation died -- early quit I hope\n'), end
+    runParadigm();
     
     taskout=load(subjmat)
     test.four_trial      = taskout.trialnum == 2*trialsPerBlock-1;
@@ -138,10 +186,10 @@ function test = TestEM()
      0 KbName('ESCAPE');... WANT TO BE DONE
      0 KbName('SPACE');  ... and exit
      ];
-    try MEGCogEmoFaceReward('DEBUG','NODAQ'), catch,fprintf('Presentation died -- early quit I hope\n'), end
+    runParadigm();
     
     taskout=load(subjmat)
-    test.five_trial      = taskout.trialnum == 2*trialsPerBlock+1;
+    test.five_trial      = taskout.trialnum == 2*trialsPerBlock;
     
     
     
