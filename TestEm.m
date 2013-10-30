@@ -37,8 +37,8 @@ function test = TestEM()
     blockresponses=[ ...
         ... ITI + first cirlce + ISI + score
         repmat([4/speedincrease KbName('2@')],trialsPerBlock,1); ...
-        2 KbName('SPACE'); ... "score and n/total progress"
-        2 KbName('SPACE'); ... "bew block is new pictures"
+        8 KbName('SPACE'); ... "score and n/total progress"
+        2 KbName('SPACE'); ... "new block is new pictures"
         2 KbName('SPACE'); ... "get ready"
         
         ];
@@ -60,7 +60,7 @@ function test = TestEM()
      0 KbName('SPACE'); ... win/loose
      0 KbName('SPACE'); ... color boxes
      0 KbName('SPACE'); ... hint
-     0 KbName('SPACE'); ... get ready
+     2 KbName('SPACE'); ... get ready
      blockresponses;
      blockresponses;
      blockresponses;

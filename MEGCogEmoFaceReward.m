@@ -83,6 +83,13 @@
 %       ITI+ISI mismatches for matching 
 %  [WF] run number is yyyymmdd because there is only one run
 %  [WF] remove quick response extra wait
+% 2013/10/30 -- after pilot
+%  [WF] Flash first get ready screen to help adjust photodiod
+%  [WF] only alow space to exit task
+%  [WF] change background on block end
+%  [WF] Hide cursor and input -- keep keyboard (crashes otherwise)
+%  {KH} reciept time to 850ms
+%  {KH} no total in trial receipt, spaced out
 
 function MEGCogEmoFaceReward(varargin)
   %% CogEmoFaceReward
@@ -116,7 +123,7 @@ function MEGCogEmoFaceReward(varargin)
   blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
   txtfid      = 0; %just so we know the file pntr's not a private nested function var
 
-  receiptDuration  = 1.4; %show feedback for 1400ms
+  receiptDuration  = .85; %850ms, match fMRI
   timerDuration    = 4;
   
   % initialize total points earned
@@ -130,6 +137,10 @@ function MEGCogEmoFaceReward(varargin)
   [ facenumC, ITIC, ISIC, blockC, emotionC, rewardC ] = indexes{:};
   %  read in order of things
   experiment=getorderfile();
+  
+  %initialize timing
+  timing(length(experiment{1})+1).start=Inf;
+
     
   
   
@@ -200,7 +211,8 @@ function MEGCogEmoFaceReward(varargin)
      % Find out how many screens and use smallset screen number.
      
      % Open a new window.
-     [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 screenResolution] );
+     backgroundColor=[204 204 204];
+     [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),backgroundColor, [0 0 screenResolution] );
      % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [] );
      
      %permit transparency
@@ -266,7 +278,9 @@ function MEGCogEmoFaceReward(varargin)
      end
      
      
-     
+     %% Hide mouse and keyboard
+     %ListenChar(2); % no keystrokes to matlab
+     HideCursor;    % no cursor
 
      %% Instructions 
      Instructions = { ...
@@ -304,6 +318,9 @@ function MEGCogEmoFaceReward(varargin)
          InstructionsBetween = [  InstructionsBetween 'Press any key when you are ready' ];
      end
      
+     % set real time priority
+     lowerPriority=Priority(MaxPriority(w));
+     
      % is the first time loading?
      % we know this by where we are set to start (!=1 if loaded from mat)
      if start==1  
@@ -313,7 +330,7 @@ function MEGCogEmoFaceReward(varargin)
              Screen('Flip', w);
              waitForResponse('space');
          end
-         getReady()
+         getReady(0);
 
         % inialize the order of events only if we arn't resuming
         order=cell(length(experiment{facenumC}),1);
@@ -324,7 +341,7 @@ function MEGCogEmoFaceReward(varargin)
          DrawFormattedText(w, ['Welcome Back!\n\n' InstructionsBetween],'center','center',black);
          Screen('Flip', w);
          waitForResponse('space');
-         getReady()
+         getReady(0);
      end
      
      %% give subj a countdown and fixation
@@ -344,13 +361,13 @@ function MEGCogEmoFaceReward(varargin)
      scannerStart = GetSecs();
     
      %% debug, timing
-     StartOfRunTime=GetSecs();
+     StartOfRunTime=scannerStart;
 
   
    
      
      %% THE BIG LOOP -- for all remaining trials or to the halfwaypt
-     lowerPriority=Priority(MaxPriority(w));
+     
      for i=start:length(experiment{facenumC})
         
         emo=experiment{emotionC}{i};
@@ -359,10 +376,10 @@ function MEGCogEmoFaceReward(varargin)
         
         %% debug, start time keeping
         % start of time debuging global var
-        checktime=GetSecs();
-        startOfTrial=checktime;
+        startOfTrialTime=GetSecs();
+        checktime=startOfTrialTime; % initialize checktime to start
         % seconds into the experiement from start of for loop
-        timing.start=checktime-StartOfRunTime;
+        timing(i).start=startOfTrialTime-StartOfRunTime;
         
         %% face (4s) + ITI + score + ISI
 
@@ -382,7 +399,7 @@ function MEGCogEmoFaceReward(varargin)
         %% REMOVE this penetly for going quick
         %dispRspTime=GetSecs() - checktime;
         %fixation( (timerDuration - dispRspTime )*10^3/2, trigger.ITI);
-        setTimeDiff('timer'); %build times (debug timing)
+        setTimeDiff('face'); %build times (debug timing)
          
         % show first fixation
         % N.B. to the subj, this is the same fixation cross that's already
@@ -425,7 +442,7 @@ function MEGCogEmoFaceReward(varargin)
         
         % save to mat so crash can be reloaded
         trialnum=i;
-        save(filename,'order','trialnum','subject','score','blockTotal');
+        save(filename,'order','trialnum','subject','score','blockTotal','timing');
        
         % line like
         % CEVR       1      22       5       2    4.481533e+01   176       0       2.136929e-01    3.764108e+01    2.399020e+02
@@ -438,20 +455,20 @@ function MEGCogEmoFaceReward(varargin)
         
         %% debug, show time of this trial
         
-        timing.end= GetSecs() - startOfTrial;
+        setTimeDiff('end');
               
-        expected.timer   = 4; 
-        expected.ITI     = double(experiment{ITIC}(i))/10^3;
-        expected.receipt = receiptDuration;
-        expected.ISI     = double(experiment{ISIC}(i))/10^3;
-        expected.end     = 0;
-        expected.end     = sum(struct2array(expected));
-        fprintf('%d: %s_%d.png\n%.2f in, expected, obs, diff\n',i, experiment{emotionC}{i},experiment{facenumC}(i),timing.start);
-        for f = {'timer' 'ITI' 'receipt' 'ISI' 'end' };
-            f=f{1};
-            fprintf('%s\t%.2f\t%.2f\t%.2f\n', f, expected.(f), timing.(f),timing.(f)-expected.(f));
+        timing(i).ITI.expected     = double(experiment{ITIC}(i))/10^3;
+        timing(i).receipt.expected = receiptDuration;
+        timing(i).ISI.expected     = double(experiment{ISIC}(i))/10^3;
+        timing(i).facetrig         = trigger.(rew).(emo).face;
+        timing(i).scoretrig        = trigger.(rew).(emo).score;
+        if(opts.DEBUG)
+            fprintf('%d: start@%.4f\t%s_%d.png\n%.2f\n',i,timing(i).start, experiment{emotionC}{i},experiment{facenumC}(i));
+            for f = {'ITI' 'receipt' 'ISI' 'end'};
+                f=f{1};
+                fprintf('\t%.4f\t%s\n', timing(i).(f).onset, f);
+            end
         end
-        
         
         
         
@@ -474,12 +491,15 @@ function MEGCogEmoFaceReward(varargin)
             Screen('TextSize', w, 22);
             %% give subj a 60 second break with countdown            
 
-
+            % change screen color to alert operator
+            Screen('FillRect',w,black,[0 0 screenResolution])
+            
             DrawFormattedText(w, ...
                 [ '\n\nYou have ' num2str(score) ' points so far\n\n'...
                 'Completed Game: ' num2str(floor(i/trialsPerBlock)) ' of ' num2str(totalBlocks)
-                ],'center','center',black);               
+                ],'center','center',white);               
             Screen('Flip',w);
+            Screen('FillRect',w,backgroundColor,[0 0 screenResolution])
             waitForResponse('space');
             
             drawRect(i+1);
@@ -517,10 +537,13 @@ function MEGCogEmoFaceReward(varargin)
     return
 
   catch
+     ShowCursor;
+     %ListenChar(0);
      Screen('CloseAll');
      Priority(0); % set priority to normal
      psychrethrow(psychlasterror);
-     sendTrigger(trigger.done)
+     sendTrigger(trigger.done);
+     
   end
   
   % set priority to normal
@@ -533,30 +556,45 @@ function MEGCogEmoFaceReward(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           support functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+  
     function msgAndCloseEverything(message)
+       sendTrigger(trigger.done) % send end code
        Priority(0); % set priority to normal 
-       DrawFormattedText(w, [message '\n\n push any key but esc to quit'],...
+       % send last message
+       DrawFormattedText(w, message,...
            'center','center',black);
        fprintf('%s\n',message)
        Screen('Flip', w);
-       waitForResponse;
+       waitForResponse('space','escok');
+       % close all files
        diary off;	      %stop diary
-       fclose('all');	%close data file
-       Screen('Close')
-       Screen('CloseAll');
+       fclose('all');	  %close data file
+       Screen('Close');   % kill screen
+       Screen('CloseAll');% all of them
+       
+       ShowCursor;    % Retrun cursor
+       %ListenChar(0); % take keyboard input
+
+       sca;           % be sure screen is gone
+       
+       
+       % turn off sound
        if(opts.sound)
          PsychPortAudio('Close');
        end
-       sca
-       sendTrigger(trigger.done)
+       
+       if(i<length(experiment))
+        error('quit early (on %d)\n',i)
+       end
+       
        return
     end
 
    %% print time since last check
    % updates global timing struct and checktime double
    function setTimeDiff(interval)
-       timing.(interval) = (GetSecs() - checktime);
+       timing(i).(interval).onset = GetSecs()-startOfTrialTime;
+       timing(i).(interval).diff  = timing(i).(interval).onset - checktime;
        checktime=GetSecs();
    end 
 
@@ -707,37 +745,65 @@ function MEGCogEmoFaceReward(varargin)
         %disp([waittime, experiment{ITIC}(i), experiment{ISIC}(i), 4000 - rspnstime, rspnstime ])
    end
    
-   %% get ready screen so experementer knows they're going to start
-   function getReady()
+   %% get ready screen, so experementer knows they're going to start
+   % first getRead flashes for the photodiode
+   function getReady(varargin)
      Screen('TextSize', w, 22);
-     DrawFormattedText(w, 'Get Ready!' ,'center','center',black);               
-     Screen('Flip',w);
-     waitForResponse('space');
+     if(isempty(varargin))
+         drawRect(i+1)
+         DrawFormattedText(w, 'Get Ready!' ,'center','center',black);
+         Screen('Flip',w);
+         waitForResponse('space');
+     elseif(varargin{1}==0)
+         getreadystart=GetSecs();
+         while(1)
+           [ keyIsDown, seconds, keyCode ] = KbCheck;
+           if(keyCode(KbName('SPACE')) )
+               break
+           end
+           drawRect(1);
+           color=white;
+           if(mod(round(2*(GetSecs()-getreadystart)),2))
+               color=black;
+           end
+           drawPhotodiodeBox(color)
+           DrawFormattedText(w, 'Get Ready!' ,'center','center',black);
+           Screen('Flip',w);
+           WaitSecs(.01);
+         end
+     end
+     
+
    end
 
    %% wait for a response
     function seconds = waitForResponse(varargin)
       %% sometimes we only want a specfic set of keys
       if(~isempty(varargin))
-       usekeys=KbName(varargin{1});
+           usekeys=KbName(varargin{1});
+           % add escape to use keys if we say esc is okay
+           if(length(varargin)>1 && strcmp(varargin{2},'escok'))
+               usekeys=[usekeys escKey];
+               WaitSecs(.2); % just so we don't esc all the way through
+           end
       else
-       usekeys=acceptableKeyPresses;
+           usekeys=acceptableKeyPresses;
+
       end
       
       while(1)
           [ keyIsDown, seconds, keyCode ] = KbCheck;
           
-          if(keyIsDown && keyCode(escKey));
-              msgAndCloseEverything(['Quit on trial ' num2str(i)]);
-              error('quit early (on %d)\n',i)
-           end
+          if(keyIsDown)
+              if(any(keyCode(usekeys))) 
+                  break;
+              elseif(keyCode(escKey) ); 
+                  msgAndCloseEverything(['Quit on trial ' num2str(i)]);
+                  error('quit early (on %d)\n',i)
+              %else, we don't care--keep looping
+              end
+          end
           
-          % go on any key
-          % if(keyIsDown && any(keyCode)); break; end %any() is redudant
-
-          % specify keys
-          if(keyIsDown && any(keyCode(usekeys))); break; end 
-
           WaitSecs(.001);
       end
       Screen('Flip', w); % change the screen so we don't hold down space
@@ -776,8 +842,8 @@ function MEGCogEmoFaceReward(varargin)
             %score=score;
             inc=0;
         end
-        fprintf('%s: ev=%.2f; Mag=%.2f; Freq: %.2f; rand: %.2f; inc: %d; pts- block: %d; total: %d\n', ...
-                experiment{rewardC}{i},ev, F_Mag,F_Freq,rd,inc,blockTotal,score);
+        fprintf('%d:  %s\tev=%.2f; Mag=%.2f; Freq: %.2f; rand: %.2f; inc: %d; pts- block: %d; total: %d\n', ...
+                i,experiment{rewardC}{i},ev, F_Mag,F_Freq,rd,inc,blockTotal,score);
        
         
         %%% Draw
@@ -785,7 +851,7 @@ function MEGCogEmoFaceReward(varargin)
         %Screen('DrawText', w, sprintf('Your Score is: %d\nrecorded rxt: %d', score, rspnstime));
         %DrawFormattedText(w, sprintf('Total score is: %d\nincrease is: %d\nradnom vs Freq (ev): %f v %f (%f)\nrecorded rxt: %d', score,F_Mag,rd,F_Freq,ev, RT),'center','center',black);
         Screen('TextSize', w, 22);
-        DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,blockTotal),'center','center',black);
+        DrawFormattedText(w, sprintf('You \nwon\n%d\npoints', inc),'center','center',black);
 
         % varagin will be trigger, send if we have it
         if(~isempty(varargin)), sendTrigger(varargin{1}), end
@@ -854,6 +920,7 @@ function MEGCogEmoFaceReward(varargin)
                     subject=localVar.subject;
 
                     order=localVar.order;
+                    timing=localVar.timing;
                     score=localVar.score;
                     % set expereiment order with old file
                     opts.TrialCSV=localVar.subject.orderCSV;
@@ -883,10 +950,13 @@ function MEGCogEmoFaceReward(varargin)
                        % replace all rows of the incomplete block
                        for i=1:length(toremove)
                          order{toremove(i)}= [];
+                         timing(i).start=0;
                        end
                       
 
                        order_completed=order(cellfun(@(x) length(x)>1,order));
+                       % reset score
+                       score=sum(cellfun(@(x) x{8}, order(1:length(order_completed))));
                        fprintf('new length: %d\n', length(order_completed))
                        fprintf('have completed blocks:\n')
                        disp( unique(cell2mat(cellfun(@(x) x(4),order_completed)),'last') )
@@ -1127,7 +1197,7 @@ function MEGCogEmoFaceReward(varargin)
       
       %% Testing
       if(opts.DEBUG==1)
-        fprintf('sent %d @ %02d:%02d.%f\n',trigger,  subsref(clock(),substruct('()',{4:6})) )
+        fprintf('%d: %d\t%.4f\n',i, trigger,  GetSecs() )
       end
     end
     
