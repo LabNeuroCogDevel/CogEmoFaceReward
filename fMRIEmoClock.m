@@ -51,35 +51,20 @@ function fMRIEmoClock
 %screenResolution=[640 480]; %basic VGA
 %screenResolution=[1600 1200];
 %screenResolution=[1440 900]; %new eyelab room
-screenResolution=[1680 1050]; %mac laptop
+%screenResolution=[1680 1050]; %mac laptop
+screenResolution=[1024 768]; %mac laptop
 
-textSize=36; %font size for intructions etc.
+textSize=22; %font size for intructions etc.
 
 %buyer beware: do not uncomment this for production use
-Screen('Preference', 'SkipSyncTests', 1);
+%Screen('Preference', 'SkipSyncTests', 1);
 
 % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 255 255 255], [0 0 640 480] );
 % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
 % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
 
 startRun       = 1; %default to running the first block
-
-%Set3 from Color Brewer
-%only provides 12 colors
-blockColors = [141 211 199; ...
-    255 255 179; ...
-    190 186 218; ...
-    251 128 114; ...
-    128 177 211; ...
-    253 180 98; ...
-    179 222 105; ...
-    252 205 229; ...
-    217 217 217; ...
-    188 128 189; ...
-    204 235 197; ...
-    255 237 111];
-%blockColors = round(255*hsv(24)); % a different color for each block of trials
-%blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
+blockColors    = []; %empty so that subfunction getSubjInfo can set
 txtfid      = 0; %just so we know the file pntr's not a private nested function var
 
 receiptDuration  = .9;  %show feedback for 900ms
@@ -181,7 +166,7 @@ try
     Priority(MaxPriority(w));
     
     %do not echo keystrokes to MATLAB
-    ListenChar(2);
+    %ListenChar(2);
     
     HideCursor;
     
@@ -212,6 +197,7 @@ try
     %spaceKey  = KbName('SPACE');
     escKey  = KbName('ESCAPE');
     caretKey = KbName('6^'); %used for scanner trigger
+    equalsKey = KbName('=+'); %used for scanner trigger
     
     %% preload textures
     % makes assumption that images for every face of every facenumber exists
@@ -289,18 +275,21 @@ try
 
     %initial fixation of 8 seconds to allow for steady state magnetization.
     %count down from 3 to 1, then a 1-second blank screen.
+    drawRect;
     priorFlip = fixation(preStartWait - 4.0, 1, scannerStart);
     
     fprintf('fix flip: %.5f\n', priorFlip);
 
     for cdown = 1:3
-        DrawFormattedText(w, ['Beginning in\n\n' num2str(4-cdown)],'center','center',black);
-        priorFlip = Screen('Flip', w, scannerStart + 4.0 + (cdown-1.0) - slack);
+        drawRect;
+        DrawFormattedText(w, ['Beginning in\n\n' num2str(4.0 - cdown)],'center','center',black);
+        priorFlip = Screen('Flip', w, scannerStart + 4.0 + (cdown - 1.0) - slack);
         %fprintf('cdown: %d, fix flip: %.5f\n', cdown, priorFlip);
         %WaitSecs(1.0);
     end
     
     %1 second of blank screen
+    drawRect;
     fixation(1.0, 0, scannerStart + 7.0);
     
     pretrialEnd=GetSecs();
@@ -313,6 +302,10 @@ try
     endTrial = startRun*trialsPerBlock;
     blockTrial = 1; %track the trial number within block
     
+    %order of fields in order array
+    orderfmt = { 'run', 'trial', 'rewFunc', 'emotion', 'magnitude', 'probability', 'score', 'ev', 'rt', 'clock_onset', ...
+        'isi_onset', 'feedback_onset', 'iti_onset' 'iti_ideal' 'image' };
+
     %error('end here');
     %% THE BIG LOOP -- complete all trials for a run
     for i=startTrial:endTrial
@@ -357,11 +350,9 @@ try
         face=experiment{facenumC}(i);
         
         %set the output of the order structure
-        orderfmt = { 'run', 'trial', 'rewFunc', 'emotion', 'magnitude', 'probability', 'score', 'ev', 'rt', 'clock_onset', ...
-             'isi_onset', 'feedback_onset', 'iti_onset' 'iti_ideal' 'image' };
         trial = { subject.run_num i experiment{rewardC}{i} experiment{emotionC}{i} ...
             F_Mag F_Freq inc ev RTms (firstClockFlip - scannerStart) (isiFlip - scannerStart) ...
-            (feedbackFlip - scannerStart) (ITIflip - scannerStart) experiment{ITIC}(i) emo };
+            (feedbackFlip - scannerStart) (ITIflip - scannerStart) experiment{ITIC}(i) strcat(emo,'_',num2str(face),'.png') };
         
         order(i) = {trial};
         
@@ -459,7 +450,7 @@ sca
                 error('quit early (on %d)\n',i)
             end
             
-            if(keyIsDown && keyCode(caretKey)), break; end
+            if(keyIsDown && (keyCode(caretKey) || keyCode(equalsKey))), break; end
             WaitSecs(.0005);
         end
         % change the screen to prevent key code carrying forward
@@ -480,7 +471,6 @@ sca
         Priority(0);
         ListenChar(0);
         ShowCursor;
-        PsychPortAudio('Close');
         sca
     end
 
@@ -499,15 +489,11 @@ sca
         if nargin>0
             t=varargin{1};
         end
-        if( t > length(experiment{blockC}) )
-            rgbcolorIDX=1;
-            fprintf('Something funny is happening!! -- we are at t=%i\n',t)
-        else
-            rgbcolorIDX=experiment{blockC}(t);
-        end
-        Screen('FrameRect', w, blockColors(rgbcolorIDX,:), [], 25);
+                
+        %fprintf('rect colors: %d %d %d\n', blockColors(rgbcolorIDX,:));
+        %fprintf('t: %d, rgbidx: %d\n', t, rgbcolorIDX);
+        Screen('FrameRect', w, blockColors(t,:), [], 50);
     end
-
 
 
 %% Meat -- show the face and revolving dot (timer)
@@ -547,6 +533,10 @@ sca
         %[VBLT, SOnsetTime] = Screen('Flip', w, 0, clearmode);
         keyPressed=0;
         
+        %listen to 1-5 (right button glove)
+        validKeys=[ KbName('1!') KbName('2@') KbName('3#')...
+                    KbName('4$') KbName('5%') ];
+        
         % Loop while there is time.
         while remainingMS > 0
             elapsedMS = round((GetSecs()*10^3 - startTimeMS) );
@@ -556,7 +546,7 @@ sca
             %Screen('DrawText', w, sprintf('%i ms elapsed...',elapsedMS), 20, 40, black);
                         
             % white circle over trial area
-            Screen('FillOval', w, [255 255 255], CenterRect([ 0 0 2*(spotRadius+spotSize)+10 2*(spotRadius+spotSize)+10 ],windowRect));
+            Screen('FillOval', w, [255 255 255], CenterRect([ 0 0 2*(spotRadius+spotSize)+10 2*(spotRadius+spotSize)+10 ], windowRect));
             
             % put the image up
             Screen('DrawTexture', w,  facetex.(emo){facenum}  );
@@ -578,10 +568,12 @@ sca
                     msgAndCloseEverything(['Quit on trial ' num2str(i)]);
                     error('quit early (on %d)\n',i)
                 end
-                %if keyCode(spaceKey)
-                keyPressed=1; %person responded!
-                break
-                %end
+                
+                if any(keyCode(validKeys))               
+                    %if keyCode(spaceKey)
+                    keyPressed=1; %person responded!
+                    break
+                end
             end
             
             %% super debug mode -- show EV for reponse times
@@ -646,9 +638,13 @@ sca
         oldFontSize=Screen(w,'TextSize', 40 );
         if drawfix, DrawFormattedText(w,'+','center','center',[ 255 0 0]); end
         Screen(w,'TextSize', oldFontSize);
+        
+        clearmode=0;
         drawRect;
-        VBLT_Onset = Screen('Flip', w, reftime); %display the fix ASAP
-        VBLT_Offset = Screen('Flip', w, reftime + waittime - slack); %and display again after desired wait
+        VBLT_Onset = Screen('Flip', w, reftime, clearmode); %display the fix ASAP
+        
+        drawRect;
+        VBLT_Offset = Screen('Flip', w, reftime + waittime - slack, clearmode); %and display again after desired wait
         %this two-flip approach ensures that the fix is on screen for approximately the right length
         
         %drawTime=toc(starttime);
@@ -740,6 +736,8 @@ sca
         Screen('DrawingFinished', w); %tell PTB that we have finished with screen creation -- minimize timing delay
         
         scoreflip = Screen('Flip', w, reftime); %onset of feedback
+        
+        drawRect;
         lastflip = Screen('Flip', w, reftime + receiptDuration - slack); %offset of feedback
         %WaitSecs(receiptDuration-toc(startScoreTime));
         
@@ -783,14 +781,12 @@ sca
                     redoBlock = input(['Do you want to redo run ', num2str(localVar.subject.run_num), ' ? (y or n) '],'s');
                     
                     if strcmpi(redoBlock, 'y')
-                        startRun=localVar.subject.run_num;
                         resume='y'; %may need to phase this out... doesn't make much sense
                     end
                 else
                     resumeNext = input(['Continue with run ', num2str(localVar.subject.run_num + 1), ' ? (y or n) '], 's');
                     if (strcmpi(resumeNext, 'y'))
                         localVar.subject.run_num = localVar.subject.run_num + 1;
-                        startRun = localVar.subject.run_num;
                         resume='y';
                     end
                 end
@@ -801,7 +797,7 @@ sca
                         error(['Must specify run 1 - ', num2str(totalBlocks)]);
                     end
                     resume='y';
-                    subject.run_num = str2double(chooseRun);
+                    localVar.subject.run_num = str2double(chooseRun);
                 end
 
                 if strcmpi(resume,'y')
@@ -818,6 +814,8 @@ sca
                     fprintf('moving %s to %s, start from top\n', txtfile,backup)
                     movefile(txtfile,backup);
                 end
+                
+                startRun = localVar.subject.run_num;
                 
             end
         end
@@ -849,6 +847,42 @@ sca
             subject.runITIs=locV.itimat(subject.runITI_indices, :);
             clear locV;
         end
+        
+        if startRun==1 && ~ismember('blockColors', fields(subject))
+            %Set1 from Color Brewer
+            %provides 8 colors
+            blockColors = [228 26 28; ...
+                55 126 184; ...
+                77 175 74; ...
+                152 78 163; ...
+                255 127 0; ...
+                255 255 51; ...
+                166 86 40; ...
+                247 129 191];
+            
+            blockColors = blockColors(randperm(8),:); %permute per subject
+            subject.blockColors=blockColors;
+            
+            %Set3 from Color Brewer
+            %only provides 12 colors
+            % blockColors = [141 211 199; ...
+            %     255 255 179; ...
+            %     190 186 218; ...
+            %     251 128 114; ...
+            %     128 177 211; ...
+            %     253 180 98; ...
+            %     179 222 105; ...
+            %     252 205 229; ...
+            %     217 217 217; ...
+            %     188 128 189; ...
+            %     204 235 197; ...
+            %     255 237 111];
+            %blockColors = round(255*hsv(24)); % a different color for each block of trials
+            %blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
+        else
+            blockColors=subject.blockColors;
+        end
+            
         
         %load ITI distribution for all runs.
         %NB: the .runITIs element is runs x trials in size (8 x 50)
