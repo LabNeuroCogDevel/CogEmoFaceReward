@@ -65,17 +65,13 @@ textSize=22; %font size for intructions etc.
 
 startRun       = 1; %default to running the first block
 blockColors    = []; %empty so that subfunction getSubjInfo can set
-txtfid      = 0; %just so we know the file pntr's not a private nested function var
+txtfid         = 0; %just so we know the file pntr's not a private nested function var
 
 receiptDuration  = .9;  %show feedback for 900ms
 postResponseISI = .05;  %50ms delay between response and feedback
 postFeedbackITI = .10;  %100ms delay after feedback prior to next trial. Any ITI is added to this.
 timerDuration    = 4.0; %time for revolution of clock
 preStartWait     = 8.0; %initial fixation
-
-% initialize total points earned
-% incremented as a function (inc,dec,const)
-score = 0;
 
 %% set order of trials
 
@@ -110,14 +106,14 @@ if(length(trialsPerBlock) > 1)
 end
 
 totalBlocks = length(experiment{blockC})/trialsPerBlock;
-runTotal=0; %reset block score for new block
+runTotals = zeros(totalBlocks, 1); %initialize 
 
 %obtain subject and run information, or resume next run.
 getSubjInfo
 
 % print the top of output file
 if startRun == 1
-    fprintf(txtfid,'#Subj:\t%s\n', subject.subj_id);
+    fprintf(txtfid,'#Subj:\t%i\n', subject.subj_id);
     fprintf(txtfid,'#Run:\t%i\n',  subject.run_num);
     fprintf(txtfid,'#Age:\t%i\n',  subject.age);
     fprintf(txtfid,'#Gender:\t%s\n',subject.gender);
@@ -128,7 +124,7 @@ fprintf(txtfid,'#%s\n',date);
 
 %% Counter balance
 % by reversing order for odd subjects
-if mod(str2double(subject.subj_id),2)==1
+if mod(subject.subj_id, 2) == 1
     fprintf('NOTE: odd subject, order reversed of input csv!\n')
     %reverse by blocks
     blockIndices = reshape(1:length(experiment{blockC}), trialsPerBlock, totalBlocks);
@@ -166,7 +162,7 @@ try
     Priority(MaxPriority(w));
     
     %do not echo keystrokes to MATLAB
-    %ListenChar(2);
+    %ListenChar(2); %leaving out for now because crashing at MRRC
     
     HideCursor;
     
@@ -204,7 +200,7 @@ try
     for emo=unique(experiment{emotionC})'
         for facenum=unique(experiment{facenumC})'
             stimfilename=strcat('faces/',emo{1},'_',num2str(facenum),'.png');
-            [imdata colormap alpha]=imread(stimfilename);
+            [imdata, colormap, alpha]=imread(stimfilename);
             imdata(:, :, 4) = alpha(:, :); %add alpha information
             % make texture image out of image matrix 'imdata'
             facetex.(emo{1}){facenum} = Screen('MakeTexture', w, imdata);
@@ -297,7 +293,7 @@ try
     
     fprintf('pretrialLength was: %.5f\n', pretrialLength);
     
-    %determine start and end trials
+    %determine start and end trials based on block to be run
     startTrial = (startRun-1)*trialsPerBlock + 1;
     endTrial = startRun*trialsPerBlock;
     blockTrial = 1; %track the trial number within block
@@ -352,7 +348,7 @@ try
         %set the output of the order structure
         trial = { subject.run_num i experiment{rewardC}{i} experiment{emotionC}{i} ...
             F_Mag F_Freq inc ev RTms (firstClockFlip - scannerStart) (isiFlip - scannerStart) ...
-            (feedbackFlip - scannerStart) (ITIflip - scannerStart) experiment{ITIC}(i) strcat(emo,'_',num2str(face),'.png') };
+            (feedbackFlip - scannerStart) (ITIflip - scannerStart) (experiment{ITIC}(i) + postFeedbackITI) strcat(emo,'_',num2str(face),'.png') };
         
         order(i) = {trial};
         
@@ -364,24 +360,14 @@ try
         fprintf(txtfid,'%d\t',order{i}{1:2} );
         fprintf(txtfid,'%s\t',order{i}{3:4} );
         fprintf(txtfid,'%4i\t',order{i}{5:14} );
-        %fprintf(txtfid, '%4i\t', order{i}{2:end});
-        fprintf(txtfid, '%s\t', strcat(emo,'_',num2str(face),'.png') );
+        fprintf(txtfid, '%s', strcat(emo,'_',num2str(face),'.png') );
         fprintf(txtfid, '\n');
         
         % save to mat so crash can be reloaded
         trialnum=i;
-        save(filename,'order','trialnum','blockTrial','subject','score','runTotal');
+        save(filename,'order','orderfmt','trialnum','blockTrial','subject','runTotals');
         
         blockTrial = blockTrial + 1;
-        
-        % line like
-        % CEVR       1      22       5       2    4.481533e+01   176       0       2.136929e-01    3.764108e+01    2.399020e+02
-        % PHASE      RUN    TRIAL    BOXC   NULL   TRACT        FMAG   FMAGP(fmp)   FFREQ(ff=F_Freq)      EV              RT
-        % | --------------- input file ---------|
-        %%% tract = trial start time    -  trstamp
-        %%% null = old exprm field
-        %%% we only have one run of the experiment
-        
         
         %% debug, show time of this trial
         
@@ -415,12 +401,15 @@ try
         
     end
     
-    % everyone should earn the bonus
-    % but they should have at least 2000 pts
-    earnedmsg='\n\nYou earned a $25 bonus !';
-    if(score < 2000); earnedmsg=''; end;
+    %%End of run, potentially with notification of bonus payment
+    earnedmsg='';
+    if startRun == totalBlocks
+        % everyone should earn the bonus
+        % but they should have at least 2000 pts
+        if(sum(runTotals) > 2000), earnedmsg='\n\nYou earned a $25 bonus !'; end
+    end
     
-    msgAndCloseEverything(['Your final score is ', num2str(score) ,' points', earnedmsg, '\n\nThanks for playing!']);
+    msgAndCloseEverything(['Your final score is ', num2str(sum(runTotals)) ,' points', earnedmsg, '\n\nThanks for playing!']);
     return
     
 catch
@@ -647,13 +636,6 @@ sca
         VBLT_Offset = Screen('Flip', w, reftime + waittime - slack, clearmode); %and display again after desired wait
         %this two-flip approach ensures that the fix is on screen for approximately the right length
         
-        %drawTime=toc(starttime);
-        %WaitSecs(waittime-drawTime);
-        
-        %timediff=toc(starttime)-waittime;
-        %if abs(timediff) > .02; fprintf('!! WARNING, wait is off by > 20ms (%.4f)\n', timediff );end
-        
-        %disp([waittime, experiment{ITIC}(i), experiment{ISIC}(i), 4000 - rspnstime, rspnstime ])
     end
 
 
@@ -688,7 +670,7 @@ sca
             F_Mag = 0;
             F_Freq = 0;
         else
-            [F_Mag F_Freq] = getScore(RTms,func);
+            [F_Mag, F_Freq] = getScore(RTms,func);
             
             %%% Compute Score
             %Add noise to magnitude
@@ -703,17 +685,15 @@ sca
                         
             % is freq above thresold and do we have a resonable RT
             if F_Freq > rd
-                score=score+F_Mag;
-                runTotal=runTotal+F_Mag;
+                runTotals(startRun) = runTotals(startRun) + F_Mag;
                 inc=F_Mag;
             else
-                %score=score;
                 inc=0;
             end
         end
         
         fprintf('%s: ev=%.2f; Mag=%.2f; Freq: %.2f; rand: %.2f; inc: %d; pts- block: %d; total: %d\n', ...
-            experiment{rewardC}{i},ev, F_Mag,F_Freq,rd,inc,runTotal,score);
+            experiment{rewardC}{i}, ev, F_Mag, F_Freq, rd, inc, runTotals(startRun), sum(runTotals));
         
         %%% Draw
         drawRect;
@@ -724,12 +704,12 @@ sca
         if keyPressed == 0
             %DrawFormattedText(w, sprintf(['You earned 0 points because you did not respond in time.\n\n' ...
             %    'Please respond before the ball goes all the way around.\n\n'...
-            %    'Total points this game: %d points'], runTotal),'center','center',black);
+            %    'Total points this game: %d points'], runTotals(startRun)),'center','center',black);
             
             DrawFormattedText(w, ['You won 0 points.\n\n\n' ...
                 'Please respond before the ball goes all the way around.\n\n'],'center','center',black);
         else
-            %DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,runTotal),'center','center',black);
+            %DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,runTotals(startRun)),'center','center',black);
             DrawFormattedText(w, sprintf('You won\n\n%d\n\npoints', inc),'center','center',black);
         end
         
@@ -747,12 +727,22 @@ sca
     function getSubjInfo
         
         %whether to resume with next run
-        resume = 'n';
+        askRun=false;
         
-        % skip the questions if we provide var ourself
-        subject.subj_id = input('Enter the subject ID number: ','s');
-                
-        filename = ['subjects/fMRIEmoClock_' subject.subj_id '_tc'];
+        %determine subject number
+        %if .mat file exists for this subject, then likely a reload and continue
+        subject.subj_id = NaN;
+        while isnan(subject.subj_id)
+            
+            idInput = str2double(input('Enter the subject ID number: ','s')); %force to be numeric
+            if ~isnan(idInput)
+                subject.subj_id = idInput;
+            else
+                fprintf('\n  Subject id must be a number\n\n');
+            end
+        end
+        
+        filename = ['subjects/fMRIEmoClock_' num2str(subject.subj_id) '_tc'];
         
         % is the subject new? should we resume from existing?
         % set t accordingly, maybe load subject structure
@@ -769,6 +759,10 @@ sca
                 resume='n';
             else
                 localVar = load(filename);
+                %load previous information
+                subject=localVar.subject;
+                order=localVar.order;
+                runTotals=localVar.runTotals;
                 
                 % sanity check
                 if localVar.subject.subj_id ~= subject.subj_id
@@ -778,47 +772,55 @@ sca
                 
                 if localVar.blockTrial < trialsPerBlock
                     fprintf('It appears only %d trials were completed in run %d.\n', localVar.blockTrial, localVar.subject.run_num);
-                    redoBlock = input(['Do you want to redo run ', num2str(localVar.subject.run_num), ' ? (y or n) '],'s');
+                    redoRun=[];
+                    while isempty(redoRun) 
+                        redoRun = input(['Do you want to redo run ', num2str(localVar.subject.run_num), ' ? (y or n) '],'s');
+                        if ~(strcmpi(redoRun, 'y') || strcmpi(redoRun, 'n'))
+                            redoRun=[];
+                        end
+                    end
                     
-                    if strcmpi(redoBlock, 'y')
-                        resume='y'; %may need to phase this out... doesn't make much sense
+                    if ~strcmpi(redoRun, 'y')
+                        askRun=true;
                     end
                 else
-                    resumeNext = input(['Continue with run ', num2str(localVar.subject.run_num + 1), ' ? (y or n) '], 's');
-                    if (strcmpi(resumeNext, 'y'))
-                        localVar.subject.run_num = localVar.subject.run_num + 1;
-                        resume='y';
+                    continueRun=[];
+                    while isempty(continueRun)
+                        continueRun = input(['Continue with run ', num2str(localVar.subject.run_num + 1), ' ? (y or n) '], 's');
+                        if ~(strcmpi(continueRun, 'y') || strcmpi(continueRun, 'n'))
+                            continueRun=[];
+                        end
                     end
+                    
+                    if (strcmpi(continueRun, 'y'))
+                        localVar.subject.run_num = localVar.subject.run_num + 1;
+                    else
+                        askRun=true;
+                    end
+
                 end
 
-                if ~strcmpi(resume, 'y')
+                if askRun
                     chooseRun = input(['Specify the run to be completed (1 - ', num2str(totalBlocks), ') '], 's');
                     if str2double(chooseRun) > totalBlocks || str2double(chooseRun) < 1
                         error(['Must specify run 1 - ', num2str(totalBlocks)]);
                     end
-                    resume='y';
+
                     localVar.subject.run_num = str2double(chooseRun);
                 end
-
-                if strcmpi(resume,'y')
-                    
-                    clear subject
-                    subject=localVar.subject;
-                    
-                    order=localVar.order;
-                    score=localVar.score;
-                    
-                    % otherwise, move the existing txt file to a backup
-                    % and we'll fill in the subject info below
-                else
-                    fprintf('moving %s to %s, start from top\n', txtfile,backup)
-                    movefile(txtfile,backup);
+                
+                %for the run about to be completed, clear out any prior responses and run totals
+                runTotals(localVar.subject.run_num) = 0; %reset total points in this run
+                for l = ((localVar.subject.run_num-1)*trialsPerBlock+1):(localVar.subject.run_num*trialsPerBlock)
+                    order{l} = [];
                 end
                 
                 startRun = localVar.subject.run_num;
                 
             end
         end
+        
+        if startRun == 1, subject.run_num = 1; end %if new participant, assume run1 start and don't prompt
         
         %% fill out the subject struct if any part of it is still empty
         for attribCell={'gender','age', 'run_num'}
@@ -881,9 +883,8 @@ sca
             %blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
         else
             blockColors=subject.blockColors;
-        end
-            
-        
+        end            
+
         %load ITI distribution for all runs.
         %NB: the .runITIs element is runs x trials in size (8 x 50)
         %here, we need to flatten it row-wise into a vector run*trials length
@@ -905,11 +906,11 @@ sca
         end
         
         % log all output of matlab
-        diaryfile = ['logs/fMRIEmoClock_' subject.subj_id '_' num2str(GetSecs()) '_tcdiary'];
+        diaryfile = ['logs/fMRIEmoClock_' num2str(subject.subj_id) '_' num2str(GetSecs()) '_tcdiary'];
         diary(diaryfile);
         
-        % log presentation,score, timing (see variable "order")
-        txtfid=fopen(txtfile,'a'); % we'll append to this..maybe
+        % log presentation, score, timing (see variable "order")
+        txtfid=fopen(txtfile,'a'); % append to existing log
         
         if txtfid == -1; error('couldn''t open text file for subject'); end
         
@@ -917,7 +918,7 @@ sca
     end
 
 % The actual scoring function. Taken from Frank et al
-    function [Mag Freq] = getScore(RT,scrfunc)
+    function [Mag, Freq] = getScore(RT,scrfunc)
         % Values for Reward computation - constant for all phases
         k = 37;
         Shift = 700;
@@ -949,9 +950,7 @@ sca
                 Mag = Mag*200;
                 Freq = (k*rt_extended)/(rt_extended-(RT+Shift)) ;
                 Freq = Freq/200;
-                
             otherwise
-                %score=score;
                 Mag = 0;
                 Freq = 0;
                 warning(['!!!WHAT function did you mean by' scrfunc]);
