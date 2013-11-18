@@ -1,24 +1,31 @@
 function ClockToExcel(filename, fieldnames)
-if nargin < 2
-    %if fieldnames not specified, these are the default
-    fieldnames = { 'run', 'trial', 'rewFunc', 'emotion', 'magnitude', 'probability', 'score', 'ev', 'rt', 'clock_onset', ...
-        'isi_onset', 'feedback_onset', 'iti_onset' 'iti_ideal' 'image' };
-end
-
     %helper function
     function st = cell2str(cellStr)
-        %add a num2str to each conversion so that numeric and char data are handled properly
-        cellStr= cellfun(@(x){[num2str(x) ',']},cellStr); %# Add ',' after each string.
-        st = cat(2,cellStr{:});  %# Convert to string
-        st(end) = []; %# Remove last ','
+        if isempty(cellStr)
+            st='';
+        else
+            %add a num2str to each conversion so that numeric and char data are handled properly
+            cellStr= cellfun(@(x){[num2str(x) ',']},cellStr); %# Add ',' after each string.
+            st = cat(2,cellStr{:});  %# Convert to string
+            st(end) = []; %# Remove last ','
+        end
     end
-
 
 %verify file existence
 if ~exist(filename,'file'), error('cannot find file: %s\n', filename); end
 
 %load behavioral results into local structure
 fdata=load(filename);
+
+if nargin < 2
+    if ismember('orderfmt',fields(fdata))
+        fieldnames=fdata.orderfmt; %order of fields saved in more recent versions of task
+    else
+        %if fieldnames not specified, these are the default
+        fieldnames = { 'run', 'trial', 'rewFunc', 'emotion', 'magnitude', 'probability', 'score', 'ev', 'rt', 'clock_onset', ...
+            'isi_onset', 'feedback_onset', 'iti_onset' 'iti_ideal' 'image' };
+    end
+end
 
 %derive new filename based on input
 [name.path,name.name,name.ext]=fileparts(filename);
@@ -30,14 +37,11 @@ fid=fopen(outfile, 'w');
 %write field header to file
 fprintf(fid, '%s\n', cell2str(fieldnames));
 
+%write each row as a comma-separated string to file
 for i = 1:size(fdata.order,1)
-    %convert=cellfun(@num2str, order{i}, 'UniformOutput', false);
-    %mat{i}=convert;
     fprintf(fid, '%s\n', cell2str(fdata.order{i}));
-    %fprintf(fid ,'%i\t%i\t%s\t%s\t%i\t%f\t%f\t%f\t%i\t%f\t%f\t%f\t%f\t%i\t%s\n',...
-    %    order{i}{:})
 end
 
 fclose(fid);
-%xlswrite('fMRIEmoClock_6_tc.xls', mat)
+
 end
