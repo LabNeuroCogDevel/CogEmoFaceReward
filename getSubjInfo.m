@@ -11,7 +11,7 @@ if nargin < 2
 end
 
 % initialize the order of events
-order=cell(trialsPerBlock*totalBlocks,1);    
+order=cell(trialsPerBlock*totalBlocks,1);
 
 %initialize run totals
 runTotals = zeros(totalBlocks, 1);
@@ -181,7 +181,12 @@ if strcmpi(taskname, 'fMRIEmoClock')
         %blockColors = round(255*hsv(24)); % a different color for each block of trials
         %blockColors = blockColors(randperm(24),:); % randperm(24) should prob be replaced by a pre-made vector
     end
-        
+    
+elseif strcmpi(taskname, 'BehavEmoClock')
+    %use randomized colors
+    blockColors = round(240*hsv(totalBlocks)); % a different color for each block of trials
+    blockColors = blockColors(randperm(totalBlocks),:);
+    subject.blockColors=blockColors;
 end
 
 
