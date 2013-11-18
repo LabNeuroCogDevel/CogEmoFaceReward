@@ -63,7 +63,7 @@ textSize=22; %font size for intructions etc.
 % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1600 1200] );
 % [ w, windowRect ] = Screen('OpenWindow', max(Screen('Screens')),[ 204 204 204], [0 0 1440 900] );
 
-startRun       = 1; %default to running the first block
+executeRun       = 1; %default to running the first block
 blockColors    = []; %empty so that subfunction getSubjInfo can set
 txtfid         = 0; %just so we know the file pntr's not a private nested function var
 
@@ -112,7 +112,7 @@ runTotals = zeros(totalBlocks, 1); %initialize
 getSubjInfo
 
 % print the top of output file
-if startRun == 1
+if executeRun == 1
     fprintf(txtfid,'#Subj:\t%i\n', subject.subj_id);
     fprintf(txtfid,'#Run:\t%i\n',  subject.run_num);
     fprintf(txtfid,'#Age:\t%i\n',  subject.age);
@@ -248,7 +248,7 @@ try
     
     % is the first time loading?
     % we know this by where we are set to start (!=1 if loaded from mat)
-    if startRun==1
+    if executeRun==1
         % show long instructions for first time player
         for instnum = 1:length(Instructions)
             DrawFormattedText(w, Instructions{instnum},'center','center',black);
@@ -294,8 +294,8 @@ try
     fprintf('pretrialLength was: %.5f\n', pretrialLength);
     
     %determine start and end trials based on block to be run
-    startTrial = (startRun-1)*trialsPerBlock + 1;
-    endTrial = startRun*trialsPerBlock;
+    startTrial = (executeRun-1)*trialsPerBlock + 1;
+    endTrial = executeRun*trialsPerBlock;
     blockTrial = 1; %track the trial number within block
     
     %order of fields in order array
@@ -403,7 +403,7 @@ try
     
     %%End of run, potentially with notification of bonus payment
     earnedmsg='';
-    if startRun == totalBlocks
+    if executeRun == totalBlocks
         % everyone should earn the bonus
         % but they should have at least 2000 pts
         if(sum(runTotals) > 2000), earnedmsg='\n\nYou earned a $25 bonus !'; end
@@ -685,7 +685,7 @@ sca
                         
             % is freq above thresold and do we have a resonable RT
             if F_Freq > rd
-                runTotals(startRun) = runTotals(startRun) + F_Mag;
+                runTotals(executeRun) = runTotals(executeRun) + F_Mag;
                 inc=F_Mag;
             else
                 inc=0;
@@ -693,7 +693,7 @@ sca
         end
         
         fprintf('%s: ev=%.2f; Mag=%.2f; Freq: %.2f; rand: %.2f; inc: %d; pts- block: %d; total: %d\n', ...
-            experiment{rewardC}{i}, ev, F_Mag, F_Freq, rd, inc, runTotals(startRun), sum(runTotals));
+            experiment{rewardC}{i}, ev, F_Mag, F_Freq, rd, inc, runTotals(executeRun), sum(runTotals));
         
         %%% Draw
         drawRect;
@@ -704,12 +704,12 @@ sca
         if keyPressed == 0
             %DrawFormattedText(w, sprintf(['You earned 0 points because you did not respond in time.\n\n' ...
             %    'Please respond before the ball goes all the way around.\n\n'...
-            %    'Total points this game: %d points'], runTotals(startRun)),'center','center',black);
+            %    'Total points this game: %d points'], runTotals(executeRun)),'center','center',black);
             
             DrawFormattedText(w, ['You won 0 points.\n\n\n' ...
                 'Please respond before the ball goes all the way around.\n\n'],'center','center',black);
         else
-            %DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,runTotals(startRun)),'center','center',black);
+            %DrawFormattedText(w, sprintf('You won:  %d points\n\nTotal points this game: %d points', inc,runTotals(executeRun)),'center','center',black);
             DrawFormattedText(w, sprintf('You won\n\n%d\n\npoints', inc),'center','center',black);
         end
         
@@ -815,12 +815,12 @@ sca
                     order{l} = [];
                 end
                 
-                startRun = localVar.subject.run_num;
+                executeRun = localVar.subject.run_num;
                 
             end
         end
         
-        if startRun == 1, subject.run_num = 1; end %if new participant, assume run1 start and don't prompt
+        if executeRun == 1, subject.run_num = 1; end %if new participant, assume run1 start and don't prompt
         
         %% fill out the subject struct if any part of it is still empty
         for attribCell={'gender','age', 'run_num'}
@@ -843,14 +843,14 @@ sca
         
         %%for first run, need to sample the 8 orders from the mat file here
         %%only sample if we have not populated the ITIs before (i.e., don't resample for re-running run 1)
-        if startRun==1 && ~ismember( 'runITI_indices', fields(subject))
+        if executeRun==1 && ~ismember( 'runITI_indices', fields(subject))
             locV=load('fMRIOptITIs_284s_38pct.mat');
             subject.runITI_indices = randsample(size(locV.itimat,1), totalBlocks);
             subject.runITIs=locV.itimat(subject.runITI_indices, :);
             clear locV;
         end
         
-        if startRun==1 && ~ismember('blockColors', fields(subject))
+        if executeRun==1 && ~ismember('blockColors', fields(subject))
             %Set1 from Color Brewer
             %provides 8 colors
             blockColors = [228 26 28; ...
