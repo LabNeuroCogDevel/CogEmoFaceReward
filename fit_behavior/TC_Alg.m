@@ -420,7 +420,7 @@ for trial = 2:numTrials
     rew_max = max(Reward(1:lasttrial)); % max reward received in block thus far -- used for v scaling v[RT_best - RT_avg]
     rew_std = std(Reward(1:lasttrial)); % stddev of rewards in block thus far
     
-    if Rew_last >V_last && Rew_last>= (rew_max-rew_std), 
+    if Rew_last > V_last && Rew_last>= (rew_max-rew_std), 
         % save Rt corresponding to most recent reward within one sd of max
         bestRT=RT_last;         
     end;

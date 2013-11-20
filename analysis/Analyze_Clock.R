@@ -289,13 +289,27 @@ for (f in tcFiles) {
     sdata <- read.table(f, header=TRUE, comment.char="#")
     sdata$Null <- NULL #delete dummy column
     sdata$Subject <- factor(subject)
+    sdata <- ddply(sdata, .(Emotion, Func), function(subdf) {
+        bestRew <- -1
+        bestRT <- -1
+        subdf$bestRewRT <- NA_real_
+        for (i in 1:nrow(subdf)) {
+            if (subdf[i,"ScoreInc"] >= bestRew) {
+                bestRT <- subdf[i,"bestRewRT"] <- subdf[i,"RT"]
+                bestRew <- subdf[i,"ScoreInc"]
+            } else {
+                subdf[i,"bestRewRT"] <- bestRT
+            }
+        }
+        subdf
+    })
     allData[[f]] <- sdata
 }
 
 ##rearrange column headers for readability
 allData <- do.call(rbind, allData)
 row.names(allData) <- NULL
-allData <- allData[,c("Subject", "Run", "Block", "Trial", "Func", "Emotion", "Mag", "Freq", "ScoreInc", "EV", "RT", "Image")]
+allData <- allData[,c("Subject", "Run", "Block", "Trial", "Func", "Emotion", "Mag", "Freq", "ScoreInc", "EV", "RT", "bestRewRT", "Image")]
 allData <- plyr::rename(allData, c(Subject="LunaID"))
 
 ##verify that each subject completed 42 trials for each Func x Emotion condition
@@ -307,6 +321,8 @@ allData$TrialRel <- unlist(lapply(split(allData, f=list(allData$LunaID, allData$
 
 allData <- merge(allData, behav[,c("LunaID", "AgeAtVisit")], by="LunaID")
 allData$Half <- factor(sapply(allData$TrialRel, function(x) { ifelse(x > 21, "H2", "H1")}))
+
+
 
 ##compute median reaction time across subjects
 allSubjAgg <- ddply(allData, .(LunaID, Func), function(subdf) {
@@ -326,6 +342,16 @@ for (s in split(allData, allData$LunaID)) {
     print(g)
 }
 dev.off()
+
+pdf("AllSubjRTs_withMax.pdf", width=11, height=8)
+for (s in split(allData, allData$LunaID)) {
+    sm <- reshape2::melt(s[,c("TrialRel", "RT", "Emotion", "Func", "bestRewRT")], id.vars=c("TrialRel", "Emotion", "Func"))
+    g <- ggplot(sm, aes(x=TrialRel, y=value, color=variable)) + geom_line() + facet_grid(Emotion ~ Func) + ggtitle(s$LunaID[1L]) + ylab("RT") + xlab("Trial")
+    print(g)
+}
+dev.off()
+
+
 
 pdf("AllSubjRTHist.pdf", width=11, height=8)
 ggplot(allData, aes(x=RT)) + geom_histogram(binwidth=250) + facet_grid(Emotion ~ Func) + ggtitle("All Subjects")
