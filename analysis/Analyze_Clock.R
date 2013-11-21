@@ -291,14 +291,23 @@ for (f in tcFiles) {
     sdata$Subject <- factor(subject)
     sdata <- ddply(sdata, .(Emotion, Func), function(subdf) {
         bestRew <- -1
-        bestRT <- -1
+        bestEV <- -1
+        bestRewRT <- subdf[1, "RT"]
+        bestEVRT <- subdf[1, "RT"]
         subdf$bestRewRT <- NA_real_
+        subdf$bestEVRT <- NA_real_
         for (i in 1:nrow(subdf)) {
             if (subdf[i,"ScoreInc"] >= bestRew) {
-                bestRT <- subdf[i,"bestRewRT"] <- subdf[i,"RT"]
+                bestRewRT <- subdf[i,"bestRewRT"] <- subdf[i,"RT"]
                 bestRew <- subdf[i,"ScoreInc"]
             } else {
-                subdf[i,"bestRewRT"] <- bestRT
+                subdf[i,"bestRewRT"] <- bestRewRT
+            }
+            if (subdf[i,"ScoreInc"] > 0 && subdf[i,"EV"] >= bestEV) {
+                bestEVRT <- subdf[i,"bestEVRT"] <- subdf[i,"RT"]
+                bestEV <- subdf[i,"EV"]
+            } else {
+                subdf[i,"bestEVRT"] <- bestEVRT
             }
         }
         subdf
@@ -309,7 +318,7 @@ for (f in tcFiles) {
 ##rearrange column headers for readability
 allData <- do.call(rbind, allData)
 row.names(allData) <- NULL
-allData <- allData[,c("Subject", "Run", "Block", "Trial", "Func", "Emotion", "Mag", "Freq", "ScoreInc", "EV", "RT", "bestRewRT", "Image")]
+allData <- allData[,c("Subject", "Run", "Block", "Trial", "Func", "Emotion", "Mag", "Freq", "ScoreInc", "EV", "RT", "bestRewRT", "bestEVRT", "Image")]
 allData <- plyr::rename(allData, c(Subject="LunaID"))
 
 ##verify that each subject completed 42 trials for each Func x Emotion condition
@@ -345,7 +354,7 @@ dev.off()
 
 pdf("AllSubjRTs_withMax.pdf", width=11, height=8)
 for (s in split(allData, allData$LunaID)) {
-    sm <- reshape2::melt(s[,c("TrialRel", "RT", "Emotion", "Func", "bestRewRT")], id.vars=c("TrialRel", "Emotion", "Func"))
+    sm <- reshape2::melt(s[,c("TrialRel", "RT", "Emotion", "Func", "bestRewRT", "bestEVRT")], id.vars=c("TrialRel", "Emotion", "Func"))
     g <- ggplot(sm, aes(x=TrialRel, y=value, color=variable)) + geom_line() + facet_grid(Emotion ~ Func) + ggtitle(s$LunaID[1L]) + ylab("RT") + xlab("Trial")
     print(g)
 }
