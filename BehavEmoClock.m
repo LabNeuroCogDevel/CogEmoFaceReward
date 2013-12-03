@@ -18,7 +18,7 @@
 %
 
 
-function BehavEmoClock
+function BehavEmoClock(varargin)
 %% BehavEmoClock
 % adapted from CogEmoFaceReward (written by Will Foran 2012-10-05)
 %
@@ -49,13 +49,44 @@ function BehavEmoClock
 % This used 'KbDemo' as template
 
 %window pointer, slack, and subject structure are global across functions
-global w slack subject;
+global w slack subject resppad;
+
+%% PROCESS ARGUMENTS GIVEN TO FUNCTION
+% * are we using a response pad?
+% * TODO: what resolution to use?, this should all be done in a for loop with class(varargin{i})
+resppad=[];
+% find all character arguments to the function
+vanCharI    = cellfun(@(x) any(strmatch(class(x),'char')), varargin );
+% find all arguments that match usb or com (port for Cedrus)
+vanCharIrpI = cellfun(@(x) any(regexpi(x,'.*(usb|com).*')), varargin( vanCharI ));
+
+if(vanCharIrpI)
+  port=varargin{vanCharIrpI(vanCharIrpI(1))};
+  fprintf('USING RESPOSE BOX: %s\n', port)
+  try; CedrusResponseBox('CloseAll'); end
+  % port is the first character argument matching com or usb
+  try
+   %% sometimes opening the the device seems to lead to
+   %% an endless loop. Works when dev is *USB0
+   resppad = CedrusResponseBox('Open',port );
+   dev     = CedrusResponseBox('GetDeviceInfo', resppad);
+   evt     = CedrusResponseBox('GetBaseTimer',resppad);
+   % eprime likes to have pin one toggled, set this
+   %CedrusResponseBox('SetOutputLineLevels',resppad, [);
+  catch
+   error('could not open response box!')
+  end
+
+end
+
 
 %screenResolution=[640 480]; %basic VGA
 %screenResolution=[1600 1200];
 %screenResolution=[1440 900]; %new eyelab room
 %screenResolution=[1680 1050]; %mac laptop
 screenResolution=[1024 768]; %mac laptop
+
+
 
 textSize=22; %font size for intructions etc.
 
@@ -252,6 +283,8 @@ try
             DrawFormattedText(w, Instructions{instnum},'center','center',black);
             Screen('Flip', w);
             waitForResponse;
+            % clear events if we are using a control box, otherwise long presses flash through instructions
+            if(~isempty(resppad)),CedrusResponseBox('FlushEvents', resppad); end
         end
     else
         DrawFormattedText(w, ['Welcome Back!\n\n' InstructionsBetween],'center','center',black);
@@ -295,7 +328,8 @@ try
     %error('end here');
     %% THE BIG LOOP -- complete all trials for a run
     for i=startTrial:endTrial
-        
+        subject.trial_num=i;
+        fprintf('start trial %d\n',subject.trial_num)
         %% debug, start time keeping
         % start of time debuging global var
         checktime=GetSecs();
@@ -318,7 +352,7 @@ try
         setTimeDiff('ISI'); %build times (debug timing)
         
         % show score
-        feedbackFlip = scoreRxt(RTms, experiment{rewardC}{i}, firstClockFlip + RTms/1000 + postResponseISI);
+        feedbackFlip = scoreRxt(RTms, experiment{rewardC}{subject.trial_num}, firstClockFlip + RTms/1000 + postResponseISI);
         setTimeDiff('receipt'); %build times (debug timing)
         
         %show fixation for min (100ms) plus scheduled ITI
@@ -332,29 +366,29 @@ try
         %nonPresTime=tic;
         
         %% write to data file
-        emo=experiment{emotionC}{i};
-        face=experiment{facenumC}(i);
+        emo=experiment{emotionC}{subject.trial_num};
+        face=experiment{facenumC}(subject.trial_num);
         
         %set the output of the order structure
-        trial = { subject.run_num i experiment{rewardC}{i} experiment{emotionC}{i} ...
+        trial = { subject.run_num subject.trial_num experiment{rewardC}{subject.trial_num} experiment{emotionC}{subject.trial_num} ...
             F_Mag F_Freq inc ev RTms (firstClockFlip - scannerStart) (isiFlip - scannerStart) ...
             (feedbackFlip - scannerStart) (ITIflip - scannerStart) ((timerDuration - RTms/1000)/2 + postFeedbackITI) strcat(emo,'_',num2str(face),'.png') };
         
-        order(i) = {trial};
+        order(subject.trial_num) = {trial};
         
         % print header
-        if i == 1
+        if subject.trial_num == 1
             fprintf(txtfid,'Run\tTrial\tFunc\tEmotion\tMag\tProb\tScore\tEV\tRT\tClock_Onset\tISI_Onset\tFeedback_Onset\tITI_Onset\tITI_Ideal\tImage\n');
         end
         
-        fprintf(txtfid,'%d\t',order{i}{1:2} );
-        fprintf(txtfid,'%s\t',order{i}{3:4} );
-        fprintf(txtfid,'%4i\t',order{i}{5:14} );
+        fprintf(txtfid,'%d\t',order{subject.trial_num}{1:2} );
+        fprintf(txtfid,'%s\t',order{subject.trial_num}{3:4} );
+        fprintf(txtfid,'%4i\t',order{subject.trial_num}{5:14} );
         fprintf(txtfid, '%s', strcat(emo,'_',num2str(face),'.png') );
         fprintf(txtfid, '\n');
         
         % save to mat so crash can be reloaded
-        trialnum=i;
+        trialnum=subject.trial_num; % this can be removed?
         save(filename,'order','orderfmt','trialnum','blockTrial','subject','runTotals');
         
         blockTrial = blockTrial + 1;
@@ -367,7 +401,7 @@ try
         expected.ISI     = double(postResponseISI);
         expected.end     = 0; 
         expected.end     = sum(struct2array(expected));
-        fprintf('\n%d: %s_%d.png\n%.2f in, expected, obs, diff\n',i, experiment{emotionC}{i},experiment{facenumC}(i),timing.start);
+        fprintf('\n%d: %s_%d.png\n%.2f in, expected, obs, diff\n',subject.trial_num, experiment{emotionC}{subject.trial_num},experiment{facenumC}(subject.trial_num),timing.start);
                 
         for f = {'clock'  'ISI' 'receipt' 'ITI' 'end' };
             f=f{1};
@@ -424,8 +458,8 @@ sca
             [ keyIsDown, seconds, keyCode ] = KbCheck;
             
             if(keyIsDown && keyCode(escKey))
-                msgAndCloseEverything(['Quit on trial ' num2str(i)]);
-                error('quit early (on %d)\n',i)
+                msgAndCloseEverything(['Quit on trial ' num2str(subject.trial_num)]);
+                error('quit early (on %d)\n',subject.trial_num)
             end
             
             if(keyIsDown && (keyCode(caretKey) || keyCode(equalsKey))), break; end
@@ -476,6 +510,16 @@ sca
         spotRect = [0 0 spotDiameter spotDiameter];
         centeredspotRect = CenterRect(spotRect, windowRect); % Center the spot.
         
+        %% clear and time response pad if we are using it
+        if(~isempty(resppad) ); 
+          CedrusResponseBox('FlushEvents', resppad);
+          % dont reset time, the reset will introduce unknown delay to timing
+          %resetTime = CedrusResponseBox('ResetRTTimer', handle);
+          % instead, use diff from built in timer
+          evt = CedrusResponseBox('GetBaseTimer', resppad);
+          cedrustime = evt.basetimer;
+        end
+        
         % Set up the timer.
         startTimeMS   = GetSecs()*10^3;
         durationMS  = timerDuration*10^3; % 4 seconds of looking at a face
@@ -485,8 +529,8 @@ sca
         % Draw border color based on block. Only call once outside of animation loop
         drawRect;
         
-        emo=experiment{emotionC}{i};
-        facenum=experiment{facenumC}(i);
+        emo=experiment{emotionC}{subject.trial_num};
+        facenum=experiment{facenumC}(subject.trial_num);
         
         clearmode=2; %don't clear frame buffer
         
@@ -525,19 +569,22 @@ sca
             Screen('DrawingFinished', w); %tell PTB that we have finished with screen creation -- minimize timing delay
                         
             [ keyIsDown, keyTime, keyCode ] = KbCheck;
-            
-            if keyIsDown
-                if(keyCode(escKey));
-                    msgAndCloseEverything(['Quit on trial ' num2str(i)]);
-                    error('quit early (on %d)\n',i)
-                end
-                
-                if any(keyCode(validKeys))               
-                    %if keyCode(spaceKey)
-                    keyPressed=1; %person responded!
-                    break
-                end
+            evt=[];
+            if(~isempty(resppad))
+              evt = CedrusResponseBox('GetButtons', resppad);
             end
+
+            if(keyCode(escKey));
+                msgAndCloseEverything(['Quit on trial ' num2str(subject.trial_num)]);
+                error('quit early (on %d)\n',subject.trial_num)
+            end
+               
+            if any(keyCode(validKeys)) || ~isempty(evt)                
+                %if keyCode(spaceKey)
+                keyPressed=1; %person responded!
+                break
+            end
+
             
             %% super debug mode -- show EV for reponse times
             %         for rt = 0:500:3500
@@ -566,6 +613,7 @@ sca
                 firstOnset=SOnsetTime;
                 firstVBLT=VBLT;
                 firstFlip = 0;
+                fprintf('first flip: %f\n',firstOnset)
             end
                         
             % Wait 0.5 ms before checking the keyboard again to prevent
@@ -575,6 +623,12 @@ sca
         
         if keyPressed == 1
             elapsedMS = round((keyTime - firstOnset) * 10^3);
+            subject.resptime.comp(subject.trial_num)= elapsedMS ;
+
+            if ~isempty(resppad)
+               elapsedMS = (evt.rawtime - cedrustime) * 10^3;
+               subject.resptime.resppad(subject.trial_num)= elapsedMS ;
+            end
         else
             elapsedMS = round((VBLT - firstOnset) * 10^3);
         end
@@ -586,13 +640,18 @@ sca
     function seconds = waitForResponse
         while(1)
             [ keyIsDown, seconds, keyCode ] = KbCheck;
-            
-            if(keyIsDown && keyCode(escKey));
-                msgAndCloseEverything(['Quit on trial ' num2str(i)]);
-                error('quit early (on %d)\n',i)
+            % get respponse pad
+            evt=[];
+            if(~isempty(resppad))       
+              evt = CedrusResponseBox('GetButtons', resppad);
             end
             
-            if(keyIsDown && any(keyCode)); break; end %any() is redudant
+            if(keyCode(escKey));
+                msgAndCloseEverything(['Quit on trial ' num2str(subject.trial_num)]);
+                error('quit early (on %d)\n',subject.trial_num)
+            end
+            
+            if( any(keyCode) || ~isempty(evt) ); break; end 
             WaitSecs(.001);
         end
         Screen('Flip', w); % change the screen so we don't hold down space
@@ -634,8 +693,11 @@ sca
             end
         end
         
+        subject.reward.value(subject.trial_num)=inc;
+        subject.reward.ev(subject.trial_num)=ev;
+
         fprintf('%s: ev=%.2f; Mag=%.2f; Freq: %.2f; rand: %.2f; inc: %d; pts- block: %d; total: %d\n', ...
-            experiment{rewardC}{i}, ev, F_Mag, F_Freq, rd, inc, runTotals(subject.run_num), sum(runTotals));
+            experiment{rewardC}{subject.trial_num}, ev, F_Mag, F_Freq, rd, inc, runTotals(subject.run_num), sum(runTotals));
         
         %%% Draw
         drawRect;
