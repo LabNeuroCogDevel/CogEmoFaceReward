@@ -1,6 +1,7 @@
 #main script to fit clock task behavior across all subjects
 
 
+
 generative = 0; % generative model that makes its own choices and gets reward rather than fitting subject data.
 multstart = 1; % use multiple starting points for gradient descent.
 

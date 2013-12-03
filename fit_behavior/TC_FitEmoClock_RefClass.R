@@ -4,8 +4,102 @@ TC_Alg <- setRefClass(
     Class="TC_Alg",
     fields=list(
         RTobs="numeric",
+        RTpred="numeric",
         Reward="numeric",
-        )
+        prior="numeric",
+        updateEquation="expression",
+        PEdistribution="character",
+        V="numeric",
+        Go="numeric",
+        NoGo="numeric",
+        
+    ),
+    methods=list(
+        predict=function() {
+          #compute predicted values and SE for a given set of parameters
+          #should be called repeatedly by fit method
+          
+          numTrials <- length(RTobs) 
+          
+          # Time clock R-L algorithm developed by Michael Frank
+          #
+          #
+          # inputs:
+          #    RTobs:    vector of observed reaction times
+          #    Reward:   vector of obtained rewards (points)
+          #    params:   vector of model parameters used to fit data
+          #    avg_RT:   scalar of average reaction time (across trials from all blocks)
+          #    rewFunc:  reward contingency, 1=CEV; 2=CEVR; 3=DEV; 4=IEV
+          #    emo:      emotion, 1=happy; 2=fear; 3=scrambled
+          #
+          #
+          # RTobs is a t x 1 column vector of reaction times for t trials.
+          # Reward is a t x 1 column vector of rewards obtained for t trials.
+          # params is an 8 x 1 column vector of model parameters to be used to fit behavior.
+          
+          RTpred  <<- rep(NA_real_, numTrials) #vector of predicted RTs
+          V       <<- rep(NA_real_, numTrials) #state-value function (expected value)
+          Go      <<- rep(NA_real_, numTrials)
+          NoGo    <<- rep(NA_real_, numTrials)
+          
+          Q <- 0
+          Noise <- 0
+          
+          mean_s <- 0
+          mean_f <- 0
+          
+          #initial variances of fast/slow resps for kalman filter
+          #Use variance of observed rewards so initial lr = 0.5
+          var_s <- var_f <- rewvar <- var(Reward)
+          rtvar <- var(RTobs)
+          
+          #can't predict first choice due to learning so just set it to actual subject RT 
+          #and then predict starting trial 2
+          
+          RTpred[1L] <- RTobs[1L]
+          
+          V[1L]     			<- priors$V
+          Go[1L]          <- priors$Go
+          NoGo[1L]        <- priors$NoGo
+          
+          #V_fast = V(1); V_slow = V(1); #no differentiation of slow vs. fast to start
+          #joint_ent=1.0; #unused at the moment.
+          
+          # learning rate for expected value V based on PE
+          # also used for updating local RT average
+          alphaV <- 0.1 # just set this to avoid degeneracy
+          
+          #initialize algorithm parameters
+          exp             <- 0
+          exp1            <- 0
+          exp1a           <- 0 #not used
+          lose_switch     <- 0
+          regress         <- 0
+          mean_short      <- 0.5
+          mean_long       <- 0.5
+          RT_avg          <- avg_RT # TODO: set avg on first trial.. WEIRD NAMING INEFFICIENCY?
+          
+          alpha_long      <- 1.01 #init counters and beta distribution hyperparams..
+          beta_long       <- 1.01
+          alpha_short     <- 1.01
+          beta_short      <- 1.01
+          
+          ##TODO: need to figure the naming of these counts..
+          cnt_short <- 0; cnt_long <- 0
+          cnt_speed <- 0; cnt_slow <- 0
+          
+        },
+        modelBuildAIC=function() {
+          #call fit function with a restricted set of parameters
+          #use the order of the user-specified parameters as the basis for computing the successive fits
+          #should return a vector of AIC values for each parameterization
+        },
+        fit=function() {
+          #constrOptim descent over theta
+          
+
+        }
+    )
 )
 
 #methods
@@ -19,54 +113,6 @@ TC_Alg <- setRefClass(
 #core TC algorithm
 TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model, 
         distType="beta", generative=FALSE, stickyChoice=FALSE) {
-    
-    # Time clock R-L algorithm developed by Michael Frank
-    #
-    #
-    # inputs:
-    #    RTobs:    vector of observed reaction times
-    #    Reward:   vector of obtained rewards (points)
-    #    params:   vector of model parameters used to fit data
-    #    avg_RT:   scalar of average reaction time (across trials from all blocks)
-    #    rewFunc:  reward contingency, 1=CEV; 2=CEVR; 3=DEV; 4=IEV
-    #    emo:      emotion, 1=happy; 2=fear; 3=scrambled
-    #
-    #
-    # RTobs is a t x 1 column vector of reaction times for t trials.
-    # Reward is a t x 1 column vector of rewards obtained for t trials.
-    # params is an 8 x 1 column vector of model parameters to be used to fit behavior.
-    
-    numTrials <- length(RTobs)
-    
-    RTpred  <- rep(NA_real_, numTrials) #vector of predicted RTs
-    V       <- rep(NA_real_, numTrials) #state-value function (expected value)
-    Go      <- rep(NA_real_, numTrials)
-    NoGo    <- rep(NA_real_, numTrials)
-    
-    Q <- 0
-    Noise <- 0
-    
-    mean_s <- 0
-    mean_f <- 0
-    
-    #initial variances of fast/slow resps for kalman filter
-    #Use variance of observed rewards so initial lr = 0.5
-    var_s <- var_f <- rewvar <- var(Reward)
-    rtvar <- var(RTobs)
-    
-    #can't predict first choice due to learning so just set it to actual subject RT 
-    #and then predict starting trial 2
-    
-    RTpred[1L] <- RTobs[1L]
-    
-    V[1L]			<- priors$V
-    Go[1L]          <- priors$Go
-    NoGo[1L]        <- priors$NoGo
-    
-    #V_fast = V(1); V_slow = V(1); #no differentiation of slow vs. fast to start
-    #joint_ent=1.0; #unused at the moment.
-    
-    alphaV <- 0.1 # just set this to avoid degeneracy
     
     # GENERATIVE model just pick some params to generate data
     if (generative) {
@@ -85,24 +131,10 @@ TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model,
         Noise=2000
     } 
     
-    #initialize algorithm parameters
-    exp             <- 0
-    exp1            <- 0
-    exp1a           <- 0 #not used
-    lose_switch     <- 0
-    regress         <- 0
-    mean_short      <- 0.5
-    mean_long       <- 0.5
-    RT_avg          <- avg_RT # TODO: set avg on first trial.. WEIRD NAMING INEFFICIENCY?
     
-    alpha_long       <- 1.01 #init counters and beta distribution hyperparams..
-    beta_long          <- 1.01
-    alpha_short      <- 1.01
-    beta_short         <- 1.01
+
     
-    ##TODO: need to figure the naming of these counts..
-    cnt_short <- 0; cnt_long <- 0
-    cnt_speed <- 0; cnt_slow <- 0
+
     
     RT_new      <- RTobs[1L] #just for init
     RT_last     <- RTobs[1L] #just for init

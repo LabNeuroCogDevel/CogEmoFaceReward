@@ -58,8 +58,8 @@ TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model,
     if (generative) {
         lambda = 0.2
         explore = 3000
-        alpha1 = .3
-        alpha2 = .3
+        alphaG = .3
+        alphaN = .3
         K = 1500
         exp_alt =500
         scale = .25
@@ -173,11 +173,11 @@ TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model,
         NoGo_new  <- NoGo_last
         
         if (Rew_last > V_last) {
-            #if obtained reward was better than expected (PPE), speed up (scaled by alpha1)
-            Go_new = Go_last + alpha1*(Rew_last - V_last)
+            #if obtained reward was better than expected (PPE), speed up (scaled by alphaG)
+            Go_new = Go_last + alphaG*(Rew_last - V_last)
         }  else if (Rew_last <= V_last) {
-            #if obtained reward was worse than expected, slow down (scaled by alpha1)
-            NoGo_new = NoGo_last + alpha2*(V_last - Rew_last)            
+            #if obtained reward was worse than expected, slow down (scaled by alphaN)
+            NoGo_new = NoGo_last + alphaN*(V_last - Rew_last)            
         }
         
         #model tracks two distributions, one for fast/short responses (less than mean RT)
@@ -228,7 +228,7 @@ TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model,
                 
                 ##TODO: This line is not in some versions of MF's code
                 var_short <- var_f
-                var_long <- var_s;
+                var_long <- var_s
                 
                 exp1 = - explore*(sqrt(var_f) - sqrt(var_s));  # using kalman filter gaussian distributions.
                 
