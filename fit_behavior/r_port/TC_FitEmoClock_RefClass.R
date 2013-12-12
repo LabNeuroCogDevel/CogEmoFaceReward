@@ -12,12 +12,20 @@ TC_Alg <- setRefClass(
         V="numeric",
         Go="numeric",
         NoGo="numeric",
+        params="numeric", #named vector of model parameters
+        scratchScalars="numeric" #named vector of scratch variables used by sub-models 
         
     ),
     methods=list(
         predict=function() {
           #compute predicted values and SE for a given set of parameters
           #should be called repeatedly by fit method
+          
+          #use a scalar workspace that is updated trial-by-trial by various sub-methods to have
+          #the necessary variables to compute a predicted RT.
+          scalarWorkspace <- list()
+          
+          
           
           numTrials <- length(RTobs) 
           
@@ -112,6 +120,53 @@ TC_Alg <- setRefClass(
 
 #wrapper function to determine whether behavior fit improves with additional parameters
 
+#go for gold specification:
+#initialize best to average RT: bestRT      <- avg_RT
+
+#track whether PPE occurs and reward is within one SD of max
+#rew_max <- max(Reward[1:lasttrial]) # max reward received in block thus far -- used for v scaling v[RT_best - RT_avg]
+#rew_sd <- sd(Reward[1:lasttrial]) # sd of rewards in block thus far
+#        # If PPE on prior trial and obtained reward within one SD of max, save as bestRT
+#        if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
+#            bestRT <- RT_last
+#        }
+
+# contribute to RT prediction according to scale parameter
+#
+#RT_new <- K + lambda*RT_last - Go_new + NoGo_new + exp1 + 0*regress +
+#    meandiff*(mean_long-mean_short) + scale*(bestRT-avg_RT) + Noise*(rand-0.5);
+
+#scratch variables:
+# - bestRT: RT associated with best reward to trial t
+# - rew_max: maximum obtained reward to trial t
+# - rew_sd: standard deviations of rewards to trial t
+
+#depends:
+# - V_last: expected value/payoff on trial t
+# - Rew_last: obtained reward on prior trial
+# - avg_RT: average reaction time across block
+# - lasttrial: counter of trial up to t (iterating over trials)
+
+#model parameters:
+# - scale: weight for modulating RT toward best: scale*(bestRT - avg_RT)
+
+#influence on prediction update
+# - scale*(bestRT - avg_RT)
+
+###
+#abstracting to other aspects of the model, we have
+# parameter proper:
+#   - initial value
+#   - min and max values (constraints)
+#   - current value
+
+# scratch variables (updated trial-to-trial)
+
+# dependencies on other scratch variables
+
+# influence on RT prediction (update)
+
+
 #core TC algorithm
 TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model, 
         distType="beta", generative=FALSE, stickyChoice=FALSE) {
@@ -158,15 +213,18 @@ TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model,
     )
     
     
+    
     #iterate over trials 2..n
     for (trial in 2:numTrials) {
         lastTrial <- trial - 1
         
-        exp1_last = exp1; exp_last = exp; exp1a_last = exp1a;
-        means_last = mean_short;
-        meanl_last = mean_long;
-        vars_last = var_short;
-        varl_last = var_long;
+        exp1_last <- exp1 
+        exp_last <- exp 
+        exp1a_last = exp1a
+        means_last = mean_short
+        meanl_last = mean_long
+        vars_last = var_short
+        varl_last = var_long
         
         #add process noise to kalman variances (only for kalman filter model)
         if (distType == "Gaussian") {
