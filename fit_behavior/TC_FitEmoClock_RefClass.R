@@ -88,6 +88,8 @@ TC_Alg <- setRefClass(
           cnt_short <- 0; cnt_long <- 0
           cnt_speed <- 0; cnt_slow <- 0
           
+		  
+		  
         },
         modelBuildAIC=function() {
           #call fit function with a restricted set of parameters
@@ -95,7 +97,7 @@ TC_Alg <- setRefClass(
           #should return a vector of AIC values for each parameterization
         },
         fit=function() {
-          #constrOptim descent over theta
+          #constrOptim descent over theta, calling predict with varying parameters
           
 
         }
