@@ -49,205 +49,453 @@
 
 
 alg <- setRefClass(
-		Class="alg",
-		fields=list(
-				RTobs="numeric",
-				RTpred="numeric",
-				Reward="numeric",
-				ntrials="numeric",
-				cur_trial="numeric",
-				updateEquation="expression",
-				PEdistribution="character",
-				V="numeric",
-				Go="numeric",
-				NoGo="numeric",
-				#params="numeric", #named vector of model parameters
-				workspace="environment", #shared environment for all params and subclasses
-				params="list"
-		
-		),
-		methods=list(
-				initialize=function(RTobs=NA_integer_, Reward=NA_integer_, ...) {
-					cat("Initializing alg\n")
-					if (is.na(RTobs[1L])) { warning("construction of alg requires observed reaction times (RTobs)") }
-					if (is.na(Reward[1L])) { warning("construction of alg requires observed rewards (Reward)") }
-					if (length(RTobs) != length(Reward)) { stop("RTobs and Reward are of different length") }
-					
-					#initialize shared workspace
-					workspace <<- new.env() 
-					workspace$sharedX <<- 15
-					
-					ntrials <<- length(Reward)
-					RTobs <<- RTobs #initialize fields
-					Reward <<- Reward 
-					params <<- list()
-					callSuper(...) #for classes inheriting from this, pass through unmatched iniitalization values
-				},
-				lappend=function(target, append) {
-					if (!is.list(target)) stop("target is not a list.")
-					if (!is.list(append)) stop("append is not a list.")
-					
-					for (elementName in names(append)) {
-						if (!is.null(target[[elementName]])) warning("Element is already present in target list: ", elementName)
-						target[[elementName]] <- append[[elementName]]
-					}
-					
-					return(target)
-				},
-				
-				add_params=function(...) {
-					#accept a variable number of parameter objects
-					p_objs <- as.list(match.call())[-1L] #first element of match.call is a class for refMethodDef for the alg object
-					p_objs <- lapply(p_objs, eval) #force initialization of param objects (otherwise stays as a language expression)
-					#browser()
-					#pass along address of shared workspace to sub-objects
-					p_objs <- lapply(p_objs, function(p) { p$workspace <- .self$workspace; return(p) })
-					
-					params <<- lappend(params, p_objs)
-				},
-				list_params=function() {
-					cat("Current parameters in algorithm\n\n")
-					cat(names(params), sep="\n")
-				},
-				reorder_params=function(neworder) {
-					left_out <- names(params)[! names(params) %in% neworder]
-					if (length(left_out) > 0L) {
-						warning("reorder_params call did not include position for: ", paste(left_out, collapse=", "), ". Defaulting to end")
-						neworder <- c(neworder, left_out)
-					}
-					if (length(unmatched <- neworder[! neworder %in% names(params)]) > 0L) {
-						stop("reorder_params unable to find parameters in alg: ", paste(unmatched, sep=","))
-					}
-					params <<- params[neworder]
-				},
-#				add_gold=function() {
-#					gobj <- list(gold=goForGold(min_value=-1, max_value=1, init_value=0, cur_value=0))
-#					
-#					params <<- lappend(params, gobj)
-#				},
-#				
-#				add_dummy=function() {
-#					gobj <- list(dum1=dummyParam(min_value=-10, max_value=10, init_value=0, cur_value=0))
-#					
-#					params <<- lappend(params, gobj)
-#					
-#				},				
-				get_param_current_vector=function() {
-					#corral a named vector of parameters for constrOptim
-					cur_p_vec <- lapply(params, function(p) {
-								return(p$cur_value)
-							})
-					return(cur_p_vec)
-				},
-				
-				get_param_minimum_vector=function() {
-					#corral a named vector of parameters for constrOptim
-					min_p_vec <- lapply(params, function(p) {
-								return(p$min_value)
-							})
-					return(min_p_vec)					
-				},
-				
-				get_param_maximum_vector=function() {
-					#corral a named vector of parameters for constrOptim
-					max_p_vec <- lapply(params, function(p) {
-								return(p$max_value)
-							})
-					return(max_p_vec)					
-				},
-				
-				get_param_initial_vector=function() {
-					#corral a named vector of parameters for constrOptim
-					init_p_vec <- lapply(params, function(p) {
-								return(p$init_value)
-							})
-					return(init_p_vec)
-				},
-				
-				predict=function() {
-					
-					
-					for (t in 2:numTrials) {
-						cur_trial <<- t #copy workspace variable to cur_trial field
-						
-					}
-				})
+    Class="alg",
+    fields=list(
+        updateEquation="expression",
+        w="environment", #shared environment for all params and subclasses
+        params="list",
+        noiseWt="numeric",
+        SSE="numeric"
+    
+    ),
+    methods=list(
+        initialize=function(RTobs=NA_integer_, Reward=NA_integer_, ...) {
+          cat("Initializing alg\n")
+          if (is.na(RTobs[1L])) { warning("construction of alg requires observed reaction times (RTobs)") }
+          if (is.na(Reward[1L])) { warning("construction of alg requires observed rewards (Reward)") }
+          if (length(RTobs) != length(Reward)) { stop("RTobs and Reward are of different length") }          
+          
+          #initialize shared workspace
+          w <<- new.env() 
+          
+          w$ntrials <<- length(Reward)
+          w$RTobs   <<- RTobs #initialize fields
+          w$Reward  <<- Reward
+          w$RTpred  <<- rep(NA_real_, w$ntrials) #initialize empty predicted RT
+          w$RTpred[1L] <<- w$RTobs[1L] #cannot predict first trial behavior per se, so use observed RT so that t=1 doesn't contribute to SSE
+          w$rpe     <<- rep(NA_real_, w$ntrials) #empty vector of reward prediction errors
+          w$V       <<- rep(NA_real_, w$ntrials) #initialize expected value vector
+          w$V[1L]   <<- 0 #just for now -- come back to allow V to carry over blocks.
+          
+          w$avg_RT  <<- mean(RTobs, na.rm=TRUE)
+          
+          w$alphaV  <<- 0.1 # learning rate for critic (V) and updating avgRT.  Just set this to avoid degeneracy
+          
+          params <<- list() #initialize empty list of model parameters
+          noiseWt <<- 0 #do not add noise to RT prediction
+          
+          callSuper(...) #for classes inheriting from this, pass through unmatched iniitalization values
+        },
+        lappend=function(target, append) {
+          if (!is.list(target)) stop("target is not a list.")
+          if (!is.list(append)) stop("append is not a list.")
+          
+          for (elementName in names(append)) {
+            if (!is.null(target[[elementName]])) warning("Element is already present in target list: ", elementName)
+            target[[elementName]] <- append[[elementName]]
+          }
+          
+          return(target)
+        },
+        
+        add_params=function(...) {
+          #accept a variable number of parameter objects
+          p_objs <- as.list(match.call())[-1L] #first element of match.call is a class for refMethodDef for the alg object
+          p_objs <- lapply(p_objs, eval) #force initialization of param objects (otherwise stays as a language expression)
+          
+          #pass along address of shared workspace to sub-objects
+          p_objs <- lapply(p_objs, function(p) { p$w <- .self$w; p$postInit(); return(p) })
+          
+          params <<- lappend(params, p_objs)
+        },
+        list_params=function() {
+          cat("Current parameters in algorithm\n\n")
+          cat(names(params), sep="\n")
+        },
+        reorder_params=function(neworder) {
+          left_out <- names(params)[! names(params) %in% neworder]
+          if (length(left_out) > 0L) {
+            warning("reorder_params call did not include position for: ", paste(left_out, collapse=", "), ". Defaulting to end")
+            neworder <- c(neworder, left_out)
+          }
+          if (length(unmatched <- neworder[! neworder %in% names(params)]) > 0L) {
+            stop("reorder_params unable to find parameters in alg: ", paste(unmatched, collapse=", "))
+          }
+          params <<- params[neworder]
+        },
+        
+        get_param_current_vector=function() {
+          #corral a named vector of parameters for constrOptim
+          cur_p_vec <- sapply(params, function(p) {
+                return(p$cur_value)
+              })
+          names(cur_p_vec) <- sapply(params, function(p) { return(p$name) }) #use internal param labels, not names provided by user
+          return(cur_p_vec)
+        },
+        
+        get_param_minimum_vector=function() {
+          #corral a named vector of parameters for constrOptim
+          min_p_vec <- sapply(params, function(p) {
+                return(p$min_value)
+              })
+          names(min_p_vec) <- sapply(params, function(p) { return(p$name) }) #use internal param labels, not names provided by user
+          return(min_p_vec)					
+        },
+        
+        get_param_maximum_vector=function() {
+          #corral a named vector of parameters for constrOptim
+          max_p_vec <- sapply(params, function(p) {
+                return(p$max_value)
+              })
+          names(max_p_vec) <- sapply(params, function(p) { return(p$name) }) #use internal param labels, not names provided by user
+          return(max_p_vec)					
+        },
+        
+        get_param_initial_vector=function() {
+          #corral a named vector of parameters for constrOptim
+          init_p_vec <- sapply(params, function(p) {
+                return(p$init_value)
+              })
+          names(init_p_vec) <- sapply(params, function(p) { return(p$name) }) #use internal param labels, not names provided by user
+          return(init_p_vec)
+        },
+        
+        fit=function(initialValues=get_param_initial_vector(),
+            lower=get_param_minimum_vector(),
+            upper=get_param_maximum_vector()) {
+          
+          #call predict using optimizer
+          if (length(initialValues) == 1L) { method="Brent"
+          } else { method="L-BFGS-B" }
+          
+          p <- optim(par=initialValues, fn=.self$predict, method=method,
+              lower=lower, upper=upper)
+          
+          return(p)
+          #optimize(.self$predict, interval=c(100, 4000))
+          #browser()
+        },
+        
+        predict=function(theta=get_param_current_vector()) {
+          #optim using Brent, or optimize fail to pass names of parameters into predict.
+          #names are critical for the params to lookup properly.
+          if (is.null(names(theta))) {
+            #warning("Unnamed theta vector passed to predict. Looking up from parameter list.")
+            names(theta) <- sapply(params, function(p) { return(p$name) })
+          }
+          
+          w$RT_new  <<- w$RTobs[1L] #use observed RT as predicted RT for t=1
+          w$RT_last <<- w$RTobs[1L]
+          
+          for (t in 2:w$ntrials) {
+            w$cur_trial <<- t
+            w$lastTrial <<- t - 1
+            
+            evalq(
+                {
+                  Rew_last <- Reward[lastTrial]
+                  RT_last  <- RTobs[lastTrial]
+                  V_last <- V[lastTrial];
+                  V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
+                  V[cur_trial] <- V_new
+                }, w)
+            
+            w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
+            w$RTpred[w$cur_trial] <<- w$RT_new        
+            
+            
+            w$rpe[t-1] <<- w$Rew_last - w$V_last
+            
+          }
+          
+          SSE <<- sum((w$RTobs - w$RTpred)^2) #sum of squared error: cost
+          cat("SSE: ", SSE, "\n")
+          return(SSE)
+        })
 
-#rew_max <- max(Reward[1:lasttrial]) # max reward received in block thus far -- used for v scaling v[RT_best - RT_avg]
-#rew_sd <- sd(Reward[1:lasttrial]) # sd of rewards in block thus far
-#        # If PPE on prior trial and obtained reward within one SD of max, save as bestRT
-#        if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
-#            bestRT <- RT_last
-#        }
 
 )
 
 
 
-
+#generic parameter class
+#should expose:
+#  - min_value:  minimum parameter value in optimization
+#  - max_value:  maximum parameter value
+#  - init_value: initial parameter value
+#  - cur_value:  current parameter value
+#
+#  - getRTUpdate: compute contribution to RT prediction for this parameter
 param <- setRefClass(
-		Class="param",
-		fields=list(
-				name="character",
-				min_value="numeric",
-				max_value="numeric",
-				init_value="numeric",
-				cur_value="numeric",
-				curtrial="numeric",
-				workspace="environment"
-		),
-		methods=list(				
-				getRTUpdate=function() {
-					return(NULL)
-				}
-		)
+    Class="param",
+    fields=list(
+        name="character",
+        min_value="numeric",
+        max_value="numeric",
+        init_value="numeric",
+        cur_value="numeric",
+        w="environment",
+        predContrib="numeric"
+    ),
+    methods=list(
+        initialize=function(min_value=-Inf, max_value=Inf, init_value=0, cur_value=0, ...) {
+          w <<- emptyenv() #workspace should never be unique to parameter, but is set upstream by alg
+
+          #general sanity checks and field assignmend handled here so subordinate classes need not duplicate
+          stopifnot(cur_value <= max_value)
+          stopifnot(cur_value >= min_value)
+          stopifnot(init_value <= max_value)
+          stopifnot(init_value >= min_value)
+          
+          min_value <<- min_value
+          max_value <<- max_value
+          init_value <<- init_value
+          cur_value <<- cur_value
+          
+          callSuper(...) #pass along any unmatched parameters for assignment          
+        },
+        postInit=function(...) {
+          #function that is called after object initialization
+          #and after the shared workspace (w) address is passed to parameter.
+          predContrib <<- rep(NA_real_, w$ntrials) #vector of this parameter's contribution to predicted RT
+        },
+        #default to NULL RT (should be overloaded by sub-class)
+        getRTUpdate=function() {
+          return(NULL)
+        }
+    )
 
 )
 
+##K: mean reaction time
+meanRT <- setRefClass(
+    Class="p_K",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(min_value=100, max_value=5000, init_value=1000, cur_value=init_value, ...) {
+          name <<- "K"
+          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+        },
+        getRTUpdate=function(theta) {
+          cur_value <<- theta[name] #update current value in param object
+          predContrib[w$cur_trial] <<- cur_value #for baseline RT, the parameter itself is the speed in ms 
+          return(predContrib[w$cur_trial])
+        }
+    )
+)
+
+##lambda: RT autocorrelated with t-1
+autocorrPrevRT <- setRefClass(
+    Class="p_autocorrPrevRT",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(min_value=0.0, max_value=1.0, init_value=0.3, cur_value=init_value, ...) {
+          name <<- "lambda"
+
+          if (min_value < 0.0) { stop("Autocorr prev RT (lambda) parameter cannot be negative") }
+          if (max_value > 1.0) { stop("Autocorr prev RT (lambda) parameter cannot exceed 1.0") }
+          
+          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+        },
+        getRTUpdate=function(theta) {          
+          cur_value <<- theta[name] #update current value based on optimization
+          predContrib[w$cur_trial] <<- cur_value*w$RT_last 
+          return(predContrib[w$cur_trial])
+        }
+    )
+
+) 
+
+
+##Go: speed up of RT for PPE
+go <- setRefClass(
+    Class="p_go",
+    contains="param",
+    fields=list(), #Go="numeric"), #put Go vector into w
+    methods=list(
+        initialize=function(min_value=0.01, max_value=5.0, init_value=0.2, cur_value=init_value, ...) {
+          if (min_value < 0.01) { stop("alphaG min_value must be at least 0.01") }
+          if (max_value > 5.0) { stop("alphaG max_value must be less than 5.0") }
+          name <<- "alphaG"
+          callSuper(min_value, max_value, init_value, cur_value, ...) #initialize upstream
+        },
+        postInit=function(...) {
+          w$Go <<- rep(NA_real_, w$ntrials) #vector of Go term
+          w$Go[1L] <<- 0.0 #may want to override this later...
+          callSuper(...) #setup predContrib upstream
+        },
+        getRTUpdate=function(theta) {
+          cur_value <<- theta[name] #update current value based on optimization
+          #a bit of a hack here to copy the alphaG learning rate into w for easier code below
+          w$cur_value <<- cur_value
+          evalq(
+              {
+                #need to clean this up -- returning NAs...
+                Go_last   <- Go[lastTrial]
+
+                #carry forward Go term unless updated below by PE
+                Go_new <- Go_last
+
+                #if obtained reward was better than expected (PPE), speed up (scaled by alphaG)
+                if (Rew_last > V_last) {                  
+                  Go_new <- Go_last + cur_value*(Rew_last - V_last)
+                }
+              },
+              w
+          )
+          rm(cur_value, envir=w)
+          
+          browser()
+          predContrib[w$cur_trial] <<- -1.0*w$Go_new 
+          return(predContrib[w$cur_trial])
+          
+        }
+    )
+)
+
+
+##scale: go for the gold
 goForGold <- setRefClass(
-		Class="p_gold",
-		contains="param",
-		fields=list(),
-		methods=list(
-				initialize=function(...) {
-					name <<- "scale"
-					callSuper(...)
-					cat("in goForGold init\n")
-					e <- environment()
-					pe <- parent.env(e)
-					cat("parent env:\n")
-					print(ls(pe))
-				},
-				getRTUpdate=function() {
-					cat("in gold RT update\n")
-					return(workspace$sharedX * 10)
-					#return(cur_value*(bestRT - avg_RT))
-				}
-		
-		)
+    Class="p_gold",
+    contains="param",
+    fields=list(bestRT="numeric"),
+    methods=list(
+        initialize=function(min_value=0, max_value=5000, init_value=0.1, cur_value=init_value, ...) {
+          name <<- "scale"
+          if (min_value < 0) { stop("Go for gold (nu) parameter cannot be negative")}
+          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+        },
+        postInit=function(...) {
+          #After shared workspace (w) address is passed in, setup expectation on bestRT
+          w$bestRT  <<- rep(NA_real_, w$ntrials) #initialize empty bestRT vector
+          if (identical(bestRT, numeric(0))) {
+            #default to average RT
+            warning("Using average reaction time across block as best RT prior.")
+            w$bestRT[1L] <<- w$avg_RT
+          } else {
+            w$bestRT[1L] <<- bestRT
+          }
+          callSuper(...) #setup predContrib using upstream method
+        },
+        getRTUpdate=function(theta) {
+          cur_value <<- theta[name] #update current value based on optimization
+          
+          #compute maximum reward and reward variability up to current trial
+          #evaluate update within shared workspace
+          evalq(
+              { 
+                rew_max <- max(Reward[1:lastTrial]) # max reward received in block thus far -- used for updating best RT
+                rew_sd  <- ifelse(lastTrial > 1, sd(Reward[1:lastTrial]), 0) # sd of rewards in block thus far (use a value of 0 if just one trial)
+                # If PPE on prior trial and obtained reward falls within one SD of max, save as bestRT
+                #N.B. This works magically well in the test case
+                #was trying to see whether the PPE aspect here is necessary
+                #if (Rew_last >= (rew_max - rew_sd)) {
+                if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
+                  bestRT[cur_trial] <- RT_last #make sure to use <-, not <<- to avoid scope confusion with bestRT field
+                } else {
+                  bestRT[cur_trial] <- bestRT[lastTrial] #carry forward best so far
+                }
+                
+              },
+              w
+          )
+          
+          predContrib[w$cur_trial] <<- cur_value*with(w, bestRT[cur_trial] - avg_RT) 
+          return(predContrib[w$cur_trial])
+          
+        }
+    
+    )
 )
 
 
-
-dummyParam <- setRefClass(
-		Class="p_dummy",
-		contains="param",
-		fields=list(),
-		methods=list(
-				initialize=function(...) {
-					name <<- "dummy"
-					callSuper(...)
-				},
-				getRTUpdate=function() {
-					
-					
-					return(cur_value*(bestRT - avg_RT))
-				}
-		
-		)
-
+#strategic explore parameter using beta distribution for counts of prediction errors
+exploreBeta <- setRefClass(
+    Class="p_epsilonBeta",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(...) {
+          
+          name <<- "epsilonBeta"
+          
+          #initialize shape parameters for short and long RT beta distributions
+          w$alpha_long  <<- 1.01
+          w$beta_long   <<- 1.01
+          w$alpha_short <<- 1.01
+          w$beta_short  <<- 1.01
+          
+          callSuper(...)
+        },
+        getRTUpdate=function(theta) {
+          #model tracks two distributions, one for fast/short responses (less than mean RT)
+          #and one for long/slow responses (above mean RT)
+          #here, we update the estimates of the corresponding beta distribution for slow or fast responses
+          
+          evalq(
+              {
+                #cache means and variances of prior trial in w
+                exp1_last = exp1; 
+                #exp_last = exp; exp1a_last = exp1a;
+                means_last = mean_short;
+                meanl_last = mean_long;
+                vars_last = var_short;
+                varl_last = var_long;
+                
+                if (RT_last > RT_avg) { #last response was slower than average
+                  if (Rew_last > V_last) { #ppe: increment alpha shape parameter for long dist
+                    alpha_long <- alpha_long + 1
+                  } else {
+                    beta_long <- beta_long + 1
+                  }
+                } else if (RT_last <= RT_avg) { #last response was faster than average
+                  if(Rew_last > V_last) {
+                    alpha_short <- alpha_short + 1
+                  } else {
+                    beta_short = beta_short + 1
+                  }
+                }
+                
+                alpha_long      <- decay * alpha_long # if decay < 1 then this decays counts, making beta dists less confident
+                beta_long       <- decay * beta_long
+                alpha_short     <- decay * alpha_short
+                beta_short      <- decay * beta_short
+                
+                # compute mode and variances of beta distribution
+                #TODO: Are these redundant with the beta updates above? If so, figure out how to consolidate
+                var_short   <- alpha_short * beta_short / ( (alpha_short + beta_short)^2 * (alpha_short + beta_short + 1) )
+                var_long    <- alpha_long*beta_long/( (alpha_long + beta_long)^2 * (alpha_long + beta_long + 1) )
+                mode_long   <- (alpha_long - 1) / (alpha_long + beta_long - 2)
+                mode_short  <- (alpha_short - 1) / (alpha_short + beta_short - 2)
+                mean_long   <- alpha_long / (alpha_long + beta_long)
+                mean_short  <- alpha_short / (alpha_short + beta_short)
+                
+                if (RT_last > RT_avg) {
+                  exp1 = -1.0*explore * (sqrt(var_short) - sqrt(var_long))  # speed up if more uncertain about fast responses
+                } else {
+                  exp1 = +1.0*explore * (sqrt(var_long) - sqrt(var_short))
+                }
+                
+                # reset if already explored in this direction last trial (see supplement of Frank et al 09)
+                if ( (RT_last < RT_last2 && exp1 < 0) ||
+                    (RT_last > RT_last2 && exp1 > 0) ) {
+                  exp1 <- 0
+                }
+                
+                
+                
+              },
+              w
+          )
+          
+          cur_value <<- w$exp1
+          return(cur_value)
+        }
+    
+    )
 )
-
 
 
 

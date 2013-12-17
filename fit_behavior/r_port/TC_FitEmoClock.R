@@ -156,8 +156,8 @@ TC_Alg <- function(RTobs, Reward, params, priors, avg_RT, rewFunc, emo, model,
         V_last <- V[lastTrial];
         V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
         
-        rew_max <- max(Reward[1:lasttrial]) # max reward received in block thus far -- used for v scaling v[RT_best - RT_avg]
-        rew_sd <- sd(Reward[1:lasttrial]) # sd of rewards in block thus far
+        rew_max <- max(Reward[1:lastTrial]) # max reward received in block thus far -- used for v scaling v[RT_best - RT_avg]
+        rew_sd <- sd(Reward[1:lastTrial]) # sd of rewards in block thus far
         
         # If PPE on prior trial and obtained reward within one SD of max, save as bestRT
         if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
