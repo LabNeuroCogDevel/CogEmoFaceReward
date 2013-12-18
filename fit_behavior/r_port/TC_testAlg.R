@@ -76,7 +76,8 @@ a$add_params(
     K=meanRT(max_value=4000, cur_value=1000),
     gold=goForGold(min_value=0, max_value=500, init_value=0, cur_value=10),
     art1=autocorrPrevRT(),
-    g=go()
+    g=go(),
+    n=noGo()
 )
 
 a$fit()

@@ -332,23 +332,69 @@ go <- setRefClass(
           w$cur_value <<- cur_value
           evalq(
               {
-                #need to clean this up -- returning NAs...
                 Go_last   <- Go[lastTrial]
 
-                #carry forward Go term unless updated below by PE
+                #carry forward Go term unless updated below by PPE
                 Go_new <- Go_last
 
                 #if obtained reward was better than expected (PPE), speed up (scaled by alphaG)
                 if (Rew_last > V_last) {                  
                   Go_new <- Go_last + cur_value*(Rew_last - V_last)
                 }
+                
+                Go[cur_trial] = Go_new                
               },
               w
           )
           rm(cur_value, envir=w)
           
-          browser()
           predContrib[w$cur_trial] <<- -1.0*w$Go_new 
+          return(predContrib[w$cur_trial])
+          
+        }
+    )
+)
+
+##Go: speed up of RT for PPE
+noGo <- setRefClass(
+    Class="p_nogo",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(min_value=0.01, max_value=5.0, init_value=0.2, cur_value=init_value, ...) {
+          if (min_value < 0.01) { stop("alphaN min_value must be at least 0.01") }
+          if (max_value > 5.0) { stop("alphaN max_value must be less than 5.0") }
+          name <<- "alphaN"
+          callSuper(min_value, max_value, init_value, cur_value, ...) #initialize upstream
+        },
+        postInit=function(...) {
+          w$NoGo <<- rep(NA_real_, w$ntrials) #vector of NoGo term
+          w$NoGo[1L] <<- 0.0 #may want to override this later...
+          callSuper(...) #setup predContrib upstream
+        },
+        getRTUpdate=function(theta) {
+          cur_value <<- theta[name] #update current value based on optimization
+          #a bit of a hack here to copy the alphaN learning rate into w for easier code below
+          w$cur_value <<- cur_value
+          evalq(
+              {
+                NoGo_last   <- NoGo[lastTrial]
+                
+                #carry forward NoGo term unless updated below by NPE
+                NoGo_new <- NoGo_last
+                
+                #if obtained reward was worse than expected (NPE), slow down (scaled by alphaN)
+                if (Rew_last <= V_last) {                  
+                  NoGo_new <- NoGo_last + cur_value*(V_last - Rew_last)
+                }
+                
+                NoGo[cur_trial] = NoGo_new                
+              },
+              w
+          )
+          rm(cur_value, envir=w)
+          
+          predContrib[w$cur_trial] <<- +1.0*w$NoGo_new 
           return(predContrib[w$cur_trial])
           
         }
@@ -410,6 +456,36 @@ goForGold <- setRefClass(
     )
 )
 
+meanSlowFast <- setRefClass(
+    Class="p_meanSlowFast",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(...) {
+          callSuper(...)
+        },
+        postInit=function(...) {
+          callSuper(...)
+        },
+        
+    )
+)
+
+#rho and epsilon parameters both depend on tracking two beta
+#distributions for fast and slow responses.
+#rho scales with the difference in mean expected payoff for fast versus slow responses
+#epsilon scales with difference in uncertainty (SD) for fast versus slow responses
+#use a object for  
+betaFastSlow <- setRefClass(
+    Class="betaFastSlow",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(...) {
+          
+        }
+    )
+)
 
 #strategic explore parameter using beta distribution for counts of prediction errors
 exploreBeta <- setRefClass(
