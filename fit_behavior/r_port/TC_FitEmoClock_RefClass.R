@@ -47,39 +47,180 @@
 
 # influence on RT prediction (update)
 
+#dataset object is supposed to represent a group of data over which a single set of parameters (theta) are to be found
+#so in the group case, get best-fitting parameters for all subjects and runs
+#for a single subject, best fitting-parameters across subject's runs
+#for a single run, best-fitting parameters for this run
 
+#have predict in alg detect the class of the dataset to determine how to proceed
+
+clockDataset <- setRefClass(
+    class="clockDataset",
+    fields=list(
+        subjects="list",
+        dataset_name="character"
+    ),
+    methods=list(
+        initialize=function(dataset_name=NULL, subjects=NULL) {
+          if (!is.null(dataset_name)) { dataset_name <<- dataset_name }
+          if (!is.null(subjects)) {
+            if (!is.list(subjects) && class(subjects) == "clockSubject") {
+              subjects <<- list(subjects) #single subject
+            } else if (is.list(subjects) && all(sapply(subjects, class) == "clockSubject")) {
+              subjects <<- subjects
+            } else { stop ("subjects should be a list of clockSubject objects or a single clockSubject object")}
+          }
+        },
+        add_subjects=function(...) {
+          if (!is.null(subjects)) {
+            existingSubjectIDs <- sapply(subjects, function(s) { s$subject_ID } )
+          } else { existingSubjectNums <- c() }
+          
+          s_objs <- as.list(match.call())[-1L] #first element of match.call is a class for refMethodDef for the alg object
+          
+          #verify that all arguments are clockSubject objects
+          if (!all(sapply(subjects, class) == "clockSubject")) { stop("All arguments to add_subjects must be clockSubject objects.") }
+          
+          newSubjectIDs <- sapply(s_objs, function(s) { s$subject_ID } )
+          
+          if (any(dupes <- newSubjectIDs %in% existingSubjectIDs)) {
+            cat("Cannot add a subject with the same ID as an existing subject\n")
+            stop("The following subjects conflict: ", paste(newSubjectIDs[dupes], collapse=", "))
+          }
+          
+          subjects <<- c(subjects, s_objs) #concatenate
+          #subjects <<- subjects[sort(sapply(subjects, function(s) { s$subject_ID }))] #sort in ascending order
+          
+        },
+        delete_subjects=function(subjects_to_delete=NULL) {
+          if (is.null(subjects_to_delete)) { return(invisible()) }
+          if (!is.character(subjects_to_delete)) { stop("delete_subjects expects a character vector of subject IDs to delete") }
+          
+          subjects_to_keep <- which(! sapply(subjects, function(s) { s$subject_ID } ) %in% subjects_to_delete)
+          unmatched <- which(! subjects_to_delete %in% subjects)
+          
+          subjects <<- subjects[subjects_to_keep]
+          
+          if (length(unmatched) > 0L) {
+            warning("Unable to find the following subjects for deletion: ", paste0(unmatched, collapse=", "))
+          }
+        }
+
+        
+        )
+)
+
+clockSubject <- setRefClass(
+    class="clockSubject",
+    fields=list(
+        subject_ID="character",
+        runs="list"
+    ),
+    initialize=function(subject_ID=NULL, runs=NULL, ...) {
+      if (is.null(subject_ID)) { stop("clockSubject requires ID at initialization.") }
+      if (!is.null(runs)) {
+        if (!is.list(runs) && class(runs) == "clockRun") {
+          runs <<- list(runs) #single run
+        } else if (is.list(runs) && all(sapply(runs, class) == "clockRun")) {
+          runs <<- runs
+        } else { stop ("runs should be a list of clockRun objects or a single clockRun object")}
+      }
+    },
+    add_runs=function(...) {
+      if (!is.null(runs)) {
+        existingRunNums <- sapply(runs, function(r) { r$run_number } )
+      } else { existingRunNums <- c() }
+        
+      r_objs <- as.list(match.call())[-1L] #first element of match.call is a class for refMethodDef for the alg object
+      
+      #verify that all arguments are clockRuns objects
+      if (!all(sapply(runs, class) == "clockRun")) { stop("All arguments to add_runs must be clockRun objects.") }
+      
+      newRunNums <- sapply(r_objs, function(r) { r$run_number } )
+      
+      if (any(dupes <- newRunNums %in% existingRunNums)) {
+        cat("Cannot add a run with the same number as an existing run\n")
+        stop("The following runs conflict: ", paste(newRunNums[dupes], collapse=", "))
+      }
+      
+      runs <<- c(runs, r_objs) #concatenate
+      runs <<- runs[sort(sapply(runs, function(r) { r$run_number }))] #sort in ascending order
+      
+    },
+    delete_runs=function(runs_to_delete=NULL) {
+      if (is.null(runs_to_delete)) { return(invisible()) }
+      if (!is.numeric(runs_to_delete)) { stop("delete_runs expects a numeric vector of run numbers to delete") }
+      
+      runs_to_keep <- which(! sapply(runs, function(r) { r$run_number} ) %in% runs_to_delete)
+      unmatched <- which(! runs_to_delete %in% runs)
+      
+      runs <<- runs[runs_to_keep]
+      
+      if (length(unmatched) > 0L) {
+        warning("Unable to find the following runs for deletion: ", paste0(unmatched, collapse=", "))
+      }
+    }
+    
+)
+
+clockRun <- setRefClass(
+    class="clockRun",
+    fields=list(
+        w="environment",
+        run_number="numeric",
+        SSE="numeric",
+        RTobs="numeric",
+        Reward="numeric"
+        ),
+        methods=list(
+            initialize=function(RTobs=NA_integer_, Reward=NA_integer_, ...) {
+              if (is.na(RTobs[1L])) { warning("construction of clockRun requires observed reaction times (RTobs)") }
+              if (is.na(Reward[1L])) { warning("construction of clockRun requires observed rewards (Reward)") }
+              if (length(RTobs) != length(Reward)) { stop("RTobs and Reward are of different length") }
+                            
+              reset_workspace() #initial setup of workspace
+              
+            },
+            reset_workspace=function() {
+              #initialize shared workspace
+              #clear out old values if refitting
+              w <<- new.env() #new.env(parent = emptyenv()) #make sure we do not accidentally inherit objects from .Globalenv as parent 
+              
+              w$ntrials <<- length(Reward)
+              w$RTobs   <<- RTobs #initialize fields
+              w$Reward  <<- Reward
+              w$RTpred  <<- rep(NA_real_, w$ntrials) #initialize empty predicted RT
+              w$RTpred[1L] <<- w$RTobs[1L] #cannot predict first trial behavior per se, so use observed RT so that t=1 doesn't contribute to SSE
+              w$rpe     <<- rep(NA_real_, w$ntrials) #vector of reward prediction errors
+              w$V       <<- rep(NA_real_, w$ntrials) #expected value vector
+              w$V[1L]   <<- 0 #just for now -- come back to allow V to carry over blocks.
+              
+              w$avg_RT  <<- mean(RTobs, na.rm=TRUE)
+ 
+            }
+            )
+    )
+
+    #add a reset method here to set values back to initial (clear for re-using the same alg object with a new dataset)
+#actually, couldn't we just note when the dataset is updated and zero out parameters?
 alg <- setRefClass(
     Class="alg",
     fields=list(
-        updateEquation="expression",
-        w="environment", #shared environment for all params and subclasses
+        #updateEquation="expression",
         params="list",
         noiseWt="numeric",
-        SSE="numeric"
-    
+        SSE="numeric",
+        clockData="ANY" #allow this to be dataset, subject, or run
     ),
     methods=list(
-        initialize=function(RTobs=NA_integer_, Reward=NA_integer_, ...) {
+        initialize=function(clockData=NULL, ...) {
           cat("Initializing alg\n")
-          if (is.na(RTobs[1L])) { warning("construction of alg requires observed reaction times (RTobs)") }
-          if (is.na(Reward[1L])) { warning("construction of alg requires observed rewards (Reward)") }
-          if (length(RTobs) != length(Reward)) { stop("RTobs and Reward are of different length") }          
+          if (!is.null(clockData) && !class(clockData) %in% c("clockDataset", "clockSubject", "clockRun")) {
+            stop("data for alg object must be one of the following types: clockDataset, clockSubject, or clockRun")
+          }
           
-          #initialize shared workspace
-          w <<- new.env() #new.env(parent = emptyenv()) #make sure we do not accidentally inherit objects from .Globalenv as parent 
-          
-          w$ntrials <<- length(Reward)
-          w$RTobs   <<- RTobs #initialize fields
-          w$Reward  <<- Reward
-          w$RTpred  <<- rep(NA_real_, w$ntrials) #initialize empty predicted RT
-          w$RTpred[1L] <<- w$RTobs[1L] #cannot predict first trial behavior per se, so use observed RT so that t=1 doesn't contribute to SSE
-          w$rpe     <<- rep(NA_real_, w$ntrials) #vector of reward prediction errors
-          w$V       <<- rep(NA_real_, w$ntrials) #expected value vector
-          w$V[1L]   <<- 0 #just for now -- come back to allow V to carry over blocks.
-          
-          w$avg_RT  <<- mean(RTobs, na.rm=TRUE)         
-          
-          w$alphaV  <<- 0.1 # learning rate for critic (V).  Just set this to avoid degeneracy
+          #should probably make this a member of this class, not in workspace
+          #w$alphaV  <<- 0.1 # learning rate for critic (V).  Just set this to avoid degeneracy
           
           params <<- list() #initialize empty list of model parameters
           noiseWt <<- 0 #do not add noise to RT prediction
@@ -97,7 +238,6 @@ alg <- setRefClass(
           
           return(target)
         },
-        
         add_params=function(...) {
           #accept a variable number of parameter objects
           p_objs <- as.list(match.call())[-1L] #first element of match.call is a class for refMethodDef for the alg object
@@ -135,7 +275,7 @@ alg <- setRefClass(
         },
         
         get_param_current_vector=function() {
-          #corral a named vector of parameters for constrOptim
+          #corral a named vector of parameters for optim
           cur_p_vec <- sapply(params, function(p) {
                 return(p$cur_value)
               })
@@ -144,7 +284,7 @@ alg <- setRefClass(
         },
         
         get_param_minimum_vector=function() {
-          #corral a named vector of parameters for constrOptim
+          #corral a named vector of parameters for optim
           min_p_vec <- sapply(params, function(p) {
                 return(p$min_value)
               })
@@ -153,7 +293,7 @@ alg <- setRefClass(
         },
         
         get_param_maximum_vector=function() {
-          #corral a named vector of parameters for constrOptim
+          #corral a named vector of parameters for optim
           max_p_vec <- sapply(params, function(p) {
                 return(p$max_value)
               })
@@ -162,7 +302,7 @@ alg <- setRefClass(
         },
         
         get_param_initial_vector=function() {
-          #corral a named vector of parameters for constrOptim
+          #corral a named vector of parameters for optim
           init_p_vec <- sapply(params, function(p) {
                 return(p$init_value)
               })
@@ -170,10 +310,16 @@ alg <- setRefClass(
           return(init_p_vec)
         },
         
-        fit=function(initialValues=get_param_initial_vector(),
+        fit=function(toFit=NULL, initialValues=get_param_initial_vector(),
             lower=get_param_minimum_vector(),
             upper=get_param_maximum_vector()) {
           
+          if (!is.null(toFit) && !class(toFit) %in% c("clockDataset", "clockSubject", "clockRun")) {
+            stop("data for alg object must be one of the following types: clockDataset, clockSubject, or clockRun")
+          } else {
+            clockData <<- toFit
+          }
+            
           #call predict using optimizer
           if (length(initialValues) == 1L) { method="Brent"
           } else { method="L-BFGS-B" }
@@ -183,18 +329,67 @@ alg <- setRefClass(
           
           return(p)
           #optimize(.self$predict, interval=c(100, 4000))
+  
+          #actually, to force optim to choose a single vector parameters over more than one run of
+          #data, we need a superordinate method that loops over subjects and runs, calling predict
+          #with a given set of values.
+  
+          #to fit multiple subjects and/or runs, probably we should pass a run of data to predict
+          #that way, predict always has a vector of RTs and Rewards to work with, as well as priors
+          #on any working variables like V, Go, NoGo, etc.
+  
+        },
+        
+        predict=function(theta=get_param_current_vector()) {
+          totalSSE <- 0
+          
+          if (class(clockData)=="clockDataset") {
+            #loop over subjects and runs (group fit)
+            for (s in clockData$subjects) {
+              for (r in s$runs) {
+                
+              }
+            }
+          } else if (class(clockData)=="clockSubject") {
+            for (r in clockData$runs) {
+              totalSSE <- totalSSE + predictRun(r)
+            }
+            
+          } else if (class(clockData)=="clockRun") {
+            totalSSE <- predictRun()
+          }
+          
+          for (s in 1:length(data$subjects)) {
+            for (r in 1:length(data$runs)) {
+              predict(theta=get_param_current_vector(), data=data[s,r])
+              #should now add workspace information and trial-by-trial stuff to the data object
+              #so that we can do
+              totalSSE <- totalSSE + data[s,r]$predStuff$SSE
+            }
+          }
+          return(totalSSE)
+          #I guess this would mean having a shared workspace per run, right?
+          #so w becomes a member of the run object
+          #and each run object contains a w.
+          #this would let you look back at it later and understand the trial-by-trial fit progression
         },
         
         ##TODO: Consider whether we want to have a "saveValues" T/F parameter here
         #during the function minimization, there's no need to save trial-by-trial estimates of the parameters
         #since the parameter values are not final yet. Could be faster not to save pred_contrib and trialwise_value, among others
-        predict=function(theta=get_param_current_vector()) {
+        predictRun=function(clockRun=NULL, priorRun=NULL, theta=get_param_current_vector()) {
+          if (is.null(clockRun) || !class(clockRun) == "clockRun") { stop("predictRun requires a clockRun object") }
+          clockRun$reset_workspace()
+          #should now copy w to alg? and set to emptyenv() at the end?
+          
           #optim using Brent, or optimize fail to pass names of parameters into predict.
           #names are critical for the params to lookup properly.
           if (is.null(names(theta))) {
             #warning("Unnamed theta vector passed to predict. Looking up from parameter list.")
             names(theta) <- sapply(params, function(p) { return(p$name) })
           }
+          
+          #reset workspace before proceeding!
           
           w$RT_new  <<- w$RTobs[1L] #use observed RT as predicted RT for t=1
           w$RT_last <<- w$RTobs[1L]
