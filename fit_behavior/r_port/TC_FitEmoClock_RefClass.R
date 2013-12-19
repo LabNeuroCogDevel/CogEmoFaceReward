@@ -66,20 +66,20 @@ alg <- setRefClass(
           if (length(RTobs) != length(Reward)) { stop("RTobs and Reward are of different length") }          
           
           #initialize shared workspace
-          w <<- new.env() 
+          w <<- new.env() #new.env(parent = emptyenv()) #make sure we do not accidentally inherit objects from .Globalenv as parent 
           
           w$ntrials <<- length(Reward)
           w$RTobs   <<- RTobs #initialize fields
           w$Reward  <<- Reward
           w$RTpred  <<- rep(NA_real_, w$ntrials) #initialize empty predicted RT
           w$RTpred[1L] <<- w$RTobs[1L] #cannot predict first trial behavior per se, so use observed RT so that t=1 doesn't contribute to SSE
-          w$rpe     <<- rep(NA_real_, w$ntrials) #empty vector of reward prediction errors
-          w$V       <<- rep(NA_real_, w$ntrials) #initialize expected value vector
+          w$rpe     <<- rep(NA_real_, w$ntrials) #vector of reward prediction errors
+          w$V       <<- rep(NA_real_, w$ntrials) #expected value vector
           w$V[1L]   <<- 0 #just for now -- come back to allow V to carry over blocks.
           
-          w$avg_RT  <<- mean(RTobs, na.rm=TRUE)
+          w$avg_RT  <<- mean(RTobs, na.rm=TRUE)         
           
-          w$alphaV  <<- 0.1 # learning rate for critic (V) and updating avgRT.  Just set this to avoid degeneracy
+          w$alphaV  <<- 0.1 # learning rate for critic (V).  Just set this to avoid degeneracy
           
           params <<- list() #initialize empty list of model parameters
           noiseWt <<- 0 #do not add noise to RT prediction
@@ -110,9 +110,19 @@ alg <- setRefClass(
         },
         list_params=function() {
           cat("Current parameters in algorithm\n\n")
-          cat(names(params), sep="\n")
+          df <- data.frame(
+              p_name=names(params), 
+              min_value=get_param_minimum_vector(),
+              max_value=get_param_maximum_vector(),
+              init_value=get_param_initial_vector(),
+              cur_value=get_param_current_vector()
+              )
+          #cat(names(params), sep="\n")
+          print(format(df,digits=2,scientific=FALSE))
         },
         reorder_params=function(neworder) {
+          #reorders the parameter collection
+          #potentially useful if there are dependencies among parameters or workspace values: params are evaluated in sequential order 
           left_out <- names(params)[! names(params) %in% neworder]
           if (length(left_out) > 0L) {
             warning("reorder_params call did not include position for: ", paste(left_out, collapse=", "), ". Defaulting to end")
@@ -173,9 +183,11 @@ alg <- setRefClass(
           
           return(p)
           #optimize(.self$predict, interval=c(100, 4000))
-          #browser()
         },
         
+        ##TODO: Consider whether we want to have a "saveValues" T/F parameter here
+        #during the function minimization, there's no need to save trial-by-trial estimates of the parameters
+        #since the parameter values are not final yet. Could be faster not to save pred_contrib and trialwise_value, among others
         predict=function(theta=get_param_current_vector()) {
           #optim using Brent, or optimize fail to pass names of parameters into predict.
           #names are critical for the params to lookup properly.
@@ -186,6 +198,9 @@ alg <- setRefClass(
           
           w$RT_new  <<- w$RTobs[1L] #use observed RT as predicted RT for t=1
           w$RT_last <<- w$RTobs[1L]
+          w$RT_last2 <<- w$RTobs[1L]
+          
+          #TODO: Risk that we initialize some vals above (like initial V), but predict is called iteratively for optimization, so values will not be reset here if they were set in initialize
           
           for (t in 2:w$ntrials) {
             w$cur_trial <<- t
@@ -195,6 +210,8 @@ alg <- setRefClass(
                 {
                   Rew_last <- Reward[lastTrial]
                   RT_last  <- RTobs[lastTrial]
+                  if (cur_trial > 2) { RT_last2 = RTobs[cur_trial - 2] }
+                  
                   V_last <- V[lastTrial];
                   V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
                   V[cur_trial] <- V_new
@@ -203,6 +220,9 @@ alg <- setRefClass(
             w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             w$RTpred[w$cur_trial] <<- w$RT_new        
             
+            #TODO: incorporate this code from matlab. Affects beta dist local_RT and autocorrelation parameters 
+            #if RT_last==0, RT_last = RT_last2; end; %% if last trial there
+            #was no response, use trial before that for updating RT avg and autocorrelation effects (otherwise counted as 0)
             
             w$rpe[t-1] <<- w$Rew_last - w$V_last
             
@@ -212,7 +232,6 @@ alg <- setRefClass(
           cat("SSE: ", SSE, "\n")
           return(SSE)
         })
-
 
 )
 
@@ -235,12 +254,13 @@ param <- setRefClass(
         init_value="numeric",
         cur_value="numeric",
         w="environment",
-        predContrib="numeric"
+        pred_contrib="numeric", #trial-wise contribution to RT pred
+        trialwise_value="numeric" #trial-wise estimate of the parameter
     ),
     methods=list(
         initialize=function(min_value=-Inf, max_value=Inf, init_value=0, cur_value=0, ...) {
           w <<- emptyenv() #workspace should never be unique to parameter, but is set upstream by alg
-
+          
           #general sanity checks and field assignmend handled here so subordinate classes need not duplicate
           stopifnot(cur_value <= max_value)
           stopifnot(cur_value >= min_value)
@@ -257,7 +277,8 @@ param <- setRefClass(
         postInit=function(...) {
           #function that is called after object initialization
           #and after the shared workspace (w) address is passed to parameter.
-          predContrib <<- rep(NA_real_, w$ntrials) #vector of this parameter's contribution to predicted RT
+          pred_contrib <<- rep(NA_real_, w$ntrials) #vector of this parameter's contribution to predicted RT
+          trialwise_value <<- rep(NA_real_, w$ntrials) #vector of parameter value at each trial
         },
         #default to NULL RT (should be overloaded by sub-class)
         getRTUpdate=function() {
@@ -279,8 +300,9 @@ meanRT <- setRefClass(
         },
         getRTUpdate=function(theta) {
           cur_value <<- theta[name] #update current value in param object
-          predContrib[w$cur_trial] <<- cur_value #for baseline RT, the parameter itself is the speed in ms 
-          return(predContrib[w$cur_trial])
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          pred_contrib[w$cur_trial] <<- cur_value #for baseline RT, the parameter itself is the speed in ms 
+          return(pred_contrib[w$cur_trial])
         }
     )
 )
@@ -293,7 +315,7 @@ autocorrPrevRT <- setRefClass(
     methods=list(
         initialize=function(min_value=0.0, max_value=1.0, init_value=0.3, cur_value=init_value, ...) {
           name <<- "lambda"
-
+          
           if (min_value < 0.0) { stop("Autocorr prev RT (lambda) parameter cannot be negative") }
           if (max_value > 1.0) { stop("Autocorr prev RT (lambda) parameter cannot exceed 1.0") }
           
@@ -301,12 +323,12 @@ autocorrPrevRT <- setRefClass(
         },
         getRTUpdate=function(theta) {          
           cur_value <<- theta[name] #update current value based on optimization
-          predContrib[w$cur_trial] <<- cur_value*w$RT_last 
-          return(predContrib[w$cur_trial])
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          pred_contrib[w$cur_trial] <<- cur_value*w$RT_last 
+          return(pred_contrib[w$cur_trial])
         }
     )
-
-) 
+)
 
 
 ##Go: speed up of RT for PPE
@@ -324,7 +346,7 @@ go <- setRefClass(
         postInit=function(...) {
           w$Go <<- rep(NA_real_, w$ntrials) #vector of Go term
           w$Go[1L] <<- 0.0 #may want to override this later...
-          callSuper(...) #setup predContrib upstream
+          callSuper(...) #setup pred_contrib upstream
         },
         getRTUpdate=function(theta) {
           cur_value <<- theta[name] #update current value based on optimization
@@ -333,10 +355,10 @@ go <- setRefClass(
           evalq(
               {
                 Go_last   <- Go[lastTrial]
-
+                
                 #carry forward Go term unless updated below by PPE
                 Go_new <- Go_last
-
+                
                 #if obtained reward was better than expected (PPE), speed up (scaled by alphaG)
                 if (Rew_last > V_last) {                  
                   Go_new <- Go_last + cur_value*(Rew_last - V_last)
@@ -348,14 +370,15 @@ go <- setRefClass(
           )
           rm(cur_value, envir=w)
           
-          predContrib[w$cur_trial] <<- -1.0*w$Go_new 
-          return(predContrib[w$cur_trial])
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          pred_contrib[w$cur_trial] <<- -1.0*w$Go_new 
+          return(pred_contrib[w$cur_trial])
           
         }
     )
 )
 
-##Go: speed up of RT for PPE
+##NoGo: slow down of RT for NPE
 noGo <- setRefClass(
     Class="p_nogo",
     contains="param",
@@ -370,7 +393,7 @@ noGo <- setRefClass(
         postInit=function(...) {
           w$NoGo <<- rep(NA_real_, w$ntrials) #vector of NoGo term
           w$NoGo[1L] <<- 0.0 #may want to override this later...
-          callSuper(...) #setup predContrib upstream
+          callSuper(...) #setup pred_contrib upstream
         },
         getRTUpdate=function(theta) {
           cur_value <<- theta[name] #update current value based on optimization
@@ -394,9 +417,9 @@ noGo <- setRefClass(
           )
           rm(cur_value, envir=w)
           
-          predContrib[w$cur_trial] <<- +1.0*w$NoGo_new 
-          return(predContrib[w$cur_trial])
-          
+          pred_contrib[w$cur_trial] <<- +1.0*w$NoGo_new
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          return(pred_contrib[w$cur_trial])          
         }
     )
 )
@@ -406,24 +429,26 @@ noGo <- setRefClass(
 goForGold <- setRefClass(
     Class="p_gold",
     contains="param",
-    fields=list(bestRT="numeric"),
+    fields=list(bestRT_t1="numeric"),
     methods=list(
         initialize=function(min_value=0, max_value=5000, init_value=0.1, cur_value=init_value, ...) {
+          #if user wants to override default behavior for expected bestRT on first trial, must pass in a bestRT_t1 value at initialize
           name <<- "scale"
-          if (min_value < 0) { stop("Go for gold (nu) parameter cannot be negative")}
+          if (min_value < 0) { stop("Go for gold (nu) parameter cannot be negative") }
           callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
         },
         postInit=function(...) {
-          #After shared workspace (w) address is passed in, setup expectation on bestRT
+          #After shared workspace (w) address is passed in, setup expectation on bestRT for first trial
           w$bestRT  <<- rep(NA_real_, w$ntrials) #initialize empty bestRT vector
-          if (identical(bestRT, numeric(0))) {
+          if (identical(bestRT_t1, numeric(0))) {
             #default to average RT
             warning("Using average reaction time across block as best RT prior.")
             w$bestRT[1L] <<- w$avg_RT
           } else {
-            w$bestRT[1L] <<- bestRT
+            #use the user-specified value for the bestRT on t=1
+            w$bestRT[1L] <<- bestRT_t1
           }
-          callSuper(...) #setup predContrib using upstream method
+          callSuper(...) #setup pred_contrib using upstream method
         },
         getRTUpdate=function(theta) {
           cur_value <<- theta[name] #update current value based on optimization
@@ -448,26 +473,11 @@ goForGold <- setRefClass(
               w
           )
           
-          predContrib[w$cur_trial] <<- cur_value*with(w, bestRT[cur_trial] - avg_RT) 
-          return(predContrib[w$cur_trial])
-          
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          pred_contrib[w$cur_trial] <<- cur_value*with(w, bestRT[cur_trial] - avg_RT)
+          return(pred_contrib[w$cur_trial])          
         }
     
-    )
-)
-
-meanSlowFast <- setRefClass(
-    Class="p_meanSlowFast",
-    contains="param",
-    fields=list(),
-    methods=list(
-        initialize=function(...) {
-          callSuper(...)
-        },
-        postInit=function(...) {
-          callSuper(...)
-        },
-        
     )
 )
 
@@ -475,17 +485,137 @@ meanSlowFast <- setRefClass(
 #distributions for fast and slow responses.
 #rho scales with the difference in mean expected payoff for fast versus slow responses
 #epsilon scales with difference in uncertainty (SD) for fast versus slow responses
-#use a object for  
+#abstract the beta tracking to a shared class
+#and the means vs SDs lookup is extrapolated to the explore and meandiff classes
 betaFastSlow <- setRefClass(
     Class="betaFastSlow",
-    contains="param",
-    fields=list(),
+    fields=list(w="environment",
+        alpha_slow="numeric", #alpha shape parameter for slow (above average) RTs
+        beta_slow="numeric", #beta shape parameter for slow RTs
+        alpha_fast="numeric",
+        beta_fast="numeric",
+        decay="numeric",
+        mean_fast="numeric", #mean of fast beta dist
+        mean_slow="numeric",
+        mode_fast="numeric", #mode of fast beta dist
+        mode_slow="numeric",
+        var_fast="numeric",
+        var_slow="numeric",
+        mean_fast_last="numeric", #mean of fast beta dist on previous trial
+        mean_slow_last="numeric",
+        var_fast_last="numeric",
+        var_slow_last="numeric",
+        explore_last="numeric",
+        explore="numeric",
+        lastUpdateTrial="numeric",
+        local_RT="numeric",
+        local_RT_last="numeric",
+        local_RT_learning_rate="numeric" #TODO: Does the learning rate for RT need to be yoked to alphaV for the critic update, as in MF's code?
+    ),
     methods=list(
-        initialize=function(...) {
+        initialize=function(w=NULL, alpha_slow=1.01, beta_slow=1.01, alpha_fast=1.01, beta_fast=1.01, decay=1.0, lastUpdateTrial=1L, local_RT_learning_rate=0.1, ...) {
+          stopifnot(decay <= 1.0)
+          if (is.null(w) || !is.environment(w)) { stop ("Shared workspace w must be passed at initialization into betaFastSlow") }
+          w <<- w #setup shared workspace
+          
+          #initialize shape parameters for fast and slow RT beta distributions
+          alpha_slow <<- alpha_slow
+          beta_slow <<- beta_slow
+          alpha_fast <<- alpha_fast 
+          beta_fast  <<- beta_fast
+          decay <<- decay
+          lastUpdateTrial <<- lastUpdateTrial
+          #local_RT <<- rep(NA_real_, w$ntrials) #model for fast/slow responses tracks recent RT average using alphaV learning rate
+          #not using a vector for now
+          local_RT[1L] <<- local_RT_last[1L] <<- w$avg_RT #set initial local average to the block mean RT
+          local_RT_learning_rate <<- local_RT_learning_rate #rate at which estimate of recent RTs is updated
+          
+          callSuper(...)
+        },
+        postInit=function(...) {
+        },
+        updateBetaDists=function() {
+          #because explore and meandiff parameters may both be present in the model
+          #need to check whether the beta distribution has already been updated on this trial
+          #if so, do not update again
+          if (lastUpdateTrial == w$cur_trial) { return(invisible(NULL)) }
+          
+          lastUpdateTrial <<- w$cur_trial #update the trial count for beta dist tracking
+          
+          #model tracks two distributions, one for fast responses (less than mean RT)
+          #and one for slow responses (above mean RT)
+          #here, we update the estimates of the corresponding beta distribution for slow or fast responses
+          
+          #cache means and variances of prior trial
+          mean_fast_last <<- mean_fast
+          mean_slow_last <<- mean_slow
+          var_fast_last  <<- var_fast
+          var_slow_last  <<- var_slow
+          local_RT_last  <<- local_RT
+          
+          if (w$RT_last > local_RT_last) { #last response was slower than local average
+            if (w$Rew_last > w$V_last) { #ppe: increment alpha shape parameter for slow dist
+              alpha_slow <<- alpha_slow + 1
+            } else {
+              beta_slow <<- beta_slow + 1
+            }
+          } else if (w$RT_last <= local_RT_last) { #last response was faster than average
+            if(w$Rew_last > w$V_last) {
+              alpha_fast <<- alpha_fast + 1
+            } else {
+              beta_fast <<- beta_fast + 1
+            }
+          }
+          
+          if (decay < 1.0) {
+            alpha_slow     <<- decay * alpha_slow # if decay < 1 then this decays counts, making beta dists less confident
+            beta_slow      <<- decay * beta_slow
+            alpha_fast     <<- decay * alpha_fast
+            beta_fast      <<- decay * beta_fast
+          }
+          
+          # compute mode and variances of beta distribution
+          var_fast    <<- alpha_fast * beta_fast / ( (alpha_fast + beta_fast)^2 * (alpha_fast + beta_fast + 1) )
+          var_slow    <<- alpha_slow*beta_slow/( (alpha_slow + beta_slow)^2 * (alpha_slow + beta_slow + 1) )
+          mode_slow   <<- (alpha_slow - 1) / (alpha_slow + beta_slow - 2)
+          mode_fast   <<- (alpha_fast - 1) / (alpha_fast + beta_fast - 2)
+          mean_slow   <<- alpha_slow / (alpha_slow + beta_slow)
+          mean_fast   <<- alpha_fast / (alpha_fast + beta_fast)
+          
+          local_RT <<- local_RT_last + local_RT_learning_rate * (w$RT_last - local_RT_last) # update estimate of recent RTs by 10% (0.1) of deviation of this trial's RT from the local average
           
         }
     )
+
 )
+
+##meandiff (rho)
+meanSlowFast <- setRefClass(
+    Class="p_meanSlowFast",
+    contains="param",
+    fields=list(),
+    methods=list(
+        initialize=function(min_value=0, max_value=10000, init_value=300, cur_value=init_value, ...) {
+          name <<- "rho"
+          if (min_value < 0) { stop("Slow versus fast mean parameter (rho) cannot be negative") }
+          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+        },
+        postInit=function(...) {
+          if (!exists("betaFastSlow", envir=w, inherits=FALSE)) { w$betaFastSlow <<- betaFastSlow(w) }
+          
+          callSuper(...)
+        },
+        getRTUpdate=function(theta) {          
+          cur_value <<- theta[name] #update current value based on optimization
+          w$betaFastSlow$updateBetaDists() #update fast/slow beta dists
+          
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          pred_contrib[w$cur_trial] <<- cur_value * with(w$betaFastSlow, mean_slow - mean_fast) 
+          return(pred_contrib[w$cur_trial])
+        }
+    )
+)
+
 
 #strategic explore parameter using beta distribution for counts of prediction errors
 exploreBeta <- setRefClass(
@@ -493,81 +623,48 @@ exploreBeta <- setRefClass(
     contains="param",
     fields=list(),
     methods=list(
-        initialize=function(...) {
-          
+        initialize=function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, ...) {          
           name <<- "epsilonBeta"
-          
-          #initialize shape parameters for short and long RT beta distributions
-          w$alpha_long  <<- 1.01
-          w$beta_long   <<- 1.01
-          w$alpha_short <<- 1.01
-          w$beta_short  <<- 1.01
+          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+        },
+        postInit=function(...) {
+          if (!exists("betaFastSlow", envir=w, inherits=FALSE)) { w$betaFastSlow <<- betaFastSlow(w) }
           
           callSuper(...)
         },
         getRTUpdate=function(theta) {
-          #model tracks two distributions, one for fast/short responses (less than mean RT)
-          #and one for long/slow responses (above mean RT)
+          #model tracks two distributions, one for fast responses (less than mean RT)
+          #and one for slow responses (above mean RT)
           #here, we update the estimates of the corresponding beta distribution for slow or fast responses
           
+          cur_value <<- theta[name] #update current value based on optimization
+          
+          w$explore_last <<- w$explore #cache prior explore product prior to beta update
+          w$betaFastSlow$updateBetaDists() #update fast/slow beta dists
+          
+          w$cur_value <<- cur_value
           evalq(
-              {
-                #cache means and variances of prior trial in w
-                exp1_last = exp1; 
-                #exp_last = exp; exp1a_last = exp1a;
-                means_last = mean_short;
-                meanl_last = mean_long;
-                vars_last = var_short;
-                varl_last = var_long;
-                
-                if (RT_last > RT_avg) { #last response was slower than average
-                  if (Rew_last > V_last) { #ppe: increment alpha shape parameter for long dist
-                    alpha_long <- alpha_long + 1
-                  } else {
-                    beta_long <- beta_long + 1
-                  }
-                } else if (RT_last <= RT_avg) { #last response was faster than average
-                  if(Rew_last > V_last) {
-                    alpha_short <- alpha_short + 1
-                  } else {
-                    beta_short = beta_short + 1
-                  }
-                }
-                
-                alpha_long      <- decay * alpha_long # if decay < 1 then this decays counts, making beta dists less confident
-                beta_long       <- decay * beta_long
-                alpha_short     <- decay * alpha_short
-                beta_short      <- decay * beta_short
-                
-                # compute mode and variances of beta distribution
-                #TODO: Are these redundant with the beta updates above? If so, figure out how to consolidate
-                var_short   <- alpha_short * beta_short / ( (alpha_short + beta_short)^2 * (alpha_short + beta_short + 1) )
-                var_long    <- alpha_long*beta_long/( (alpha_long + beta_long)^2 * (alpha_long + beta_long + 1) )
-                mode_long   <- (alpha_long - 1) / (alpha_long + beta_long - 2)
-                mode_short  <- (alpha_short - 1) / (alpha_short + beta_short - 2)
-                mean_long   <- alpha_long / (alpha_long + beta_long)
-                mean_short  <- alpha_short / (alpha_short + beta_short)
-                
-                if (RT_last > RT_avg) {
-                  exp1 = -1.0*explore * (sqrt(var_short) - sqrt(var_long))  # speed up if more uncertain about fast responses
+              {                
+                if (RT_last > betaFastSlow$local_RT_last) {
+                  #explore parameter scales the difference in SDs between the fast and slow beta dists
+                  explore <- -1.0*cur_value * (sqrt(betaFastSlow$var_fast) - sqrt(betaFastSlow$var_slow))  # speed up if more uncertain about fast responses
                 } else {
-                  exp1 = +1.0*explore * (sqrt(var_long) - sqrt(var_short))
+                  explore <- +1.0*cur_value * (sqrt(betaFastSlow$var_slow) - sqrt(betaFastSlow$var_fast)) #slow down if more uncertain about slow responses
                 }
                 
                 # reset if already explored in this direction last trial (see supplement of Frank et al 09)
-                if ( (RT_last < RT_last2 && exp1 < 0) ||
-                    (RT_last > RT_last2 && exp1 > 0) ) {
-                  exp1 <- 0
+                if ( (RT_last < RT_last2 && explore < 0) ||
+                    (RT_last > RT_last2 && explore > 0) ) {
+                  explore <- 0
                 }
-                
-                
-                
               },
               w
           )
-          
-          cur_value <<- w$exp1
-          return(cur_value)
+          rm(cur_value, envir=w)
+         
+          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          pred_contrib[w$cur_trial] <<- w$explore 
+          return(pred_contrib[w$cur_trial])
         }
     
     )
