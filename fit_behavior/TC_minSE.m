@@ -59,7 +59,7 @@ for s = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop through e
         rewFunc = toFit(1, tdef.rewFunc); %reward function
         emo = toFit(1, tdef.emo); %emotion
         
-        fit_smooth = 1; % fit smoothed data
+        fit_smooth = 0; % fit smoothed data
         window=5;
         mean_dev = 0;
 
@@ -69,13 +69,13 @@ for s = 1:size(Subj_Sess,1)   % for fitting across group of subs, loop through e
             avgRT = 0; % if mean deviating then average should now be 0.
         end
         
-        if(fit_smooth==1) 
+        if(fit_smooth == 1) 
             fitRT = smooth(rt, window);            
         else
             fitRT = rt;
         end
         
-        [RTpred, ret] = TC_Alg(rt, reward, params, priors, avgRT, rewFunc, emo, model);
+        [RTpred, ret] = TC_Alg(fitRT, reward, params, priors, avgRT, rewFunc, emo, model);
         
         ret.block = blocks(b);
         

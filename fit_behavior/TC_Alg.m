@@ -384,6 +384,7 @@ for trial = 2:numTrials
     meanl_last = mean_long;
     vars_last = var_short;
     varl_last = var_long;
+    meandiff_last = meandiff;
     
     if strcmp(dist_type,'Gauss')
         % add process noise to kalman variances (only for kalman filter model)
@@ -594,6 +595,7 @@ for trial = 2:numTrials
     ret.go(trial-1) = Go_last;                  %mean of Gos
     ret.noGo(trial-1) = NoGo_last;              %mean of NoGos
     ret.ev(trial-1) = V_last;                   %expected value
+    ret.rho(trial-1) = meandiff_last*(meanl_last - means_last);           %shift based on mean difference between fast and slow
     
     if (trial == numTrials)
         %If this is the last trial, add return values for last trial
@@ -606,6 +608,7 @@ for trial = 2:numTrials
         ret.go(trial) = Go_new;                     %mean of Gos
         ret.noGo(trial) = NoGo_new;                 %mean of NoGos
         ret.ev(trial) = V_new;                      %expected value
+        ret.rho(trial) = meandiff*(mean_long - mean_short);
     end
     
 end

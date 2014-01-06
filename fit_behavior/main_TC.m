@@ -18,7 +18,7 @@ options = optimset(@fmincon);
 %get a list of subject data to fit
 
 %subject directory is relative to this fit_behavior directory.
-subjdir='../subjects/';
+subjdir='../subjects/pilot/';
 subjfiles=dir(strcat(subjdir, '*.mat'));
 
 if isempty(subjfiles)
@@ -36,9 +36,9 @@ end
 refit=0; %whether to refit a subject who has already been run.
 
 %loop over and fit all models
-models = { 'noemo', 'emoexplore', 'emogonogo', 'emonogo', ...
-    'noemosticky', 'emoexploresticky', 'emogonogosticky', 'emonogosticky', ...
-    'noemo_scram', 'noemosticky_scram' };
+models = { 'noemo' }; %, 'emoexplore', 'emogonogo', 'emonogo', ...
+    %'noemosticky', 'emoexploresticky', 'emogonogosticky', 'emonogosticky', ...
+    %'noemo_scram', 'noemosticky_scram' };
 
 %matlabpool(4)
 
