@@ -208,7 +208,7 @@ clockRun <- setRefClass(
               callSuper(...) #assign unmatched args
               
             },
-            reset_workspace=function() {
+            reset_workspace=function(prior_w) {
               #initialize shared workspace
               #clear out old values if refitting
               w <<- new.env()#parent = emptyenv()) #make sure we do not accidentally inherit objects from .Globalenv as parent 
@@ -220,7 +220,14 @@ clockRun <- setRefClass(
               w$RTpred[1L] <<- w$RTobs[1L] #cannot predict first trial behavior per se, so use observed RT so that t=1 doesn't contribute to SSE
               w$rpe     <<- rep(NA_real_, w$ntrials) #vector of reward prediction errors
               w$V       <<- rep(NA_real_, w$ntrials) #expected value vector
-              w$V[1L]   <<- 0 #just for now -- come back to allow V to carry over blocks.
+              if (!missing(prior_w) && !is.null(prior_w) && is.environment(prior_w)) {
+                w$V[1L]   <<- prior_w$V[length(prior_w$V)] #carry forward expected value from last trial
+                cat("using priorV: ", prior_w$V[length(prior_w$V)], "\n") #carry forward expected value from last trial
+              } else {
+                cat("using 0 V\n")
+                w$V[1L]   <<- 0 #no assumption on prior expected value
+              }
+              
               
               w$avg_RT  <<- mean(RTobs, na.rm=TRUE)
               w$alphaV  <<- 0.1 # learning rate for critic (V).  Just set this to avoid degeneracy
@@ -314,7 +321,7 @@ alg <- setRefClass(
               cur_value=get_param_current_vector()
               )
           #cat(names(params), sep="\n")
-          print(format(df,digits=2,scientific=FALSE))
+          print(format(df,digits=3,scientific=FALSE))
         },
         reorder_params=function(neworder) {
           #reorders the parameter collection
@@ -387,23 +394,29 @@ alg <- setRefClass(
 #          if (length(initialValues) == 1L) { method="Brent"
 #          } else { method="Rvmmin" } #bobyqa
           
-          #p <- optim(par=initialValues, fn=.self$predict, method=method,
-          #    lower=lower, upper=upper)
+          optResult <- optim(par=initialValues, fn=.self$predict, method=method,
+              lower=lower, upper=upper, updateFields=TRUE)
   
           #p <- nlminb(start=initialValues, objective=.self$predict, lower=lower, upper=upper)
           #scalecheck()
           #browser()
-          #time <- system.time(p <- optimx(par=initialValues, fn=.self$predict, lower=lower, upper=upper, method=method, control=list(parscale=c(1e3, 1e0, 1e-1, 1e-1))))
-          time <- system.time(p <- optimx(par=initialValues, fn=.self$predictNoLookup, lower=lower, upper=upper, method=method, updateFields=FALSE))
+  #        time <- system.time(p <- optimx(par=initialValues, fn=.self$predict, lower=lower, upper=upper, method=method, control=list(parscale=c(1e3, 1e0, 1e-1, 1e-1))))
+          #time <- system.time(p <- optimx(par=initialValues, fn=.self$predictNoLookup, lower=lower, upper=upper, method=method, updateFields=FALSE))
           
-          return(list(p, time))
+          if (optResult$convergence == 0) {
+            #success
+            lapply(params, function(p) { p$cur_value <- optResult$par[p$name] }) #set current parameter values based on optimization
+          } else {
+            warning("Optimization failed.")
+          }
+  
+          return(list(optResult, time))
           #optimize(.self$predict, interval=c(100, 4000))
   
         },
         
         predictNoLookup=function(theta=get_param_current_vector(), updateFields=FALSE) {
           if (class(clockData) == "clockSubject") {
-            browser()
             runRTs <- lapply(clockData$runs, "[[", "RTobs")
             runRews <- lapply(clockData$runs, "[[", "Reward")
             resetFuncs <- lapply(.self$params, function(p) { p$reset_workspace } )
@@ -430,11 +443,11 @@ alg <- setRefClass(
           } else if (class(clockData)=="clockSubject") {
             for (r in 1:length(clockData$runs)) {
               if (r > 1L) {
-                priorRun <- clockData$runs[r - 1] #pass forward 
-              } else { priorRun <- NULL }
+                prior_w <- clockData$runs[[r - 1]]$w #pass along environment from previous run
+              } else { prior_w <- NULL }
               
               #pass forward theta (likely from optim)
-              totalSSE <- totalSSE + predictRun(theta=theta, clockRun=clockData$runs[[r]], priorRun=priorRun, updateFields=updateFields) 
+              totalSSE <- totalSSE + predictRun(theta=theta, clockRun=clockData$runs[[r]], prior_w=prior_w, updateFields=updateFields) 
             }
             
           } else if (class(clockData)=="clockRun") {
@@ -448,11 +461,11 @@ alg <- setRefClass(
         ##TODO: Consider whether we want to have a "saveValues" T/F parameter here
         #during the function minimization, there's no need to save trial-by-trial estimates of the parameters
         #since the parameter values are not final yet. Could be faster not to save pred_contrib and trialwise_value, among others
-        predictRun=function(clockRun=NULL, priorRun=NULL, theta=get_param_current_vector(), updateFields=FALSE) {
+        predictRun=function(clockRun=NULL, prior_w=NULL, theta=get_param_current_vector(), updateFields=FALSE) {
           if (is.null(clockRun) || !class(clockRun) == "clockRun") { stop("predictRun requires a clockRun object") }
           
           #setup basics of workspace -- shouldn't this be in alg conceptually?
-          clockRun$reset_workspace()
+          clockRun$reset_workspace(prior_w)
           
           w <<- clockRun$w #should now copy w to alg? and set to emptyenv() at the end?
           
@@ -481,7 +494,7 @@ alg <- setRefClass(
                 {
                   Rew_last <- Reward[lastTrial]
                   RT_last  <- RTobs[lastTrial]
-                  if (cur_trial > 2) { RT_last2 = RTobs[cur_trial - 2] }
+                  if (cur_trial > 2) { RT_last2 <- RTobs[cur_trial - 2] }
                   
                   V_last <- V[lastTrial];
                   V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
@@ -490,12 +503,12 @@ alg <- setRefClass(
             
             ##TODO: figure out how to setup list of RT update functions
             ##seems like this may need to be superordinate from here.
-            if (!updateFields) {
-              rtUpdateFuncs <- lapply(params, "[[", "getRTUpdate")
-              #then sum(lapply(rtUpdateFuncs)) roughly
-            }
+#            if (!updateFields) {
+#              rtUpdateFuncs <- lapply(params, "[[", "getRTUpdate")
+#              #then sum(lapply(rtUpdateFuncs)) roughly
+#            }
             
-            w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
+            w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             w$RTpred[w$cur_trial] <<- w$RT_new        
             
             #TODO: incorporate this code from matlab. Affects beta dist local_RT and autocorrelation parameters 
@@ -656,9 +669,8 @@ go <- setRefClass(
           callSuper(...) #setup pred_contrib upstream
         },
         getRTUpdate=function(theta, updateFields=FALSE) {
-          cur_value <<- theta[name] #update current value based on optimization
           #a bit of a hack here to copy the alphaG learning rate into w for easier code below
-          w$cur_value <<- cur_value
+          w$cur_value <<- theta[name]
           evalq(
               {
                 Go_last   <- Go[lastTrial]
@@ -677,10 +689,14 @@ go <- setRefClass(
           )
           rm(cur_value, envir=w)
           
-          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
-          pred_contrib[w$cur_trial] <<- -1.0*w$Go_new 
-          return(pred_contrib[w$cur_trial])
+          rtContrib <- -1.0*w$Go_new
           
+          if (updateFields) {
+            cur_value <<- theta[name] #update current value based on optimization
+            pred_contrib[w$cur_trial] <<- rtContrib 
+            trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+          }
+          return(rtContrib)
         }
     )
 )
@@ -728,8 +744,7 @@ noGo <- setRefClass(
           if (updateFields) {
             cur_value <<- theta[name] #update current value based on optimization
             pred_contrib[w$cur_trial] <<- rtContrib 
-            trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
-            
+            trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial 
           }
           return(rtContrib) 
         }
@@ -754,7 +769,7 @@ goForGold <- setRefClass(
           w$bestRT  <<- rep(NA_real_, w$ntrials) #initialize empty bestRT vector
           if (identical(bestRT_t1, numeric(0))) {
             #default to average RT
-            warning("Using average reaction time across block as best RT prior.")
+            #message("Using average reaction time across block as best RT prior.")
             w$bestRT[1L] <<- w$avg_RT
           } else {
             #use the user-specified value for the bestRT on t=1
@@ -762,8 +777,7 @@ goForGold <- setRefClass(
           }
           callSuper(...) #setup pred_contrib using upstream method
         },
-        getRTUpdate=function(theta) {
-          cur_value <<- theta[name] #update current value based on optimization
+        getRTUpdate=function(theta, updateFields=FALSE) {
           
           #compute maximum reward and reward variability up to current trial
           #evaluate update within shared workspace
@@ -776,22 +790,30 @@ goForGold <- setRefClass(
                 #was trying to see whether the PPE aspect here is necessary
                 #if (Rew_last >= (rew_max - rew_sd)) {
                 if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
-                  bestRT[cur_trial] <- RT_last #make sure to use <-, not <<- to avoid scope confusion with bestRT field
+                  bestRT[cur_trial] <- RT_last
                 } else {
                   bestRT[cur_trial] <- bestRT[lastTrial] #carry forward best so far
                 }
-                
               },
               w
           )
+
+          rtContrib <- theta[name]*with(w, bestRT[cur_trial] - avg_RT)
+
+          if (updateFields) {
+            cur_value <<- theta[name] #update current value based on optimization
+            trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
+            pred_contrib[w$cur_trial] <<- rtContrib
+          }
           
-          trialwise_value[w$cur_trial] <<- cur_value #save estimate of parameter at this trial
-          pred_contrib[w$cur_trial] <<- cur_value*with(w, bestRT[cur_trial] - avg_RT)
-          return(pred_contrib[w$cur_trial])          
+          return(rtContrib)          
         }
     
     )
 )
+
+###NEED TO USE RETURN VALUE FROM FIT FUNCTION TO SET CURRENT VALUES
+###NEVER UPDATE CURRENT VALUES DURING FIT?
 
 #rho and epsilon parameters both depend on tracking two beta
 #distributions for fast and slow responses.

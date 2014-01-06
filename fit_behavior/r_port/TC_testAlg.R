@@ -165,10 +165,10 @@ a <- alg()
 
 a$add_params(
     K=meanRT(max_value=4000),
-    gold=goForGold(min_value=0, max_value=500, init_value=0, cur_value=10),
+    gold=goForGold(),
     art1=autocorrPrevRT(),
-    g=go()
-    #n=noGo()
+    g=go(),
+    n=noGo()
     #m=meanSlowFast()
     #e=exploreBeta()
 )
@@ -190,32 +190,53 @@ s1000$import_runs_from_csv()
 atest <- alg()
 atest$add_params(
     K=meanRT(max_value=4000),
-    gold=goForGold(min_value=0, max_value=500, init_value=0, cur_value=10),
+    gold=goForGold(),
     art1=autocorrPrevRT(),
     g=go(),
-    n=noGo(),
-    m=meanSlowFast(),
-    e=exploreBeta()
+    n=noGo()
+    #m=meanSlowFast(),
+    #e=exploreBeta()
 )
 
 #f <- atest$fit(s1000)
-atest$get_param_current_vector()
+atest$list_params()
 
-atest$params[["K"]]$cur_value <- 809.8756
-atest$params[["gold"]]$cur_value <- 0.27036
-atest$params[["art1"]]$cur_value <- 0.60583
-atest$params[["g"]]$cur_value <- 0.06214
-atest$params[["n"]]$cur_value <- 0.11034
-atest$params[["m"]]$cur_value <- 192.7773
-atest$params[["e"]]$cur_value <- 2162.829
+#values from MATLAB with K, lambda (autoRT), Go, NoGo
+#6Jan2014: Verified exact match with MATLAB for RTpred and SSE
+#atest$params[["K"]]$cur_value <- 335.777
+#atest$params[["art1"]]$cur_value <- 0.84477
+#atest$params[["g"]]$cur_value <- 0.13896
+#atest$params[["n"]]$cur_value <- 0.16138
+
+#values from MATLAB with K, lambda (autoRT), Go, NoGo, and scale/nu (gold)
+atest$params[["K"]]$cur_value <- 792.565
+atest$params[["art1"]]$cur_value <- 0.62524
+atest$params[["g"]]$cur_value <- 0.05058
+atest$params[["n"]]$cur_value <- 0.08567
+atest$params[["gold"]]$cur_value <- 0.26445
 
 
-atest$get_param_current_vector()
+
+#values from MATLAB for full model
+#atest$params[["K"]]$cur_value <- 809.8756
+#atest$params[["gold"]]$cur_value <- 0.27036
+#atest$params[["art1"]]$cur_value <- 0.60583
+#atest$params[["g"]]$cur_value <- 0.06214
+#atest$params[["n"]]$cur_value <- 0.11034
+#atest$params[["m"]]$cur_value <- 192.7773
+#atest$params[["e"]]$cur_value <- 2162.829
+
+atest$list_params()
 atest$clockData <- s1000
+sse <- atest$predict(updateFields=TRUE)
 
-sse <- atest$predict()
+#look at predicted and observed RTs
+RTobs <- lapply(s1000$runs, function(r) { r$RTobs })
+RTpred <- lapply(s1000$runs, function(r) { r$w$RTpred })
 
-s1000$plotRTs()
+atest$params[]
+
+#s1000$plotRTs()
 
 #try fitting using parameters from MATLAB. Do we recover identical SSE?
 #Nope
