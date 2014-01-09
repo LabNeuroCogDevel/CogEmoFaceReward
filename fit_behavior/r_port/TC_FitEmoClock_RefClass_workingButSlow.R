@@ -152,7 +152,7 @@ alg <- setRefClass(
           
           #this is a bit scary/problematic to the extent that RT prediction depend on proper scaling
           #initialValues <- initialValues / get_param_par_scale_vector() #scale prior to optimization
-          
+  
           #system.time(optResult <- optim(par=initialValues, fn=.self$predict, method=method,
           #        lower=lower, upper=upper,
           #        control=list(parscale=get_param_par_scale_vector()),
@@ -160,12 +160,12 @@ alg <- setRefClass(
           
           #track optimization
           Rprof("tc_prof.out")
-          
+  
           #this is the most sensible, and corresponds to optim above (and is somewhat faster)
           elapsed_time <- system.time(optResult <- nlminb(start=initialValues, objective=.self$predict, 
                   lower=lower, upper=upper, scale=1/get_param_par_scale_vector(),
                   updateFields=FALSE, trackHistory=TRUE))
-          
+
           Rprof(NULL)          
           
           prof <- summaryRprof("tc_prof.out")#, lines = "show")
@@ -179,7 +179,7 @@ alg <- setRefClass(
           #even though this is faster, I have no idea why one would use a scale of 100 for all...
           #system.time(optResult <- nlminb(start=initialValues, objective=.self$predict, lower=lower, upper=upper, scale=100L, #scale=c(1, 100, 100, 100, 100),
           #        updateFields=FALSE, trackHistory=TRUE))
-          
+
           #system.time(optResult <- nlminb(start=initialValues, objective=.self$predict, lower=lower, upper=upper, scale=10L, #scale=c(1, 100, 100, 100, 100),
           #        updateFields=FALSE, trackHistory=TRUE))
           
@@ -263,18 +263,6 @@ alg <- setRefClass(
           return(totalSSE)
         },
         
-        predictRun_norefclass=function(theta, runRTs, runRewards, prior_w) {
-          #1) reset run workspace: setup RTobs, initial V, etc.
-          #2) copy run workspace address into alg
-          #3) potentially set global avg RT
-          #4) reset workspace for each parameter
-          #5) loop over trials, setting up RT_last, Reward_last, etc.
-          #    5a) call getRTUpdate for each parameter
-  
-          #long story short, we need the shared workspace to be the only thing that's needed by all update functions...
-  
-        },
-        
         ##TODO: Consider whether we want to have a "saveValues" T/F parameter here
         #during the function minimization, there's no need to save trial-by-trial estimates of the parameters
         #since the parameter values are not final yet. Could be faster not to save pred_contrib and trialwise_value, among others
@@ -323,7 +311,14 @@ alg <- setRefClass(
                   V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
                   V[cur_trial] <- V_new
                 }, w)
-                        
+            
+            ##TODO: figure out how to setup list of RT update functions
+            ##seems like this may need to be superordinate from here.
+#            if (!updateFields) {
+#              rtUpdateFuncs <- lapply(params, "[[", "getRTUpdate")
+#              #then sum(lapply(rtUpdateFuncs)) roughly
+#            }
+            
             w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             w$RTpred[w$cur_trial] <<- w$RT_new        
             
@@ -532,7 +527,7 @@ noGo <- setRefClass(
         },
         getRTUpdate=function(theta, updateFields=FALSE) {
           #a bit of a hack here to copy the alphaN learning rate into w for easier code below
-          w$cur_value <<- theta[name] ##TODO: name is a field, leads to a dependency on refclass
+          w$cur_value <<- theta[name]
           evalq(
               {
                 NoGo_last   <- NoGo[lastTrial]
@@ -623,6 +618,8 @@ goForGold <- setRefClass(
     )
 )
 
+###NEED TO USE RETURN VALUE FROM FIT FUNCTION TO SET CURRENT VALUES
+###NEVER UPDATE CURRENT VALUES DURING FIT?
 
 #rho and epsilon parameters both depend on tracking two beta
 #distributions for fast and slow responses.
@@ -757,7 +754,7 @@ meanSlowFast <- setRefClass(
             cur_value <<- theta[name] #update current value based on optimization
             pred_contrib[w$cur_trial] <<- rtContrib
           }
-          
+           
           return(rtContrib)
         }
     )
@@ -811,7 +808,7 @@ exploreBeta <- setRefClass(
           if (updateFields) {
             pred_contrib[w$cur_trial] <<- rtContrib
           }
-          
+           
           return(rtContrib)
         }
     

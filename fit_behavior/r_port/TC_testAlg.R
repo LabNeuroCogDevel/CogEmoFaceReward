@@ -185,7 +185,7 @@ summaryRprof("profile1.out")#, lines = "show")
 #try to figure out a match with MF fits
 #pilot: 1000
 s1000 <- clockSubject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
-s1000$import_runs_from_csv()
+#s1000$import_runs_from_csv()
 
 atest <- alg()
 atest$add_params(
@@ -193,13 +193,15 @@ atest$add_params(
     gold=goForGold(),
     art1=autocorrPrevRT(),
     g=go(),
-    n=noGo()
-    #m=meanSlowFast(),
-    #e=exploreBeta()
+    n=noGo(),
+    m=meanSlowFast(),
+    e=exploreBeta()
 )
 
-#f <- atest$fit(s1000)
+f <- atest$fit(s1000)
+sqrt(f[[1]]$value) #sse
 atest$list_params()
+lapply(atest$params, function(p) { p$value_history })
 
 #values from MATLAB with K, lambda (autoRT), Go, NoGo
 #6Jan2014: Verified exact match with MATLAB for RTpred and SSE
@@ -209,12 +211,14 @@ atest$list_params()
 #atest$params[["n"]]$cur_value <- 0.16138
 
 #values from MATLAB with K, lambda (autoRT), Go, NoGo, and scale/nu (gold)
+#have now verified that scale parameter works as expected when manually setting parameters, as here.
+#but BFGS optimization does not get a particularly good fit (a bit worse). Need random starts or alternative algorithm?
+#implement parscale approach
 atest$params[["K"]]$cur_value <- 792.565
 atest$params[["art1"]]$cur_value <- 0.62524
 atest$params[["g"]]$cur_value <- 0.05058
 atest$params[["n"]]$cur_value <- 0.08567
 atest$params[["gold"]]$cur_value <- 0.26445
-
 
 
 #values from MATLAB for full model
@@ -229,6 +233,7 @@ atest$params[["gold"]]$cur_value <- 0.26445
 atest$list_params()
 atest$clockData <- s1000
 sse <- atest$predict(updateFields=TRUE)
+sqrt(sse)
 
 #look at predicted and observed RTs
 RTobs <- lapply(s1000$runs, function(r) { r$RTobs })

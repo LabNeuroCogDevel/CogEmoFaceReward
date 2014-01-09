@@ -385,6 +385,9 @@ for trial = 2:numTrials
     vars_last = var_short;
     varl_last = var_long;
     meandiff_last = meandiff;
+    goldlast = scale*(bestRT-avg_RT);
+    bestRT_last=bestRT;
+    avg_RT_last = avg_RT;
     
     if strcmp(dist_type,'Gauss')
         % add process noise to kalman variances (only for kalman filter model)
@@ -423,7 +426,7 @@ for trial = 2:numTrials
     
     if Rew_last > V_last && Rew_last>= (rew_max-rew_std), 
         % save Rt corresponding to most recent reward within one sd of max
-        bestRT=RT_last;         
+        bestRT=RT_last;
     end;
     
     Go_last = Go(lasttrial);
@@ -596,6 +599,9 @@ for trial = 2:numTrials
     ret.noGo(trial-1) = NoGo_last;              %mean of NoGos
     ret.ev(trial-1) = V_last;                   %expected value
     ret.rho(trial-1) = meandiff_last*(meanl_last - means_last);           %shift based on mean difference between fast and slow
+    ret.gold(trial-1) = goldlast;
+    ret.bestRT(trial-1) = bestRT_last;
+    ret.avg_RT(trial-1) = avg_RT_last;
     
     if (trial == numTrials)
         %If this is the last trial, add return values for last trial
@@ -609,6 +615,9 @@ for trial = 2:numTrials
         ret.noGo(trial) = NoGo_new;                 %mean of NoGos
         ret.ev(trial) = V_new;                      %expected value
         ret.rho(trial) = meandiff*(mean_long - mean_short);
+        ret.gold(trial) = scale*(bestRT-avg_RT);
+        ret.bestRT(trial) = bestRT;
+        ret.avg_RT(trial) = avg_RT;
     end
     
 end
