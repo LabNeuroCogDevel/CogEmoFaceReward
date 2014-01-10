@@ -175,6 +175,7 @@ clockRun <- setRefClass(
         run_number="numeric", #number of this run within a multi-run session
         RTobs="numeric", #vector of observed RTs
         Reward="numeric", #vector of obtained rewards
+        avg_RT="numeric", #average reaction time, used for some parameter fits
         global_trial_number="numeric", #vector of trial numbers in the overall experiment (1..runs x trials/run)
         rew_function="character",
         run_condition="character", #optional string specifying the conditions for this run (e.g., fear faces)
@@ -190,6 +191,7 @@ clockRun <- setRefClass(
           
           run_number <<- run_number
           RTobs <<- RTobs
+          avg_RT <<- mean(RTobs, na.rm=TRUE)
           Reward <<- Reward
           
           if (is.na(global_trial_number[1L])) { 
@@ -233,7 +235,7 @@ clockRun <- setRefClass(
             w$V[1L]   <<- 0 #no assumption on prior expected value
           }
           
-          w$avg_RT  <<- mean(RTobs, na.rm=TRUE)
+          w$avg_RT  <<- avg_RT
           w$alphaV  <<- 0.1 # learning rate for critic (V).  Just set this to avoid degeneracy
         },
         plot_RTs=function() {

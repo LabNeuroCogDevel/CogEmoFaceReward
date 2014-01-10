@@ -199,6 +199,13 @@ atest$add_params(
 )
 
 f <- atest$fit(s1000)
+times <- list()
+
+for (n in 1:10) {
+  times[[n]] <- atest$fit(s1000)[[2]]["elapsed"]
+}
+
+
 sqrt(f[[1]]$value) #sse
 atest$list_params()
 lapply(atest$params, function(p) { p$value_history })
@@ -212,8 +219,6 @@ lapply(atest$params, function(p) { p$value_history })
 
 #values from MATLAB with K, lambda (autoRT), Go, NoGo, and scale/nu (gold)
 #have now verified that scale parameter works as expected when manually setting parameters, as here.
-#but BFGS optimization does not get a particularly good fit (a bit worse). Need random starts or alternative algorithm?
-#implement parscale approach
 atest$params[["K"]]$cur_value <- 792.565
 atest$params[["art1"]]$cur_value <- 0.62524
 atest$params[["g"]]$cur_value <- 0.05058

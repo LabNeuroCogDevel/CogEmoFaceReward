@@ -1,0 +1,13 @@
+Optimization lessons learned:
+	1) Huge speedup when I removed a number of w <<- calls from predictRun, switching to a local variable w and not having an alg-object-level w environment. Everytime a field is accessed or set in a refclass, as.environment is called (see .dollarForEnvRefClass http://svn.r-project.org/R/trunk/src/library/methods/R/refClass.R), so I believe these global lookups were generating a ton of calls to as.environment, get, is, getClassDef, and :::. After removing just the <<- calls within predictRun, average optim speed for a simple model went from 20.87 sec to 11.57 sec!
+
+	2) I copy the current value of a parameter into w to ease the syntax in the evalq statements, then rm that value at the end of the evalq. Just having two rm calls for go and noGo parameters, the average time was 29.46 sec (for a reasonably simple model). Removing just these two calls only resulted in average times of 17.23 sec. Looking over the profile information, most of the heavy self.time calls like $ and unique were taking substantially longer! I still don't understand this, but it came to my attention because rm had a total.time value of 11.36 seconds! (just about the difference in the optimization)... So, I've removed these for now to good effect, although it's still mysterious why this makes such a big difference.
+
+	3) unlist(lapply()) is markedly faster than a comparable sapply call. I noticed that simplify2array() was taking about 10% of the total optimization time. Switching to unlist(lapply()) shaved off almost exactly that percentage of time!
+
+	4) Using the total.time column of the $by.total Rprof output is a great way to look for single calls that are ultimately taking a long time. This column essentially looks at the total time for a function and its subsidiaries. But when there are no obvious subsidiaries in the code, it is a good place to look for time savings.
+
+	5) Wow, eliminating a single ifelse call in the gold parameter in favor of a if {} else {} assignment shaved two seconds off of optimization (~6%).
+
+	6) Not sure if moving from evalq to eval(quote()) made much difference. Perhaps about 1%.
+	

@@ -13,7 +13,7 @@ alg <- setRefClass(
         noiseWt="numeric",
         SSE="numeric",
         clockData="ANY", #allow this to be dataset, subject, or run,
-        w="environment", #a bit hacky (improve later?), but just copy the clockRun workspace to alg for working calculations
+#        w="environment", #a bit hacky (improve later?), but just copy the clockRun workspace to alg for working calculations
         use_global_avg_RT="logical",
         global_avg_RT="numeric"
     ),
@@ -28,7 +28,7 @@ alg <- setRefClass(
           noiseWt <<- 0 #do not add noise to RT prediction
           use_global_avg_RT <<- TRUE #whether to use average RT across all blocks in fit (e.g., "go for gold" scales wrt avg_RT). 
           
-          w <<- emptyenv() #shared workspace is abstracted to level of clockRun, copied here at fit-time for convenience
+#          w <<- emptyenv() #shared workspace is abstracted to level of clockRun, copied here at fit-time for convenience
           
           callSuper(...) #for classes inheriting from this, pass through unmatched iniitalization values
         },
@@ -159,7 +159,7 @@ alg <- setRefClass(
           #        updateFields=FALSE, trackHistory=TRUE))
           
           #track optimization
-          Rprof("tc_prof.out")
+          Rprof("tc_prof.out", line.profiling=TRUE)
   
           #this is the most sensible, and corresponds to optim above (and is somewhat faster)
           elapsed_time <- system.time(optResult <- nlminb(start=initialValues, objective=.self$predict, 
@@ -168,7 +168,7 @@ alg <- setRefClass(
 
           Rprof(NULL)          
           
-          prof <- summaryRprof("tc_prof.out")#, lines = "show")
+          prof <- summaryRprof("tc_prof.out", lines = "both")
           unlink("tc_prof.out")
           
           
@@ -272,14 +272,14 @@ alg <- setRefClass(
           #setup basics of workspace -- shouldn't this be in alg conceptually?
           clockRun$reset_workspace(prior_w)
           
-          w <<- clockRun$w #should now copy w to alg? and set to emptyenv() at the end?
+          w <- clockRun$w
           
           #if using global RT average, set environment here
           #N.B. Need to set here before calling reset in each param because this is where bestRT[1] is set...
           #would be better to make this more robust
-          if (use_global_avg_RT) { w$avg_RT <<- global_avg_RT }
+          if (use_global_avg_RT) { w$avg_RT <- global_avg_RT }
           
-          lapply(.self$params, function(p) { p$w <- .self$w; p$reset_workspace() }) #setup workspace variables for each parameter
+          lapply(.self$params, function(p) { p$w <- w; p$reset_workspace() }) #setup workspace variables for each parameter
           
           #optim using Brent, or optimize fail to pass names of parameters into predict.
           #names are critical for the params to lookup properly.
@@ -290,16 +290,15 @@ alg <- setRefClass(
           
           #reset workspace before proceeding!
           
-          
-          w$RT_new  <<- w$RTobs[1L] #use observed RT as predicted RT for t=1
-          w$RT_last <<- w$RTobs[1L]
-          w$RT_last2 <<- w$RTobs[1L]
+          w$RT_new  <- w$RTobs[1L] #use observed RT as predicted RT for t=1
+          w$RT_last <- w$RTobs[1L]
+          w$RT_last2 <- w$RTobs[1L]
           
           #TODO: Risk that we initialize some vals above (like initial V), but predict is called iteratively for optimization, so values will not be reset here if they were set in initialize
           
           for (t in 2:w$ntrials) {
-            w$cur_trial <<- t
-            w$lastTrial <<- t - 1
+            w$cur_trial <- t
+            w$lastTrial <- t - 1
             
             evalq(
                 {
@@ -319,20 +318,21 @@ alg <- setRefClass(
 #              #then sum(lapply(rtUpdateFuncs)) roughly
 #            }
             
-            w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
-            w$RTpred[w$cur_trial] <<- w$RT_new        
+            #unlist(lapply( is noticeably faster than sapply
+            w$RT_new <- sum(unlist(lapply(params, function(p) { p$getRTUpdate(theta, updateFields=updateFields) } ))) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
+            w$RTpred[w$cur_trial] <- w$RT_new        
             
             #TODO: incorporate this code from matlab. Affects beta dist local_RT and autocorrelation parameters 
             #if RT_last==0, RT_last = RT_last2; end; %% if last trial there
             #was no response, use trial before that for updating RT avg and autocorrelation effects (otherwise counted as 0)
             
-            w$rpe[t-1] <<- w$Rew_last - w$V_last
+            w$rpe[t-1] <- w$Rew_last - w$V_last
             
           }
           
           SSE <<- sum((w$RTobs - w$RTpred)^2) #sum of squared error: cost
           #cat("SSE: ", SSE, "\n")
-          w <<- emptyenv() #alg should never have a persistent workspace
+#          w <<- emptyenv() #alg should never have a persistent workspace
           return(SSE)
         })
 
@@ -495,7 +495,8 @@ go <- setRefClass(
               },
               w
           )
-          rm(cur_value, envir=w)
+          #this is slow!
+          #rm(cur_value, envir=w)
           
           rtContrib <- -1.0*w$Go_new
           
@@ -544,7 +545,8 @@ noGo <- setRefClass(
               },
               w
           )
-          rm(cur_value, envir=w)
+          #this is slow!
+          #rm(cur_value, envir=w)
           
           rtContrib <- +1.0*w$NoGo_new
           
@@ -591,7 +593,7 @@ goForGold <- setRefClass(
           evalq(
               { 
                 rew_max <- max(Reward[1:lastTrial]) # max reward received in block thus far -- used for updating best RT
-                rew_sd  <- ifelse(lastTrial > 1, sd(Reward[1:lastTrial]), 0) # sd of rewards in block thus far (use a value of 0 if just one trial)
+                rew_sd  <- if(lastTrial > 1) { sd(Reward[1:lastTrial]) } else { 0 } # sd of rewards in block thus far (use a value of 0 if just one trial)
                 # If PPE on prior trial and obtained reward falls within one SD of max, save as bestRT
                 #N.B. This works magically well in the test case
                 #was trying to see whether the PPE aspect here is necessary
@@ -767,7 +769,7 @@ exploreBeta <- setRefClass(
     contains="param",
     fields=list(),
     methods=list(
-        initialize=function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, ...) {          
+        initialize=function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, par_scale=1e2, ...) {          
           name <<- "epsilonBeta"
           callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
         },
@@ -802,7 +804,8 @@ exploreBeta <- setRefClass(
               },
               w
           )
-          rm(cur_value, envir=w)
+          #this is slow!
+          #rm(cur_value, envir=w)
           
           rtContrib <- w$explore
           if (updateFields) {
