@@ -327,19 +327,19 @@ alg <- setRefClass(
             
             eval(
                 quote({
-                  Rew_last <- Reward[lastTrial]
-                  RT_last  <- RTobs[lastTrial]
-                  if (cur_trial > 2) { RT_last2 <- RTobs[cur_trial - 2] }
-                  
-                  V_last <- V[lastTrial];
-                  V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
-                  V[cur_trial] <- V_new
-                }), w)
+                      Rew_last <- Reward[lastTrial]
+                      RT_last  <- RTobs[lastTrial]
+                      if (cur_trial > 2) { RT_last2 <- RTobs[cur_trial - 2] }
+                      
+                      V_last <- V[lastTrial];
+                      V_new = V_last + alphaV*(Rew_last - V_last) # update critic expected value
+                      V[cur_trial] <- V_new
+                    }), w)
             
             #refclass version
             #w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             #w$RT_new <- sum(sapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
-  
+            
             #getting profile information that simplify2array is taking a few seconds. Try unlist(lapply(
             w$RT_new <- sum(unlist(lapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) } ))) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             
@@ -585,18 +585,18 @@ getRTUpdate.p_go <- function(obj, theta, updateFields) {
   obj$w$cur_value <- theta[obj$name]
   eval(
       quote({
-        Go_last   <- Go[lastTrial]
-        
-        #carry forward Go term unless updated below by PPE
-        Go_new <- Go_last
-        
-        #if obtained reward was better than expected (PPE), speed up (scaled by alphaG)
-        if (Rew_last > V_last) {                  
-          Go_new <- Go_last + cur_value*(Rew_last - V_last)
-        }
-        
-        Go[cur_trial] = Go_new              
-      }),
+            Go_last   <- Go[lastTrial]
+            
+            #carry forward Go term unless updated below by PPE
+            Go_new <- Go_last
+            
+            #if obtained reward was better than expected (PPE), speed up (scaled by alphaG)
+            if (Rew_last > V_last) {                  
+              Go_new <- Go_last + cur_value*(Rew_last - V_last)
+            }
+            
+            Go[cur_trial] = Go_new              
+          }),
       obj$w
   )
   #N.B. The call below drastically slows down optimization
@@ -686,18 +686,18 @@ getRTUpdate.p_nogo <- function(obj, theta, updateFields) {
   obj$w$cur_value <- theta[obj$name]
   eval(
       quote({
-        NoGo_last   <- NoGo[lastTrial]
-        
-        #carry forward NoGo term unless updated below by NPE
-        NoGo_new <- NoGo_last
-        
-        #if obtained reward was worse than expected (NPE), slow down (scaled by alphaN)
-        if (Rew_last <= V_last) {                  
-          NoGo_new <- NoGo_last + cur_value*(V_last - Rew_last)
-        }
-        
-        NoGo[cur_trial] <- NoGo_new                
-      }),
+            NoGo_last   <- NoGo[lastTrial]
+            
+            #carry forward NoGo term unless updated below by NPE
+            NoGo_new <- NoGo_last
+            
+            #if obtained reward was worse than expected (NPE), slow down (scaled by alphaN)
+            if (Rew_last <= V_last) {                  
+              NoGo_new <- NoGo_last + cur_value*(V_last - Rew_last)
+            }
+            
+            NoGo[cur_trial] <- NoGo_new                
+          }),
       obj$w
   )
   #N.B. The call below drastically slows down optimization.
@@ -793,18 +793,18 @@ getRTUpdate.p_gold <- function(obj, theta, updateFields=FALSE) {
   #evaluate update within shared workspace
   eval(
       quote({ 
-        rew_max <- max(Reward[1:lastTrial]) # max reward received in block thus far -- used for updating best RT
-        rew_sd  <- if(lastTrial > 1) { sd(Reward[1:lastTrial]) } else { 0 } # sd of rewards in block thus far (use a value of 0 if just one trial)
-        # If PPE on prior trial and obtained reward falls within one SD of max, save as bestRT
-        #N.B. This works magically well in the test case
-        #was trying to see whether the PPE aspect here is necessary
-        #if (Rew_last >= (rew_max - rew_sd)) {
-        if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
-          bestRT[cur_trial] <- RT_last
-        } else {
-          bestRT[cur_trial] <- bestRT[lastTrial] #carry forward best so far
-        }
-      }),
+            rew_max <- max(Reward[1:lastTrial]) # max reward received in block thus far -- used for updating best RT
+            rew_sd  <- if(lastTrial > 1) { sd(Reward[1:lastTrial]) } else { 0 } # sd of rewards in block thus far (use a value of 0 if just one trial)
+            # If PPE on prior trial and obtained reward falls within one SD of max, save as bestRT
+            #N.B. This works magically well in the test case
+            #was trying to see whether the PPE aspect here is necessary
+            #if (Rew_last >= (rew_max - rew_sd)) {
+            if (Rew_last > V_last && Rew_last >= (rew_max - rew_sd)) {
+              bestRT[cur_trial] <- RT_last
+            } else {
+              bestRT[cur_trial] <- bestRT[lastTrial] #carry forward best so far
+            }
+          }),
       obj$w
   )
   
@@ -915,20 +915,25 @@ betaFastSlow <- function(
           local_RT_last=numeric(0)
       ))
   #class(obj) <- "betaFastSlow" #keep as list for use of within in updateBetaDist
-
+  
   obj$local_RT[1L] <- obj$local_RT_last[1L] <- w$avg_RT #set initial local average to the block mean RT
   
   return(invisible(obj))
 }
 
 
-updateBetaDists=function(obj) {
+updateBetaDists=function(w) {
   #because explore and meandiff parameters may both be present in the model
   #need to check whether the beta distribution has already been updated on this trial
   #if so, do not update again
-  if (obj$lastUpdateTrial == obj$w$cur_trial) { return(invisible(NULL)) }
   
-  eval(quote(betaFastSlow$lastUpdateTrial <- cur_trial), obj$w) #update the trial count for beta dist tracking
+  if (w$betaFastSlow$lastUpdateTrial == w$cur_trial) { return(invisible(NULL)) }
+  
+  w$betaFastSlow$lastUpdateTrial <- w$cur_trial
+#  cat("cur_trial is: ", w$cur_trial, "\n")
+#  cat("betaFastSlow_lastUpdateTrial is: ", w$betaFastSlow$lastUpdateTrial, "\n")
+  #browser()
+  #eval(quote(betaFastSlow$lastUpdateTrial <- cur_trial), w$w) #update the trial count for beta dist tracking
   
   #model tracks two distributions, one for fast responses (less than mean RT)
   #and one for slow responses (above mean RT)
@@ -937,44 +942,83 @@ updateBetaDists=function(obj) {
   
   #by updating betaFastSlow within the shared environment, we get persistence without return value.
   #conceptually ugly relative to refClass implementation... need to think about this.
-  obj$w$betaFastSlow <- within(obj, {
-        mean_fast_last <- mean_fast
-        mean_slow_last <- mean_slow
-        var_fast_last  <- var_fast
-        var_slow_last  <- var_slow
-        local_RT_last  <- local_RT
-        
-        if (w$RT_last > local_RT_last) { #last response was slower than local average
-          if (w$Rew_last > w$V_last) { #ppe: increment alpha shape parameter for slow dist
-            alpha_slow <- alpha_slow + 1
-          } else {
-            beta_slow <- beta_slow + 1
-          }
-        } else if (w$RT_last <= local_RT_last) { #last response was faster than average
-          if(w$Rew_last > w$V_last) {
-            alpha_fast <- alpha_fast + 1
-          } else {
-            beta_fast <- beta_fast + 1
-          }
-        }
-        
-        if (decay < 1.0) {
-          alpha_slow     <- decay * alpha_slow # if decay < 1 then this decays counts, making beta dists less confident
-          beta_slow      <- decay * beta_slow
-          alpha_fast     <- decay * alpha_fast
-          beta_fast      <- decay * beta_fast
-        }
-        
-        # compute mode and variances of beta distribution
-        var_fast    <- alpha_fast * beta_fast / ( (alpha_fast + beta_fast)^2 * (alpha_fast + beta_fast + 1) )
-        var_slow    <- alpha_slow*beta_slow/( (alpha_slow + beta_slow)^2 * (alpha_slow + beta_slow + 1) )
-        #mode_slow  <- (alpha_slow - 1) / (alpha_slow + beta_slow - 2) #not used at present, omit for optimization speed
-        #mode_fast  <- (alpha_fast - 1) / (alpha_fast + beta_fast - 2) 
-        mean_slow   <- alpha_slow / (alpha_slow + beta_slow)
-        mean_fast   <- alpha_fast / (alpha_fast + beta_fast)
-        
-        local_RT <- local_RT_last + local_RT_learning_rate * (w$RT_last - local_RT_last) # update estimate of recent RTs by 10% (0.1) of deviation of this trial's RT from the local average      
-      })
+  
+  w$betaFastSlow$mean_fast_last <- w$betaFastSlow$mean_fast
+  w$betaFastSlow$mean_slow_last <- w$betaFastSlow$mean_slow
+  w$betaFastSlow$var_fast_last  <- w$betaFastSlow$var_fast
+  w$betaFastSlow$var_slow_last  <- w$betaFastSlow$var_slow
+  w$betaFastSlow$local_RT_last  <- w$betaFastSlow$local_RT
+  
+  if (w$RT_last > w$betaFastSlow$local_RT_last) { #last response was slower than local average
+    if (w$Rew_last > w$V_last) { #ppe: increment alpha shape parameter for slow dist
+      w$betaFastSlow$alpha_slow <- w$betaFastSlow$alpha_slow + 1
+    } else {
+      w$betaFastSlow$beta_slow <- w$betaFastSlow$beta_slow + 1
+    }
+  } else if (w$RT_last <= w$betaFastSlow$local_RT_last) { #last response was faster than average
+    if(w$Rew_last > w$V_last) {
+      w$betaFastSlow$alpha_fast <- w$betaFastSlow$alpha_fast + 1
+    } else {
+      w$betaFastSlow$beta_fast <- w$betaFastSlow$beta_fast + 1
+    }
+  }
+  
+  if (w$betaFastSlow$decay < 1.0) {
+    w$betaFastSlow$alpha_slow     <- w$betaFastSlow$decay * w$betaFastSlow$alpha_slow # if decay < 1 then this decays counts, making beta dists less confident
+    w$betaFastSlow$beta_slow      <- w$betaFastSlow$decay * w$betaFastSlow$beta_slow
+    w$betaFastSlow$alpha_fast     <- w$betaFastSlow$decay * w$betaFastSlow$alpha_fast
+    w$betaFastSlow$beta_fast      <- w$betaFastSlow$decay * w$betaFastSlow$beta_fast
+  }
+  
+  # compute mode and variances of beta distribution
+  w$betaFastSlow$var_fast    <- w$betaFastSlow$alpha_fast * w$betaFastSlow$beta_fast / ( (w$betaFastSlow$alpha_fast + w$betaFastSlow$beta_fast)^2 * (w$betaFastSlow$alpha_fast + w$betaFastSlow$beta_fast + 1) )
+  w$betaFastSlow$var_slow    <- w$betaFastSlow$alpha_slow*w$betaFastSlow$beta_slow/( (w$betaFastSlow$alpha_slow + w$betaFastSlow$beta_slow)^2 * (w$betaFastSlow$alpha_slow + w$betaFastSlow$beta_slow + 1) )
+  #mode_slow  <- (alpha_slow - 1) / (alpha_slow + beta_slow - 2) #not used at present, omit for optimization speed
+  #mode_fast  <- (alpha_fast - 1) / (alpha_fast + beta_fast - 2) 
+  w$betaFastSlow$mean_slow   <- w$betaFastSlow$alpha_slow / (w$betaFastSlow$alpha_slow + w$betaFastSlow$beta_slow)
+  w$betaFastSlow$mean_fast   <- w$betaFastSlow$alpha_fast / (w$betaFastSlow$alpha_fast + w$betaFastSlow$beta_fast)
+  
+  w$betaFastSlow$local_RT <- w$betaFastSlow$local_RT_last + w$betaFastSlow$local_RT_learning_rate * (w$RT_last - w$betaFastSlow$local_RT_last) # update estimate of recent RTs by 10% (0.1) of deviation of this trial's RT from the local average      
+  
+  
+#  w$betaFastSlow <- within(w$betaFastSlow, {
+#        mean_fast_last <- mean_fast
+#        mean_slow_last <- mean_slow
+#        var_fast_last  <- var_fast
+#        var_slow_last  <- var_slow
+#        local_RT_last  <- local_RT
+#        
+#        if (w$RT_last > local_RT_last) { #last response was slower than local average
+#          if (w$Rew_last > w$V_last) { #ppe: increment alpha shape parameter for slow dist
+#            alpha_slow <- alpha_slow + 1
+#          } else {
+#            beta_slow <- beta_slow + 1
+#          }
+#        } else if (w$RT_last <= local_RT_last) { #last response was faster than average
+#          if(w$Rew_last > w$V_last) {
+#            alpha_fast <- alpha_fast + 1
+#          } else {
+#            beta_fast <- beta_fast + 1
+#          }
+#        }
+#        
+#        if (decay < 1.0) {
+#          alpha_slow     <- decay * alpha_slow # if decay < 1 then this decays counts, making beta dists less confident
+#          beta_slow      <- decay * beta_slow
+#          alpha_fast     <- decay * alpha_fast
+#          beta_fast      <- decay * beta_fast
+#        }
+#        
+#        # compute mode and variances of beta distribution
+#        var_fast    <- alpha_fast * beta_fast / ( (alpha_fast + beta_fast)^2 * (alpha_fast + beta_fast + 1) )
+#        var_slow    <- alpha_slow*beta_slow/( (alpha_slow + beta_slow)^2 * (alpha_slow + beta_slow + 1) )
+#        #mode_slow  <- (alpha_slow - 1) / (alpha_slow + beta_slow - 2) #not used at present, omit for optimization speed
+#        #mode_fast  <- (alpha_fast - 1) / (alpha_fast + beta_fast - 2) 
+#        mean_slow   <- alpha_slow / (alpha_slow + beta_slow)
+#        mean_fast   <- alpha_fast / (alpha_fast + beta_fast)
+#        
+#        local_RT <- local_RT_last + local_RT_learning_rate * (w$RT_last - local_RT_last) # update estimate of recent RTs by 10% (0.1) of deviation of this trial's RT from the local average      
+#      })
   
 }
 
@@ -1098,7 +1142,8 @@ reset_workspace.p_meanSlowFast=function(obj) {
 }
 
 getRTUpdate.p_meanSlowFast=function(obj, theta, updateFields=FALSE) {
-  updateBetaDists(obj$w$betaFastSlow) #update fast/slow beta dists
+  #updateBetaDists(obj$w$betaFastSlow) #update fast/slow beta dists
+  updateBetaDists(obj$w) #update fast/slow beta dists
   
   rtContrib <- theta[obj$name] * with(obj$w$betaFastSlow, mean_slow - mean_fast)
 #  if (updateFields) {
@@ -1165,7 +1210,7 @@ getRTUpdate.p_epsilonBeta=function(obj, theta, updateFields=FALSE) {
   #here, we update the estimates of the corresponding beta distribution for slow or fast responses
   
   obj$w$explore_last <- obj$w$explore
-  updateBetaDists(obj$w$betaFastSlow) #update fast/slow beta dists
+  updateBetaDists(obj$w) #update fast/slow beta dists
   
   obj$w$cur_value <- theta[obj$name]
   eval(

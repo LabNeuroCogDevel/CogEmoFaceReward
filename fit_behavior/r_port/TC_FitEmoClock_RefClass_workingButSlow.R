@@ -737,10 +737,10 @@ meanSlowFast <- setRefClass(
     contains="param",
     fields=list(),
     methods=list(
-        initialize=function(min_value=0, max_value=10000, init_value=300, cur_value=init_value, ...) {
+        initialize=function(min_value=0, max_value=10000, init_value=300, cur_value=init_value, par_scale=1e2, ...) {
           name <<- "rho"
           if (min_value < 0) { stop("Slow versus fast mean parameter (rho) cannot be negative") }
-          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+          callSuper(min_value, max_value, init_value, cur_value, par_scale, ...) #initialize upstream
         },
         reset_workspace=function(...) {
           if (!exists("betaFastSlow", envir=w, inherits=FALSE)) { w$betaFastSlow <<- betaFastSlow(w) }
@@ -769,9 +769,9 @@ exploreBeta <- setRefClass(
     contains="param",
     fields=list(),
     methods=list(
-        initialize=function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, par_scale=1e2, ...) {          
+        initialize=function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, par_scale=1e3, ...) {          
           name <<- "epsilonBeta"
-          callSuper(min_value, max_value, init_value, cur_value, ...) #call upstream constructor to initialize fields
+          callSuper(min_value, max_value, init_value, cur_value, par_scale, ...) #initialize upstream
         },
         reset_workspace=function(...) {
           if (!exists("betaFastSlow", envir=w, inherits=FALSE)) { w$betaFastSlow <<- betaFastSlow(w) }

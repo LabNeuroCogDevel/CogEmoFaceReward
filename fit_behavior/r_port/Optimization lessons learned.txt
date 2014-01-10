@@ -9,5 +9,7 @@ Optimization lessons learned:
 
 	5) Wow, eliminating a single ifelse call in the gold parameter in favor of a if {} else {} assignment shaved two seconds off of optimization (~6%).
 
+	6) Was using within call to make code nicer for updateBetaDists(). But when I switch back to good old $ (ugly), it shaves nearly 40seconds (21%) off of the optimization time. So, apparently within is very expensive! Looking over profiling information, can see timing for updateBetaDists drop from 62s to 32s (large majority of speedup). Most of the remaining slowness is that within brings back an sapply call, which reintroduces simplify2array.
+
 	6) Not sure if moving from evalq to eval(quote()) made much difference. Perhaps about 1%.
 	
