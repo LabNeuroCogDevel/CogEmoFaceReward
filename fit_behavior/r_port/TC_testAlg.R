@@ -201,9 +201,16 @@ atest$add_params(
 f <- atest$fit(s1000)
 times <- list()
 
+library(microbenchmark)
+#microbenchmark( lapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) }), unname(lapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) } )), times=10000)
+
 for (n in 1:10) {
-  times[[n]] <- atest$fit(s1000)[[2]]["elapsed"]
+  times[[n]] <- atest$fit(s1000)#[[2]]["elapsed"]
 }
+
+#benchmark: 103.3338 seconds average on imac
+mean(sapply(lapply(times, "[[", 2), "[", "elapsed")[c(1:8, 10)])
+
 
 
 sqrt(f[[1]]$value) #sse

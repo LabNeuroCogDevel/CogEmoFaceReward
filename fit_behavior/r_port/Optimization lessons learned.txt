@@ -12,4 +12,11 @@ Optimization lessons learned:
 	6) Was using within call to make code nicer for updateBetaDists(). But when I switch back to good old $ (ugly), it shaves nearly 40seconds (21%) off of the optimization time. So, apparently within is very expensive! Looking over profiling information, can see timing for updateBetaDists drop from 62s to 32s (large majority of speedup). Most of the remaining slowness is that within brings back an sapply call, which reintroduces simplify2array.
 
 	6) Not sure if moving from evalq to eval(quote()) made much difference. Perhaps about 1%.
+
+	7) On the other hand, removing the eval(quote()) calls in favor of a ton of $ actually slowed things down somewhat -- moved a lot of the time cost from eval to $, leading the full model to go from 100s to 120s for Go and NoGo RTUpdate functions.
+
+	8) For updateBetaDists, rather than using a list and then having lots of $ or a within call, just create a new environment for the beta tracking and use the eval(quote()) strategy, as elsewhere. This dropped the mean from 103s to 87s.
+
+	
+
 	

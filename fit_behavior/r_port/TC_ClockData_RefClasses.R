@@ -217,8 +217,7 @@ clockRun <- setRefClass(
         reset_workspace=function(prior_w) {
           #initialize shared workspace
           #clear out old values if refitting
-          w <<- new.env() #parent = emptyenv()) #make sure we do not accidentally inherit objects from .Globalenv as parent 
-          #leaving out parent=emptyenv() for now because seems to mess up evalq with {} syntax.
+          w <<- new.env(parent = baseenv()) #make sure we do not accidentally inherit objects from .Globalenv as parent 
           
           w$ntrials <<- length(Reward)
           w$RTobs   <<- RTobs #initialize fields
