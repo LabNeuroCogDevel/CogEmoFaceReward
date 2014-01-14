@@ -149,11 +149,13 @@ learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemosticky.txt", hea
 
 learning_emoexplore <- rename(learning_emoexplore, c(Subject="LunaID"))
 learning_emoexplore <- merge(learning_emoexplore, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
-            "RIST.INDEZ", "SSS_Total", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
+            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
+            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
 
 learning_noemo <- rename(learning_noemo, c(Subject="LunaID"))
 learning_noemo <- merge(learning_noemo, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
-            "RIST.INDEZ", "SSS_Total", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
+            "NN", "NSR	", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO	", "CO", "CGS",
+            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
 
 learning_noemo$explorePos <- sapply(learning_noemo$explore, function(x) { ifelse(x > 0, x, NA) })
 learning_noemo$exploreGt0 <- sapply(learning_noemo$explore, function(x) { ifelse(x > 0, 1, 0) })
@@ -177,6 +179,50 @@ ggplot(learning_noemo, aes(x=AgeAtVisit, y=exploreGt0)) + geom_point()
 
 corstarsl(learning_noemo, omit=c("LunaID", "Session", "ignore"))
 corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
+
+
+corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
+
+corwithtarget <- function(df, omit=NULL, target, withvars=NULL, pmin=NULL) {
+  if (!is.null(omit)) { 
+    dnames <- which(names(df) %in% omit)
+    df <- df[,-1*dnames]
+  }
+  
+  if (is.null(withvars)) {
+    withvars <- names(df)[which(!names(df) %in% target)]
+  }
+  
+  res <- sapply(target, function(tv) {
+        cvec <- sapply(withvars, function(wv) { 
+              rc <- Hmisc::rcorr(df[,tv], df[,wv])
+              list(r=plyr::round_any(rc$r[1,2], .001), p=plyr::round_any(rc$P[1,2], .001))
+            } 
+        )
+        
+        if (!is.null(pmin)) { 
+          sigr <- which(unlist(cvec["p",]) <= pmin)
+          if (length(sigr) == 0L) { cvec <- c() 
+          } else { cvec <- cvec[,sigr, drop=FALSE] }
+        }  
+          return(cvec)
+        
+        #print(cvec)
+      }, simplify=FALSE)
+  
+  return(res)
+}
+
+params <- c("lambda", "alphaN", "alphaG", "explore_scram", "explore_fear", "explore_happy", "K", "sticky_decay", "rho", "SSE")
+sigrs <- corwithtarget(learning_emoexplore, pmin=.05, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target=params) 
+    #withvars=c("UPPS_SS", "UPPS_PosUrg", "NN"))
+
+print(sigrs)
+
+#check age x process interactions for each variable
+lapply(params, function(p) {
+      
+    })
 
 #explore by emotion
 explore.melt <- melt(learning_emoexplore[,c("LunaID", "AgeAtVisit", "UPPS_SS", "UPPS_Urg", "UPPS_PosUrg", 
