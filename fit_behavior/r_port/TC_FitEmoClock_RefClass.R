@@ -107,7 +107,8 @@ alg <- setRefClass(
         
         fit=function(toFit=NULL, initialValues=get_param_initial_vector(),
             lower=get_param_minimum_vector(),
-            upper=get_param_maximum_vector()) {
+            upper=get_param_maximum_vector(),
+            profile=TRUE) {
           
           require(foreach)
           #require(optimx)
@@ -126,9 +127,7 @@ alg <- setRefClass(
           if (length(initialValues) == 1L) { method="Brent"
           } else { method="L-BFGS-B" }
           
-#          if (length(initialValues) == 1L) { method="Brent"
-#          } else { method="Rvmmin" } #bobyqa
-          
+
           #lapply(params, function(p) { p$value_history <- numeric(0) }) #reset value history for all parameters prior to fit REFCLASS VERSION
           params <<- lapply(params, function(p) { p$value_history <- numeric(0); return(p) }) #reset value history for all parameters prior to fit S3 VERSION
           
@@ -141,18 +140,22 @@ alg <- setRefClass(
           #        updateFields=FALSE, trackHistory=TRUE))
           
           #track optimization
-          Rprof("tc_prof.out")#, line.profiling=TRUE)
+          if (profile) { Rprof("tc_prof.out") }
           
           #this is the most sensible, and corresponds to optim above (and is somewhat faster)
           elapsed_time <- system.time(optResult <- nlminb(start=initialValues, objective=.self$predict, 
                   lower=lower, upper=upper, scale=1/get_param_par_scale_vector(),
                   updateFields=FALSE, trackHistory=TRUE))
           
-          Rprof(NULL)          
+          if (profile) {
+            Rprof(NULL)
+
+            prof <- summaryRprof("tc_prof.out")#, lines = "both")
+            unlink("tc_prof.out")
+          } else {
+            prof <- list()
+          }
           
-          prof <- summaryRprof("tc_prof.out")#, lines = "both")
-          unlink("tc_prof.out")
-                    
           #this is roughly what is suggested in the PORT documentation (1/max scaling). But it's slower than 1/magnitude above.
           #system.time(optResult <- nlminb(start=initialValues, objective=.self$predict, lower=lower, upper=upper, scale=1/upper, #scale=c(1, 100, 100, 100, 100),
           #        updateFields=FALSE, trackHistory=TRUE))
@@ -198,8 +201,7 @@ alg <- setRefClass(
             warning("Optimization failed.")
           }
           
-          return(list(optResult, elapsed_time, prof))
-          #optimize(.self$predict, interval=c(100, 4000))
+          return(list(optResult, elapsed_time=elapsed_time, prof=prof))
           
         },
         
@@ -366,7 +368,6 @@ meanRT <- function(min_value=100, max_value=5000, init_value=1000, cur_value=ini
   obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
   return(invisible(obj))
 }
-
 
 #autocorrelation with previous reaction time
 autocorrPrevRT <- function(min_value=0.0, max_value=1.0, init_value=0.3, cur_value=init_value, par_scale=1e-1) {  
@@ -593,15 +594,12 @@ getRTUpdate.p_nogo <- function(obj, theta, updateFields) {
 updateBetaDists=function(bfs) {
   #because explore and meandiff parameters may both be present in the model
   #need to check whether the beta distribution has already been updated on this trial
-  #if so, do not update again
-  
+  #if so, do not update again  
   if (bfs$lastUpdateTrial == bfs$w$cur_trial) { return(invisible(NULL)) }
   
   bfs$lastUpdateTrial <- bfs$w$cur_trial
 #  cat("cur_trial is: ", w$cur_trial, "\n")
 #  cat("betaFastSlow_lastUpdateTrial is: ", w$betaFastSlow$lastUpdateTrial, "\n")
-  #browser()
-  #eval(quote(betaFastSlow$lastUpdateTrial <- cur_trial), w$w) #update the trial count for beta dist tracking
   
   #model tracks two distributions, one for fast responses (less than mean RT)
   #and one for slow responses (above mean RT)
@@ -658,7 +656,6 @@ getRTUpdate.p_meanSlowFast=function(obj, theta, updateFields=FALSE) {
   theta[obj$name] * with(obj$w$betaFastSlow, mean_slow - mean_fast) #rtContrib
 }
 
-
 getRTUpdate.p_epsilonBeta=function(obj, theta, updateFields=FALSE) {
   #model tracks two distributions, one for fast responses (less than mean RT)
   #and one for slow responses (above mean RT)
@@ -691,20 +688,23 @@ getRTUpdate.p_epsilonBeta=function(obj, theta, updateFields=FALSE) {
 
 ##RESET WORKSPACE FUNCTIONS
 ##TODO: Does preallocating the pred_contrib vectors buy any time?
+# does not seem to slow down optimization at all to pre-initialize, although doesn't seem needed during
+# optimization per se, since pred_contrib is only really useful at optimized parameter values.
 
 reset_workspace <- function(obj) { UseMethod("reset_workspace") }
-#reset_workspace.param <- function(obj) { obj$w$pred_contrib[[obj$name]] <- rep(NA_real_, obj$w$ntrials) }
+reset_workspace.param <- function(obj) { obj$w$pred_contrib[[obj$name]] <- rep(NA_real_, obj$w$ntrials) }
+#reset_workspace.param <- function(obj) { NULL }
 
 reset_workspace.p_go <- function(obj) {
   obj$w$Go <- rep(NA_real_, obj$w$ntrials) #vector of Go term
   obj$w$Go[1L] <- 0.0 #may want to override this later...
-#  NextMethod()
+  NextMethod()
 }
 
 reset_workspace.p_nogo <- function(obj) {
   obj$w$NoGo <- rep(NA_real_, obj$w$ntrials) #vector of NoGo term
   obj$w$NoGo[1L] <- 0.0 #may want to override this later...
-  #NextMethod()
+  NextMethod()
 }
 
 reset_workspace.p_gold <- function(obj) {
