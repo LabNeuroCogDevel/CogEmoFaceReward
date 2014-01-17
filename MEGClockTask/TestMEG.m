@@ -118,9 +118,18 @@ classdef TestMEG < matlab.unittest.TestCase
                [success subject]=runParadigm(tc.sid,1);
                tc.verifyEqual(success,1);
                % make sure the experiment is the same each time
+               tc.verifyEqual(subject.subj_id,sid);
                tc.verifyEqual(subject.experiment,experiment);
+
+               orderlens = length(find(cellfun(@(x) length(x), subject.order)));
+               tc.verifyEqual(orderlens,tc.trialsPerBlock*i)
             end
 
+            %% check order
+            orderlens = length(find(cellfun(@(x) length(x), subject.order)));
+            tc.verifyEqual(orderlens,tc.trialsPerBlock*i)
+            %% todo - unique this
+            cellfun(@(x) x{1}, subject.order,'UniformOutput',0)
 
 
             % support running functions
