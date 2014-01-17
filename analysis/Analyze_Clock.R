@@ -148,12 +148,15 @@ learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemosticky.txt", hea
 #learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemo_scram.txt", header=TRUE)
 
 learning_emoexplore <- rename(learning_emoexplore, c(Subject="LunaID"))
-learning_emoexplore <- merge(learning_emoexplore, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
-            "RIST.INDEZ", "SSS_Total", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
+learning_emoexplore <- merge(learning_emoexplore, behav[,c("LunaID", "AgeAtVisit", 
+            "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", "UPPS_Prem", "UPPS_Pers", 
+            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
+            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
 
 learning_noemo <- rename(learning_noemo, c(Subject="LunaID"))
 learning_noemo <- merge(learning_noemo, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
-            "RIST.INDEZ", "SSS_Total", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
+            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
+            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
 
 learning_noemo$explorePos <- sapply(learning_noemo$explore, function(x) { ifelse(x > 0, x, NA) })
 learning_noemo$exploreGt0 <- sapply(learning_noemo$explore, function(x) { ifelse(x > 0, 1, 0) })
@@ -177,6 +180,194 @@ ggplot(learning_noemo, aes(x=AgeAtVisit, y=exploreGt0)) + geom_point()
 
 corstarsl(learning_noemo, omit=c("LunaID", "Session", "ignore"))
 corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
+
+
+corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
+
+corwithtarget <- function(df, omit=NULL, target, withvars=NULL, pmin=NULL) {
+  if (!is.null(omit)) { 
+    dnames <- which(names(df) %in% omit)
+    df <- df[,-1*dnames]
+  }
+  
+  if (is.null(withvars)) {
+    withvars <- names(df)[which(!names(df) %in% target)]
+  }
+  
+  res <- sapply(target, function(tv) {
+        cvec <- sapply(withvars, function(wv) { 
+              rc <- Hmisc::rcorr(df[,tv], df[,wv])
+              list(r=plyr::round_any(rc$r[1,2], .001), p=plyr::round_any(rc$P[1,2], .001))
+            } 
+        )
+        
+        if (!is.null(pmin)) { 
+          sigr <- which(unlist(cvec["p",]) <= pmin)
+          if (length(sigr) == 0L) { cvec <- c() 
+          } else { cvec <- cvec[,sigr, drop=FALSE] }
+        }  
+          return(cvec)
+        
+        #print(cvec)
+      }, simplify=FALSE)
+  
+  return(res)
+}
+
+#params <- c("lambda", "alphaN", "alphaG", "explore_scram", "explore_fear", "explore_happy", "K", "sticky_decay", "rho", "SSE")
+params <- c("lambda", "alphaN", "alphaG", "explore", "K", "sticky_decay", "rho", "SSE")
+selfreports <- c("UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", "UPPS_Prem", "UPPS_Pers", 
+"NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
+"RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")
+
+sigrs <- corwithtarget(learning_emoexplore, pmin=.05, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target=params)
+
+#follow-up to see whether there are linear or quadratic interactions with age
+for (p in 1:length(sigrs)) {
+  if (is.null(sigrs[[p]])) { next }
+  p_name <- names(sigrs)[p]
+  
+  #get variables with which this is correlated
+  sreports <- dimnames(sigrs[[p]])[[2]]
+  
+  for(s in 1:length(sreports)) {
+    s_name <- sreports[s]
+    df_test <- data.frame(
+        as.vector(scale(learning_emoexplore[[ p_name ]], scale=FALSE)),
+        learning_emoexplore[[ s_name ]],
+        as.vector(scale(learning_emoexplore$AgeAtVisit, scale=FALSE))
+    )
+    
+    names(df_test) <- c(p_name, s_name, "AgeAtVisit")
+    #form <- as.formula(paste(s_name, "~", p_name, "*AgeAtVisit + ", p, "*I(AgeAtVisit^2)"))
+    form <- as.formula(paste(s_name, "~", p_name, "*AgeAtVisit"))
+    model <- lm(form, data=df_test)
+    pvals <- summary(model)$coefficients[,c("Pr(>|t|)")][-1L] #-1L to drop p-value for intercept
+    #if (any(pvals < .05)) {
+    #if (pvals[paste0(p, ":I(AgeAtVisit^2)")] < .05) {
+    #if (pvals[paste0(p, ":AgeAtVisit")] < .05) {
+      
+    cat("------\n\nParameter:", p_name, ", Self-report:", s_name, "\n")
+    print(summary(model))
+    cat("\n-----\n\n")
+  }
+}
+
+sigrs <- corwithtarget(learning_emoexplore, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target="AgeAtVisit")
+sigrs <- corwithtarget(learning_noemo, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target="AgeAtVisit")
+    #withvars=c("UPPS_SS", "UPPS_PosUrg", "NN"))
+
+print(sigrs)
+
+pdf("param_age_interactions.pdf", width=9, height=9)
+for (p in params) {
+  #g <- ggplot(learning_emoexplore, aes_string(x="AgeAtVisit", y=p)) + geom_point() + stat_smooth(width=1.5, method="loess") + ggtitle(p)
+  g <- ggplot(learning_noemo, aes_string(x="AgeAtVisit", y=p)) + geom_point() + stat_smooth(width=1.5, method="loess") + ggtitle(p)
+  print(g)
+}
+dev.off()
+
+
+#just look at at age interactions with self-reports
+pdf("sig_AgeSelfReport_Assoc.pdf", width=9, height=9)
+for (s in selfreports) {
+  df_test <- data.frame(
+      learning_emoexplore[[s]],
+      as.vector(scale(learning_emoexplore$AgeAtVisit, scale=FALSE)) #center age to reduce linear-quadratic collinearity
+  )
+  names(df_test) <- c(s, "AgeAtVisit")
+  
+  form <- as.formula(paste(s, "~ AgeAtVisit + I(AgeAtVisit^2)"))
+  model <- lm(form, data=df_test)
+  
+  pvals <- summary(model)$coefficients[,c("Pr(>|t|)")][-1L] #-1L to drop p-value for intercept
+  if (any(pvals < .05)) {
+    
+    predData <- list()
+    
+    predData[["AgeAtVisit"]] <- seq(min(df_test$AgeAtVisit, na.rm=TRUE), max(df_test$AgeAtVisit, na.rm=TRUE), length=cont.points)
+    
+    predData[[s]] <- 0 #dv
+    
+    pred_df <- do.call(expand.grid, predData)
+    
+    pred_df$`I(AgeAtVisit^2)` <- pred_df$AgeAtVisit^2
+    
+    pred_df[[s]] <- predict(model, pred_df)
+    pred_df[["AgeAtVisit"]] <- pred_df[["AgeAtVisit"]] + mean(learning_emoexplore[["AgeAtVisit"]]) #add mean back in for plotting 
+    
+    g<- ggplot(pred_df, aes_string(x="AgeAtVisit", y=s)) + geom_line() + ggtitle(s) + geom_point(data=learning_emoexplore)
+    print(g)
+    
+    cat("Self-report:", s, "\n")
+    print(summary(model)) 
+  }
+}
+dev.off()
+
+#conclusion: age reductions for 
+# UPPS_PosUrg (quadratic down)
+# UPPS_SS (quadratic down)
+# UPPS_Prem (linear down)
+# NSR (Neuroticism self-reproach) quad down
+# CO: orderliness linear up
+# ADI_Total: linear down
+# STAI_SCORE: quad down
+
+
+#check age x process interactions for each variable
+n.divide <- 3
+cont.points <- 20
+library(ggplot2)
+pdf("sigplots.pdf", width=9, height=9)
+for (p in params) {
+  for (s in selfreports) {
+    df_test <- data.frame(
+        as.vector(scale(learning_emoexplore[[p]], scale=FALSE)),
+        learning_emoexplore[[s]],
+        as.vector(scale(learning_emoexplore$AgeAtVisit, scale=FALSE))
+    )
+    names(df_test) <- c(p, s, "AgeAtVisit")
+    
+    #form <- as.formula(paste(s, "~", p, "*AgeAtVisit + ", p, "*I(AgeAtVisit^2)"))
+    form <- as.formula(paste(s, "~", p, "*AgeAtVisit"))
+    model <- lm(form, data=df_test)
+    pvals <- summary(model)$coefficients[,c("Pr(>|t|)")][-1L] #-1L to drop p-value for intercept
+    #if (any(pvals < .05)) {
+    #if (pvals[paste0(p, ":I(AgeAtVisit^2)")] < .05) {
+    if (pvals[paste0(p, ":AgeAtVisit")] < .05) {
+      #generate plot
+      #p_sd <- sd(learning_emoexplore[[p]], na.rm=TRUE)
+      #p_m <- mean(learning_emoexplore[[p]], na.rm=TRUE)
+      
+      p_sd <- sd(df_test[[p]], na.rm=TRUE)
+      p_m <- mean(df_test[[p]], na.rm=TRUE) #should be zero, but whatever
+      
+      predData <- list()
+      
+      predData[[p]] <- if (n.divide==3) { c(p_m-p_sd, p_m, p_m+p_sd)
+          } else { c(p_m-p_sd*2, p_m-p_sd, p_m, p_m+p_sd, p_m+p_sd*2) }     
+      
+      predData[["AgeAtVisit"]] <- seq(min(df_test$AgeAtVisit, na.rm=TRUE), max(df_test$AgeAtVisit, na.rm=TRUE), length=cont.points)
+      predData[[s]] <- 0 #dv
+      pred_df <- do.call(expand.grid, predData)
+      #pred_df$`I(AgeAtVisit^2)` <- pred_df$AgeAtVisit^2
+      
+      pred_df[[s]] <- predict(model, pred_df)
+      
+      pred_df[[p]] <- factor(plyr::round_any(pred_df[[p]], .001)) #since we discretized parameter into SD ranges, need to store as factor for visual display
+      pred_df[["AgeAtVisit"]] <- pred_df[["AgeAtVisit"]] + mean(learning_emoexplore[["AgeAtVisit"]]) #add mean back in for plotting
+      
+      print(ggplot(pred_df, aes_string(x="AgeAtVisit", y=s, color=p)) + geom_line() + ggtitle(paste(s, p)))
+      
+      cat("Parameter:", p, ", Self-report:", s, "\n")
+      print(summary(model)) 
+    }
+  }
+}
+dev.off()
+
+plot(effect(term="lambda:AgeAtVisit",mod=model,default.levels=10),multiline=TRUE)
 
 #explore by emotion
 explore.melt <- melt(learning_emoexplore[,c("LunaID", "AgeAtVisit", "UPPS_SS", "UPPS_Urg", "UPPS_PosUrg", 
