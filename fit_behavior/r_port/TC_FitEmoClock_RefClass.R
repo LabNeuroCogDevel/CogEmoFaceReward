@@ -18,15 +18,12 @@ alg <- setRefClass(
     methods=list(
         initialize=function(clockData=NULL, ...) {
           cat("Initializing alg\n")
-          if (!is.null(clockData) && !class(clockData) %in% c("clockDataset", "clockSubject", "clockRun")) {
-            stop("data for alg object must be one of the following types: clockDataset, clockSubject, or clockRun")
-          }
           
           params <<- list() #initialize empty list of model parameters
           noiseWt <<- 0 #do not add noise to RT prediction
           use_global_avg_RT <<- TRUE #whether to use average RT across all blocks in fit (e.g., "go for gold" scales wrt avg_RT). 
-          set_global_avg_RT()
           
+          if (!is.null(clockData)) { set_data(clockData) }
           callSuper(...) #for classes inheriting from this, pass through unmatched iniitalization values
         },
         set_global_avg_RT=function() {
@@ -60,7 +57,34 @@ alg <- setRefClass(
           #p_objs <- lapply(p_objs, function(p) { p$w <- .self$w; p$reset_workspace(); return(p) })
           
           params <<- lappend(params, p_objs)
+          
+          ##TODO: need to call 
         },
+        
+        set_data=function(cdata) {
+          if (!class(cdata) %in% c("clockDataset", "clockSubject", "clockRun")) {
+            stop("data for alg object must be one of the following types: clockDataset, clockSubject, or clockRun")
+          }
+          
+          clockData <<- cdata
+          set_global_avg_RT()
+          
+          setup_param_by()
+        },
+        
+        setup_param_by=function() { #expand parameters depending on condition or reward function by
+          if (inherits(clockData, "uninitializedField")) { return(invisible(NULL)) } #do nothing
+#          byFields <- sapply(params, function(p) { p$by })
+          
+          un <- unique(sapply(atest$params, function(p) { p$by }))
+          
+          if (class(clockData) == "clockSubject") {
+            browser()
+            conMat <- lapply(clockData$runs, function(x) { browser()}) # un)
+          }
+          
+        },
+        
         list_params=function() {
           cat("Current parameters in algorithm\n\n")
           df <- data.frame(
@@ -105,24 +129,16 @@ alg <- setRefClass(
           sapply(params, function(p) { p$par_scale })
         },
         
-        fit=function(toFit=NULL, initialValues=get_param_initial_vector(),
+        fit=function(initialValues=get_param_initial_vector(),
             lower=get_param_minimum_vector(),
             upper=get_param_maximum_vector(),
             profile=TRUE) {
           
+          if (inherits(clockData, "uninitializedField")) { stop("clock dataset must be provided prior to $fit(). Set using $set_data()") }
+          
           require(foreach)
           #require(optimx)
-          
-          #can pass in new dataset at $fit call
-          #if not passed in, use the current clockData field
-          if (!is.null(toFit)) {
-            if (!class(toFit) %in% c("clockDataset", "clockSubject", "clockRun")) { stop("data for alg object must be one of the following types: clockDataset, clockSubject, or clockRun")
-            } else { 
-              clockData <<- toFit
-              set_global_avg_RT() #compute global RT
-            }
-          }
-          
+                    
           #call predict using optimizer
           if (length(initialValues) == 1L) { method="Brent"
           } else { method="L-BFGS-B" }
@@ -131,7 +147,6 @@ alg <- setRefClass(
           #lapply(params, function(p) { p$value_history <- numeric(0) }) #reset value history for all parameters prior to fit REFCLASS VERSION
           params <<- lapply(params, function(p) { p$value_history <- numeric(0); return(p) }) #reset value history for all parameters prior to fit S3 VERSION
           
-          #this is a bit scary/problematic to the extent that RT prediction depend on proper scaling
           #initialValues <- initialValues / get_param_par_scale_vector() #scale prior to optimization
           
           #system.time(optResult <- optim(par=initialValues, fn=.self$predict, method=method,
@@ -193,20 +208,20 @@ alg <- setRefClass(
             #compute trialwise predictions with optimized parameters
             .self$predict(updateFields=TRUE, trackHistory=FALSE)
             
-            #TODO: Would be nice if $fit returned a fit object that had parameter values, the constituent environments that were fit,
+            ##TODO: Would be nice if $fit returned a fit object that had parameter values, the constituent environments that were fit,
             # and key workspace variables as data.frames (e.g., predicted RTs, observed RTs, trial-by-trial param contributions, etc.
   
-            #TODO: compute AIC here.
+            ##TODO: compute AIC here.
           } else {
             warning("Optimization failed.")
           }
           
-          return(list(optResult, elapsed_time=elapsed_time, prof=prof))
+          return(list(opt=optResult, elapsed_time=elapsed_time, prof=prof))
           
         },
         
         predict=function(theta=get_param_current_vector(), updateFields=FALSE, trackHistory=FALSE) {
-          #TODO: alg object shoud allow for some sort of symbolic specification of how
+          ##TODO: alg object shoud allow for some sort of symbolic specification of how
           #values from prior runs are carried forward.
           #this is an alg-level decision, not subject, run, parameter, etc.
           
@@ -232,7 +247,7 @@ alg <- setRefClass(
               } else { prior_w <- NULL }
               
               #pass forward theta (likely from optim)
-              totalSSE <- totalSSE + predictRun(theta=theta, clockRun=clockData$runs[[r]], prior_w=prior_w, updateFields=updateFields) #no cached update functions
+              totalSSE <- totalSSE + predictRun(theta=theta, clockRun=clockData$runs[[r]], prior_w=prior_w, updateFields=updateFields)
             }
             
           } else if (class(clockData)=="clockRun") {
@@ -334,7 +349,7 @@ alg <- setRefClass(
 #  - getRTUpdate: compute contribution to RT prediction for this parameter
 
 #general sanity checks and field assignment handled here so subordinate classes need not duplicate
-initialize_par <- function(obj, min_value=NULL, max_value=NULL, init_value=NULL, cur_value=NULL, par_scale=NULL) {
+initialize_par <- function(obj, min_value=NULL, max_value=NULL, init_value=NULL, cur_value=NULL, par_scale=NULL, by=NULL) {
   stopifnot(cur_value <= max_value)
   stopifnot(cur_value >= min_value)
   stopifnot(init_value <= max_value)
@@ -345,6 +360,7 @@ initialize_par <- function(obj, min_value=NULL, max_value=NULL, init_value=NULL,
   obj$init_value <- init_value
   obj$cur_value <- cur_value
   obj$par_scale <- par_scale
+  obj$by <- by
   obj$w <- emptyenv() #workspace should never be unique to parameter, but is set upstream by alg
   
   return(obj)
@@ -358,19 +374,23 @@ initialize_par <- function(obj, min_value=NULL, max_value=NULL, init_value=NULL,
 
 ###PARAMETER CONSTRUCTORS
 #meanRT constructor
-meanRT <- function(min_value=100, max_value=5000, init_value=1000, cur_value=init_value, par_scale=1e3) {
+meanRT <- function(min_value=100, max_value=5000, init_value=1000, cur_value=init_value, par_scale=1e3, by=NULL) {
   
   obj <- structure(
       list(
           name = "K"
       ), class=c("p_meanRT", "param"))
   
-  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
+  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale, by) #check and initialize fields
+  
+  ##by is a character vector specifying which fields of a clockRun object should be used for setting multiple named cur_value fields just prior to fit.
+  ##so, $fit (and predict?) should check the unique values for all by fields, then do an expand.grid, then name cur_values things like K.run_condition:IEV, etc.
+  
   return(invisible(obj))
 }
 
 #autocorrelation with previous reaction time
-autocorrPrevRT <- function(min_value=0.0, max_value=1.0, init_value=0.3, cur_value=init_value, par_scale=1e-1) {  
+autocorrPrevRT <- function(min_value=0.0, max_value=1.0, init_value=0.3, cur_value=init_value, par_scale=1e-1, by=NULL) {  
   obj <- structure(
       list(name = "lambda"),
       class=c("p_autocorrPrevRT", "param")
@@ -379,7 +399,7 @@ autocorrPrevRT <- function(min_value=0.0, max_value=1.0, init_value=0.3, cur_val
   if (min_value < 0.0) { stop("Autocorr prev RT (lambda) parameter cannot be negative") }
   if (max_value > 1.0) { stop("Autocorr prev RT (lambda) parameter cannot exceed 1.0") }
   
-  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
+  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale, by) #check and initialize fields
   return(invisible(obj))
 }
 
@@ -718,15 +738,15 @@ reset_workspace.p_gold <- function(obj) {
     #use the user-specified value for the bestRT on t=1
     obj$w$bestRT[1L] <- obj$bestRT_t1
   }
-  #NextMethod()
+  NextMethod()
 }
 
 reset_workspace.p_meanSlowFast=function(obj) {
   if (!exists("betaFastSlow", envir=obj$w, inherits=FALSE)) { obj$w$betaFastSlow <- betaFastSlow(obj$w) }
-  #NextMethod()
+  NextMethod()
 }
 
 reset_workspace.p_epsilonBeta=function(obj) {
   if (!exists("betaFastSlow", envir=obj$w, inherits=FALSE)) { obj$w$betaFastSlow <- betaFastSlow(obj$w) }
-  #NextMethod()
+  NextMethod()
 }

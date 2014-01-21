@@ -190,16 +190,30 @@ s1000 <- clockSubject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFa
 atest <- alg()
 atest$add_params(
     K=meanRT(max_value=4000),
-    gold=goForGold(),
-    art1=autocorrPrevRT(),
-    g=go(),
-    n=noGo(),
-    m=meanSlowFast(),
-    e=exploreBeta()
+    art1=autocorrPrevRT()
+#    gold=goForGold(),
+#    g=go(),
+#    n=noGo(),
+#    m=meanSlowFast(),
+#    e=exploreBeta()
 )
 
 f <- atest$fit(s1000)
 times <- list()
+
+atest <- alg()
+atest$add_params(
+    K=meanRT(max_value=4000, by="rew_function"),
+    art1=autocorrPrevRT(by="emotion")
+#    gold=goForGold(),
+#    g=go(),
+#    n=noGo(),
+#    m=meanSlowFast(),
+#    e=exploreBeta()
+)
+
+atest$set_data(s1000)
+
 
 library(microbenchmark)
 #microbenchmark( lapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) }), unname(lapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) } )), times=10000)
