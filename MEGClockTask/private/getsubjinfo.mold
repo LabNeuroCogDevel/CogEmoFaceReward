@@ -1,0 +1,179 @@
+function getSubjInfo 
+     global subject opts;
+     % skip the questions if we provide var ourself
+     subject.subj_id = input('Enter the subject ID number: ','s');
+     
+     %run number is the date yyyymmdd
+     c=clock();
+     subject.run_num=c(1)*10000+c(2)*100+c(3);
+
+     filename = ['subjects/MEG_' subject.subj_id '_' subject.run_num '_tc'];
+
+     % is the subject new? should we resume from existing?
+     % set t accordingly, maybe load subject structure 
+     txtfile=[filename '.txt'];
+     backup=[txtfile '.' num2str(GetSecs()) '.bak'];
+     
+     % we did something with this subject before?
+     if exist(txtfile,'file') 
+         
+         % check that we have a mat file
+         % if not, backup txt file and restart
+         if ~ exist([filename '.mat'],'file')
+             fprintf('%s.txt exists, but .mat does not!\n',filename)
+             reload= 'n'; % move txt file to backup and start from scratch
+         
+         % we have the mat file
+         % * is this resuming the previous run -- we were at the halfwaypt
+         % * if it's not obviously resuming, do we want to continue where
+         %   we left off?
+         else
+             localVar = load(filename);
+             % sanity check
+             if localVar.subject.subj_id ~= subject.subj_id
+                 error('mat file data conflicts with name!: %d != %d',...
+                     localVar.subject.subj_id, subject.subj_id);
+             end
+             
+             resume = lower(input('Want to load previous session (y or n)? ','s'));
+            
+             %
+             % if we auto incremented run_num
+             % or decided to resume
+             %   clear subject, and load from mat file
+             if strcmp(resume,'y')
+                 
+                 %% from which block
+                 
+                 clear subject
+                 disp(localVar), disp(localVar.subject);
+                 
+                 start=localVar.trialnum;
+                 subject=localVar.subject;
+
+                 % these thigns should now be in subject structure
+                 %order=localVar.order;
+                 %timing=localVar.timing;
+                 %score=localVar.score;
+                 %experiment=localVar.experiment; % use previously generated experiment
+
+                 % %  BEFORE we used CSV set expereiment order with old file
+                 % % opts.TrialCSV=localVar.subject.orderCSV;
+                 % % experiment=getorderfile();
+
+                 % restart from the last fully completed block
+                 order_completed=subject.order( cellfun(@(x) length(x)>1,subject.order) );
+
+                 [val,startpos] = unique(cell2mat(cellfun(@(x) x(4),order_completed)),'first');
+                 [val,endpos]   = unique(cell2mat(cellfun(@(x) x(4),order_completed)),'last');
+                 incompleteblock=val(find( endpos - startpos < trialsPerBlock-1) );
+                 % there should only be one incomplete block
+                 if(length(incompleteblock) > 1)
+                    incompleteblock
+                    error('too many incompleted blocks!')
+                 elseif(length(incompleteblock == 1))
+                   
+                    % move start back
+                    toremove=find(cellfun(@(x) x{4}==incompleteblock,order_completed));
+                    start=localVar.trialnum - length(toremove) +1; % we will start on the first of the removed
+                    fprintf('starting trial moved from %d to %d\n',localVar.trialnum, start)
+
+                    %% start chopping the incomplete block
+                    fprintf('chopping off incomplete block "%d"\n', incompleteblock);
+                    fprintf('originally completed trials: %d\t', length(order_completed))
+
+                    % replace all rows of the incomplete block
+                    for rmidx=1:length(toremove)
+                      subject.order{toremove(rmidx)}= [];
+                      subject.timing(rmidx).start=0;
+                    end
+                   
+
+                    order_completed=subject.order(cellfun(@(x) length(x)>1,subject.order));
+                    % reset score
+                    subject.score=sum(cellfun(@(x) x{8}, subject.order(1:length(order_completed))));
+                    fprintf('new length: %d\n', length(order_completed))
+                    fprintf('have completed blocks:\n')
+                    disp( unique(cell2mat(cellfun(@(x) x(4),order_completed)),'last') )
+
+                    
+                    
+                 else
+                   % don't need to do anything order is perfect!
+                   % we killed right on a new block
+                   fprintf('resuming right were we left off!\n')
+
+                   if(mod( start-1, trialsPerBlock) ~= 0)
+                    fprintf('.. but maybe we need to increase trial to start on (%d)\n', start);
+                    start=start+1; % we never incremented the trial position when we exited
+                   end
+                 end
+                 
+                 % sanity check -- length should be a multiple of trialsPerBlock
+                 if(mod( length(order_completed), trialsPerBlock) ~= 0)
+                   error('trial length is off: mod(%d,%d) ~= 0',length(order_completed), trialsPerBlock)
+                 end
+                 if(mod( start-1, trialsPerBlock) ~= 0)
+                   error('last completed trial is off: mod(%d,%d) ~= 0',start-1, trialsPerBlock)
+                 end
+
+                 fprintf('RESUMING ON PRESENTED BLOCK # %d\n', (start-1)/trialsPerBlock + 1); 
+
+             
+             % otherwise, move the existing txt file to a backup
+             % and we'll fill in the subject info below
+             else
+                 fprintf('moving %s to %s, start from top\n', txtfile,backup)
+                 movefile(txtfile,backup);
+             end
+             
+         end
+      end
+     
+     %% fill out the subject struct if any part of it is still empty
+     for attribCell={'gender','age'}
+         % make a normal string
+         attrib = cell2mat(attribCell);
+
+         % check if it's already filled out
+         if  ~ismember( attrib,fields(subject) )  
+           promptText=sprintf('Enter subject''s %s: ',attrib);
+           subject.(attrib) = input(promptText,'s');
+         else
+            if ~ischar(subject.(attrib)); tmp=num2str(subject.(attrib)); else tmp=subject.(attrib); end 
+           fprintf('using old %s (%s)\n', attrib, tmp);
+         end
+     end
+
+     %% age should be a number
+     if ischar(subject.age);     subject.age    =str2double(subject.age);    end
+     %if ischar(subject.run_num); subject.run_num=str2double(subject.run_num);end
+
+
+     %% set sex to a standard
+     if ismember(lower(subject.gender),{'male';'dude';'guy';'m';'1'} )
+         subject.gender = 'male';
+     else
+         subject.gender = 'female';
+     end
+     % print out determined sex, give user a chance to correct
+     fprintf('Subject is %s\n', subject.gender);
+
+     %% Initialize data storage and records
+     % make directoires
+     for dir={'subjects','logs'}
+      if ~ exist(dir{1},'dir'); mkdir(dir{1}); end
+     end
+     
+     % log all output of matlab
+     diaryfile = ['logs/' subject.subj_id '_' num2str(GetSecs()) '_tcdiary'];
+     diary(diaryfile);
+     
+     % log presentation,score, timing (see variable "order")
+     txtfid=fopen(txtfile,'a'); % we'll append to this..maybe
+     
+     if txtfid == -1; error('couldn''t open text file for subject'); end
+
+
+end
+
