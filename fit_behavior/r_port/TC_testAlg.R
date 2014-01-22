@@ -190,29 +190,64 @@ s1000 <- clockSubject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFa
 atest <- alg()
 atest$add_params(
     K=meanRT(max_value=4000),
-    art1=autocorrPrevRT()
-#    gold=goForGold(),
-#    g=go(),
-#    n=noGo(),
-#    m=meanSlowFast(),
-#    e=exploreBeta()
+    art1=autocorrPrevRT(),
+    gold=goForGold(),
+    g=go(),
+    n=noGo(),
+    m=meanSlowFast(),
+    e=exploreBeta()
 )
 
-f <- atest$fit(s1000)
-times <- list()
+
+f <- atest$fit(toFit=s1000)
+
+f$AIC
+
 
 atest <- alg()
 atest$add_params(
-    K=meanRT(max_value=4000, by="rew_function"),
-    art1=autocorrPrevRT(by="emotion")
+    K=meanRT(max_value=4000),
+    art1=autocorrPrevRT(),
+    gold=goForGold(),
+    g=go(),
+    n=noGo(),
+    m=meanSlowFast(),
+    e=exploreBeta(by="run_condition")
+)
+
+f_emoexplore <- atest$fit(toFit=s1000)
+
+allF <- lapply(s1000$runs, function(r) {
+      atest$fit(toFit=r)
+    })
+
+sum(sapply(allF, "[[", "AIC"))
+
+times <- list()
+
+#testing parameter variation by condition
+atest <- alg()
+atest$add_params(
+    K=meanRT(max_value=4000, by=c("rew_function")),
+   autocorrPrevRT(by="run_condition")
+#    autocorrPrevRT(),
 #    gold=goForGold(),
-#    g=go(),
+#    g=go()
 #    n=noGo(),
 #    m=meanSlowFast(),
 #    e=exploreBeta()
 )
 
 atest$set_data(s1000)
+#atest$predict()
+atest$fit()
+
+s1000Dat <- read.csv("/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv", header=TRUE)
+library(plyr)
+ms <- ddply(s1000Dat, .(rewFunc, emotion), function(subdf) {
+      return(data.frame(m=mean(subdf$rt[2:nrow(subdf)])))
+    })
+print(mean(ms$m))
 
 
 library(microbenchmark)

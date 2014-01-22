@@ -11,9 +11,11 @@ alg <- setRefClass(
         params="list",
         noiseWt="numeric",
         SSE="numeric",
+        AIC="numeric",
         clockData="ANY", #allow this to be dataset, subject, or run,
         use_global_avg_RT="logical",
-        global_avg_RT="numeric"
+        global_avg_RT="numeric",
+        all_by="character" #character vector that is the union of all run-level fields defining vary-by-run parameters
     ),
     methods=list(
         initialize=function(clockData=NULL, ...) {
@@ -27,16 +29,21 @@ alg <- setRefClass(
           callSuper(...) #for classes inheriting from this, pass through unmatched iniitalization values
         },
         set_global_avg_RT=function() {
-          if (use_global_avg_RT && !is.null(clockData) && class(clockData) == "clockSubject") {
-            #compute average reaction time across all runs
-            global_avg_RT <<- mean(do.call("c", lapply(clockData$runs, "[[", "RTobs")), na.rm=TRUE)
-          }
+          if (use_global_avg_RT && !is.null(clockData)) {
+            if (class(clockData) == "clockSubject") {
+              #compute average reaction time across all runs
+              global_avg_RT <<- mean(do.call("c", lapply(clockData$runs, "[[", "RTobs")), na.rm=TRUE)
+            } else if (class(clockData) == "clockRun") {
+              global_avg_RT <<- mean(clockData$RTobs, na.rm=TRUE)
+            }
+          } 
         },
         lappend=function(target, append) {
           if (!is.list(target)) stop("target is not a list.")
           if (!is.list(append)) stop("append is not a list.")
-
+          
           #force names of list to match corresponding parameter names
+          #this ignores any list names provided by user
           names(append) <- sapply(append, function(p) { return(p$name) })
           
           for (elementName in names(append)) {
@@ -72,31 +79,63 @@ alg <- setRefClass(
           setup_param_by()
         },
         
-        setup_param_by=function() { #expand parameters depending on condition or reward function by
+        setup_param_by=function() { #expand parameters to accommodate per-condition variation, depending on clockData
           if (inherits(clockData, "uninitializedField")) { return(invisible(NULL)) } #do nothing
-#          byFields <- sapply(params, function(p) { p$by })
           
-          un <- unique(sapply(atest$params, function(p) { p$by }))
+          #determine by settings for all parameters
+          if (!is.null( uniq_by <- unique(unlist(lapply(params, function(p) { p$by }))) )) { 
+            all_by <<- uniq_by 
+          } else {
+            return(invisible(NULL)) #no use of by-condition parameters
+          }
           
+          #develop a lookup matrix of unique conditions combinations
           if (class(clockData) == "clockSubject") {
-            browser()
-            conMat <- lapply(clockData$runs, function(x) { browser()}) # un)
+            conMat <- lapply(clockData$runs, function(r) {
+                  #set by_lookup (union of all by fields) for each run object
+                  #and return a list of conditions for each run to be expanded for each parameter below, as needed
+                  r$by_lookup <- sapply(all_by, function(b) { r[[b]]} )
+                })
+            conMat_df <- data.frame(do.call(rbind, conMat))
+            for (n in 1:ncol(conMat_df)) {
+              conMat_df[,n] <- paste(names(conMat_df)[n], conMat_df[,n], sep=":")
+            }
+            params <<- lapply(params, function(p) {
+                  p$base_name <- p$name[1L] #just basic parameter name without condition (used for getTheta lookup) 
+                  if (!is.null(p$by)) {
+                    #make sure that by is sorted alpha to correspond with getTheta
+                    p$by <- sort(p$by)
+                    #format parameter names into <param>/condition:value/condition:value/.../ for passing to optimizer (parse within predict)
+                    #for now, leave off param name, just keep condition names
+                    #when calling get_param_initial_vector, etc., lapply will include param name in vector
+                    p$name <- paste(p$name, unique(apply(conMat_df[,p$by, drop=FALSE], 1, paste, collapse="/")), sep="/") #alpha sort is important so that getTheta can assume that order of theta condition string is alphabetical
+                    #p$name <- unique(apply(conMat_df[,p$by, drop=FALSE], 1, paste, collapse="/"))
+                    #I suppose using the first element as the value to replicate could backfire if an alg object is recycled across datasets.
+                    p$init_value <- rep_len(p$init_value[1L], length(p$name))
+                    p$cur_value <- rep_len(p$cur_value[1L], length(p$name))
+                    p$max_value <- rep_len(p$max_value[1L], length(p$name))
+                    p$min_value <- rep_len(p$min_value[1L], length(p$name))
+                    p$par_scale <- rep_len(p$par_scale[1L], length(p$name))
+                    names(p$init_value) <- names(p$cur_value) <- names(p$max_value) <- names(p$min_value) <- names(p$par_scale) <- p$name
+                  }
+                  p
+                })
           }
           
         },
         
         list_params=function() {
-          cat("Current parameters in algorithm\n\n")
-          df <- data.frame(
-              p_name=names(params), 
-              min_value=get_param_minimum_vector(),
+          #cat("Current parameters in algorithm\n\n")
+          df <- cbind(min_value=get_param_minimum_vector(),
               max_value=get_param_maximum_vector(),
               init_value=get_param_initial_vector(),
               cur_value=get_param_current_vector(),
               par_scale=get_param_par_scale_vector()
           )
+          rownames(df) <- unlist(lapply(params, function(p) { p$name }))
           #cat(names(params), sep="\n")
-          print(format(df,digits=3,scientific=FALSE))
+          #print(format(df,digits=3,scientific=FALSE))
+          return(df)
         },
         reorder_params=function(neworder) {
           #reorders the parameter collection
@@ -114,36 +153,41 @@ alg <- setRefClass(
         
         #these functions get values, bounds, and scales for all parameters in the current model 
         get_param_current_vector=function() {
-          sapply(params, function(p) { p$cur_value })
+          unlist(unname(lapply(params, function(p) { p$cur_value }))) #need to unname lapply vector to avoid appending names(params) to each element
         },        
         get_param_minimum_vector=function() {
-          sapply(params, function(p) { p$min_value })          					
+          unlist(unname(lapply(params, function(p) { p$min_value })))          					
         },        
         get_param_maximum_vector=function() {
-          sapply(params, function(p) { p$max_value })
+          unlist(unname(lapply(params, function(p) { p$max_value })))
         },        
         get_param_initial_vector=function() {
-          sapply(params, function(p) { p$init_value })
+          unlist(unname(lapply(params, function(p) { p$init_value })))
         },        
         get_param_par_scale_vector=function() {
-          sapply(params, function(p) { p$par_scale })
+          unlist(unname(lapply(params, function(p) { p$par_scale })))
         },
         
-        fit=function(initialValues=get_param_initial_vector(),
-            lower=get_param_minimum_vector(),
-            upper=get_param_maximum_vector(),
-            profile=TRUE) {
+        fit=function(toFit=NULL, random_starts=NULL, profile=TRUE) {
+          
+          #can pass in new dataset at $fit call
+          #if not passed in, use the current clockData field
+          if (!is.null(toFit)) {
+            set_data(toFit)
+          }
+          
+          initialValues <- get_param_initial_vector()
+          lower <- get_param_minimum_vector()
+          upper <- get_param_maximum_vector()
           
           if (inherits(clockData, "uninitializedField")) { stop("clock dataset must be provided prior to $fit(). Set using $set_data()") }
           
-          require(foreach)
           #require(optimx)
-                    
+          
           #call predict using optimizer
           if (length(initialValues) == 1L) { method="Brent"
           } else { method="L-BFGS-B" }
           
-
           #lapply(params, function(p) { p$value_history <- numeric(0) }) #reset value history for all parameters prior to fit REFCLASS VERSION
           params <<- lapply(params, function(p) { p$value_history <- numeric(0); return(p) }) #reset value history for all parameters prior to fit S3 VERSION
           
@@ -154,6 +198,14 @@ alg <- setRefClass(
           #        control=list(parscale=get_param_par_scale_vector()),
           #        updateFields=FALSE, trackHistory=TRUE))
           
+          if (!is.null(random_starts) && is.numeric(random_starts)) {
+            require(foreach)
+            require(doMC)
+            njobs <- min(parallel::detectCores, random_starts)
+            registerDoMC(njobs)
+            
+          }
+          
           #track optimization
           if (profile) { Rprof("tc_prof.out") }
           
@@ -163,10 +215,10 @@ alg <- setRefClass(
                   updateFields=FALSE, trackHistory=TRUE))
           
           if (profile) {
-            Rprof(NULL)
-
+            Rprof(NULL) #stop profiling
+            
             prof <- summaryRprof("tc_prof.out")#, lines = "both")
-            unlink("tc_prof.out")
+            unlink("tc_prof.out") #remove profile file
           } else {
             prof <- list()
           }
@@ -204,19 +256,40 @@ alg <- setRefClass(
             #lapply(params, function(p) { p$cur_value <- optResult$par[p$name] }) #set current parameter values based on optimization REFCLASS
             #need to unname the parameter value to avoid getting a named vector, which lapply concatenates with list names (e.g., lambda.lambda)
             params <<- lapply(params, function(p) { p$cur_value <- unname(optResult$par[p$name]); return(p) }) #set current parameter values based on optimization S3
-
+            
             #compute trialwise predictions with optimized parameters
             .self$predict(updateFields=TRUE, trackHistory=FALSE)
             
+            #set SSE for fit
+            SSE <<- optResult$objective
+            
             ##TODO: Would be nice if $fit returned a fit object that had parameter values, the constituent environments that were fit,
             # and key workspace variables as data.frames (e.g., predicted RTs, observed RTs, trial-by-trial param contributions, etc.
-  
-            ##TODO: compute AIC here.
+            
+            ##only works for subject and run fits, not group
+            if (class(clockData) == "clockSubject") {
+              ntrials <- sum(unlist(lapply(clockData$runs, function(r) { r$w$ntrials } )))
+              RTobs <- do.call(rbind, lapply(clockData$runs, function(r) { r$RTobs }))
+              RTpred <- do.call(rbind, lapply(clockData$runs, function(r) { r$w$RTpred }))
+              Reward <- do.call(rbind, lapply(clockData$runs, function(r) { r$Reward }))
+            } else if (class(clockData) == "clockRun") {
+              ntrials <- clockData$w$ntrials
+              RTobs <- clockData$RTobs
+              RTpred <- clockData$w$RTpred
+              Reward <- clockData$Reward
+            }
+            
+            nparams <- length(optResult$par) #number of free parameters
+            
+            AIC <<- ntrials*(log(2*pi*(SSE/ntrials))+1) + 2*nparams
+
+            fitResult <- clockFit(RTobs=RTobs, RTpred=RTpred, Reward=Reward, total_SSE=SSE, AIC=AIC, elapsed_time=unclass(elapsed_time), opt_data=optResult, profile_data=prof, theta=as.matrix(list_params()))
           } else {
             warning("Optimization failed.")
+            fitResult <- NULL
           }
           
-          return(list(opt=optResult, elapsed_time=elapsed_time, prof=prof))
+          return(fitResult)
           
         },
         
@@ -247,7 +320,9 @@ alg <- setRefClass(
               } else { prior_w <- NULL }
               
               #pass forward theta (likely from optim)
-              totalSSE <- totalSSE + predictRun(theta=theta, clockRun=clockData$runs[[r]], prior_w=prior_w, updateFields=updateFields)
+              run_SSE <- predictRun(theta=theta, clockRun=clockData$runs[[r]], prior_w=prior_w, updateFields=updateFields)
+              clockData$runs[[r]]$w$run_SSE <- run_SSE
+              totalSSE <- totalSSE + run_SSE
             }
             
           } else if (class(clockData)=="clockRun") {
@@ -273,7 +348,12 @@ alg <- setRefClass(
           if (use_global_avg_RT) { w$avg_RT <- global_avg_RT }
           
           #lapply(.self$params, function(p) { p$w <- .self$w; p$reset_workspace() }) #setup workspace variables for each parameter REFCLASS VERSION
-          params <<- lapply(.self$params, function(p) { p$w <- w; reset_workspace(p); return(p) }) #setup workspace variables for each parameter (NEED TO UPDATE PARAMS SINCE THEY ARE PASS BY VALUE)
+          params <<- lapply(.self$params, function(p) { 
+                p$w <- w
+                reset_workspace(p)
+                p$theta_lookup <- getTheta(p, clockRun$by_lookup) #define which element of theta is relevant for each parameter (based on $by and this run's condition)
+                return(p)
+              }) #setup workspace variables for each parameter (NEED TO UPDATE PARAMS SINCE THEY ARE PASS BY VALUE)
           
           #optim using Brent, or optimize fail to pass names of parameters into predict.
           #names are critical for the params to lookup properly.
@@ -288,8 +368,11 @@ alg <- setRefClass(
           w$RT_last <- w$RTobs[1L]
           w$RT_last2 <- w$RTobs[1L]
           
-          #TODO: Risk that we initialize some vals above (like initial V), but predict is called iteratively for optimization, so values will not be reset here if they were set in initialize
+          ##TODO: Risk that we initialize some vals above (like initial V), but predict is called iteratively for optimization, so values will not be reset here if they were set in initialize
           
+          #For speed, theta obj + condition lookup should occur here, outside of trial loop
+          
+  
           for (t in 2:w$ntrials) {
             w$cur_trial <- t
             w$lastTrial <- t - 1
@@ -310,9 +393,11 @@ alg <- setRefClass(
             #w$RT_new <<- sum(sapply(params, function(p) { p$getRTUpdate(theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             #w$RT_new <- sum(sapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) } )) + noiseWt*(runif(1,-0.5,0.5)) #add or subtract noise according to noiseWt (0 for now)
             
-            #getting profile information that simplify2array is taking a few seconds. Try unlist(lapply(
+            #need to pass along run condition to getRTUpdate functions
+            #sapply(all_by, function(b) { clockRun[[b]]} )
+  
             noiseContrib <- if (noiseWt > 0.0) { noiseWt*(runif(1,-0.5,0.5)) } else { 0.0 }
-            w$RT_new <- sum(pred_contrib <- unlist(lapply(params, function(p) { getRTUpdate(p, theta, updateFields=updateFields) } ))) + noiseContrib
+            w$RT_new <- sum(pred_contrib <- unlist(lapply(params, function(p) { getRTUpdate(p, theta) } ))) + noiseContrib
             
             if (updateFields) { #track trial-by-trial contribution of each param to RT prediction
               pnames <- names(params)
@@ -360,6 +445,8 @@ initialize_par <- function(obj, min_value=NULL, max_value=NULL, init_value=NULL,
   obj$init_value <- init_value
   obj$cur_value <- cur_value
   obj$par_scale <- par_scale
+  #name each parameter value so that when flattened to theta vector, all elements can be identified
+  names(obj$min_value) <- names(obj$max_value) <- names(obj$init_value) <- names(obj$cur_value) <- names(obj$par_scale) <- obj$name  
   obj$by <- by
   obj$w <- emptyenv() #workspace should never be unique to parameter, but is set upstream by alg
   
@@ -418,7 +505,7 @@ go <- function(min_value=0.01, max_value=5.0, init_value=0.2, cur_value=init_val
 }
 
 ##NoGo: slow down of RT for NPE
-noGo <- function(min_value=0.01, max_value=5.0, init_value=0.2, cur_value=init_value, par_scale=1e-1) {
+noGo <- function(min_value=0.01, max_value=5.0, init_value=0.2, cur_value=init_value, par_scale=1e-1, by=NULL) {
   obj <- structure(
       list(name = "alphaN"),
       class=c("p_nogo", "param")
@@ -427,12 +514,12 @@ noGo <- function(min_value=0.01, max_value=5.0, init_value=0.2, cur_value=init_v
   if (min_value < 0.01) { stop("alphaN min_value must be at least 0.01") }
   if (max_value > 5.0) { stop("alphaN max_value must be less than 5.0") }
   
-  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
+  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale, by) #check and initialize fields
   return(invisible(obj))
 }
 
 ##Go for the gold: adapt RT toward the best
-goForGold <- function(min_value=0.0, max_value=100.0, init_value=0.1, cur_value=init_value, par_scale=1e-1, bestRT_t1=numeric(0)) {
+goForGold <- function(min_value=0.0, max_value=100.0, init_value=0.1, cur_value=init_value, par_scale=1e-1, by=NULL, bestRT_t1=numeric(0)) {
   obj <- structure(
       list(
           name = "scale",
@@ -441,12 +528,12 @@ goForGold <- function(min_value=0.0, max_value=100.0, init_value=0.1, cur_value=
   
   if (min_value < 0) { stop("Go for gold (nu) parameter cannot be negative") }
   
-  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
+  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale, by) #check and initialize fields
   return(invisible(obj))
 }
 
 ##rho: Adapt toward fast responses if these have been better thus far
-meanSlowFast <- function(min_value=0, max_value=10000, init_value=300, cur_value=init_value, par_scale=1e2) {
+meanSlowFast <- function(min_value=0, max_value=10000, init_value=300, cur_value=init_value, par_scale=1e2, by=NULL) {
   obj <- structure(
       list(name = "rho"), 
       class=c("p_meanSlowFast", "param")
@@ -454,18 +541,18 @@ meanSlowFast <- function(min_value=0, max_value=10000, init_value=300, cur_value
   
   if (min_value < 0) { stop("Slow versus fast mean parameter (rho) cannot be negative") }
   
-  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
+  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale, by) #check and initialize fields
   return(invisible(obj))
 }
 
 #epsilon: adapt to fast/slow responses in proportion to uncertainty about other dist
-exploreBeta <- function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, par_scale=1e3) {
+exploreBeta <- function(min_value=0, max_value=100000, init_value=2000, cur_value=init_value, par_scale=1e3, by=NULL) {
   obj <- structure(
       list(name = "epsilonBeta"), 
       class=c("p_epsilonBeta", "param")
   )
   
-  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale) #check and initialize fields
+  obj <- initialize_par(obj, min_value, max_value, init_value, cur_value, par_scale, by) #check and initialize fields
   return(invisible(obj))
 }
 
@@ -518,24 +605,34 @@ betaFastSlow <- function(
 
 ###
 #getRTUpdate functions
-getRTUpdate <- function(obj, theta, updateFields=FALSE) { UseMethod("getRTUpdate") } #general dispatch
+getRTUpdate <- function(obj, theta) { UseMethod("getRTUpdate") } #general dispatch
 
-getRTUpdate.default <- function(obj, theta, updateFields=FALSE) {
-  return (NULL) 
+getRTUpdate.default <- function(obj, theta, condition=NULL) {
+  return (NULL)
 } #shouldn't have an empty rt update
 
+getTheta <- function(obj, condition) {
+  if (is.null(obj$by)) {
+    obj$name[1L]
+  } else {
+    obj$name[which(obj$name == paste0(obj$base_name, "/",  paste(obj$by, condition[obj$by], sep=":", collapse="/")))]
+  }
+}
+
 #K: mean RT
-getRTUpdate.p_meanRT <- function(obj, theta, updateFields=FALSE) {
-  theta[obj$name] #for baseline RT, the parameter itself is the speed in ms
+getRTUpdate.p_meanRT <- function(obj, theta, condition=NULL) {
+  #theta[obj$name] #for baseline RT, the parameter itself is the speed in ms
+  theta[obj$theta_lookup] #for baseline RT, the parameter itself is the speed in ms
 }
 
 #lambda: corr with prior RT
-getRTUpdate.p_autocorrPrevRT <- function(obj, theta, updateFields) {
-  theta[obj$name]*obj$w$RT_last
+getRTUpdate.p_autocorrPrevRT <- function(obj, theta, condition=NULL) {
+  #theta[obj$name]*obj$w$RT_last
+  theta[obj$theta_lookup]*obj$w$RT_last
 }
 
 #nu: go for the gold 
-getRTUpdate.p_gold <- function(obj, theta, updateFields=FALSE) {
+getRTUpdate.p_gold <- function(obj, theta, condition=NULL) {
   #compute maximum reward and reward variability up to current trial
   eval(
       quote({ 
@@ -554,13 +651,13 @@ getRTUpdate.p_gold <- function(obj, theta, updateFields=FALSE) {
       obj$w
   )
   
-  theta[obj$name]*with(obj$w, bestRT[cur_trial] - avg_RT) #rtContrib
+  theta[obj$theta_lookup]*with(obj$w, bestRT[cur_trial] - avg_RT) #rtContrib
 }
 
 #Go: speed up for PPE
-getRTUpdate.p_go <- function(obj, theta, updateFields) {
+getRTUpdate.p_go <- function(obj, theta, condition=NULL) {
   #a bit of a hack here to copy the alphaG learning rate into w for easier code below
-  obj$w$cur_value <- theta[obj$name]
+  obj$w$cur_value <- theta[obj$theta_lookup]
   
   eval(
       quote({
@@ -585,9 +682,9 @@ getRTUpdate.p_go <- function(obj, theta, updateFields) {
 }
 
 #NoGo: slow down for NPE
-getRTUpdate.p_nogo <- function(obj, theta, updateFields) {
+getRTUpdate.p_nogo <- function(obj, theta, condition=NULL) {
   #a bit of a hack here to copy the alphaN learning rate into w for easier code below
-  obj$w$cur_value <- theta[obj$name]
+  obj$w$cur_value <- theta[obj$theta_lookup]
   eval(
       quote({
             NoGo_last   <- NoGo[lastTrial]
@@ -671,12 +768,12 @@ updateBetaDists=function(bfs) {
 }
 
 
-getRTUpdate.p_meanSlowFast=function(obj, theta, updateFields=FALSE) {
+getRTUpdate.p_meanSlowFast=function(obj, theta, condition=NULL) {
   updateBetaDists(obj$w$betaFastSlow) #update fast/slow beta dists
-  theta[obj$name] * with(obj$w$betaFastSlow, mean_slow - mean_fast) #rtContrib
+  theta[obj$theta_lookup] * with(obj$w$betaFastSlow, mean_slow - mean_fast) #rtContrib
 }
 
-getRTUpdate.p_epsilonBeta=function(obj, theta, updateFields=FALSE) {
+getRTUpdate.p_epsilonBeta=function(obj, theta, condition=NULL) {
   #model tracks two distributions, one for fast responses (less than mean RT)
   #and one for slow responses (above mean RT)
   #here, we update the estimates of the corresponding beta distribution for slow or fast responses
@@ -684,7 +781,7 @@ getRTUpdate.p_epsilonBeta=function(obj, theta, updateFields=FALSE) {
   obj$w$explore_last <- obj$w$explore
   updateBetaDists(obj$w$betaFastSlow) #update fast/slow beta dists
   
-  obj$w$cur_value <- theta[obj$name]
+  obj$w$cur_value <- theta[obj$theta_lookup]
   eval(
       quote({                
             if (RT_last > betaFastSlow$local_RT_last) {
@@ -712,7 +809,7 @@ getRTUpdate.p_epsilonBeta=function(obj, theta, updateFields=FALSE) {
 # optimization per se, since pred_contrib is only really useful at optimized parameter values.
 
 reset_workspace <- function(obj) { UseMethod("reset_workspace") }
-reset_workspace.param <- function(obj) { obj$w$pred_contrib[[obj$name]] <- rep(NA_real_, obj$w$ntrials) }
+reset_workspace.param <- function(obj) { lapply(obj$name, function(f) { obj$w$pred_contrib[[f]] <- rep(NA_real_, obj$w$ntrials) } ) }
 #reset_workspace.param <- function(obj) { NULL }
 
 reset_workspace.p_go <- function(obj) {

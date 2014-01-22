@@ -167,6 +167,26 @@ clockSubject <- setRefClass(
     )
 )
 
+clockFit <- setRefClass(
+    Class="clockFit",
+    fields=list(
+        RTobs="matrix", #trial vector (run), run x trial matrix (subject), or subject x run x trial matrix (group)
+        RTpred="matrix",
+        Reward="matrix",
+        total_SSE="numeric", #scalar of total sum of squared errors
+        theta="matrix", #named matrix of parameters and bounds
+        SSE="numeric", #vector or matrix of SSEs over subjects and runs
+        AIC="numeric", 
+        elapsed_time="numeric",
+        profile_data="list",
+        opt_data="list"
+        ),
+        methods=list(
+            initialize=function(...) {
+              callSuper(...) #default assignment of fields
+            })
+    )
+
 clockRun <- setRefClass(
     Class="clockRun",
     fields=list(
@@ -179,6 +199,7 @@ clockRun <- setRefClass(
         global_trial_number="numeric", #vector of trial numbers in the overall experiment (1..runs x trials/run)
         rew_function="character",
         run_condition="character", #optional string specifying the conditions for this run (e.g., fear faces)
+        by_lookup="character", #at fit-time, alg copies in a named character vector that is the union of all relevant fields for run definition (usually rew_function + run_condition) 
         orig_data_frame="data.frame" #optional data.frame from original experiment run containing full saved data (in case there are additional variables of interest)
     ),
     methods=list(
