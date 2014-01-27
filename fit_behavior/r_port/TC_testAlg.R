@@ -1,12 +1,12 @@
 # Some thoughts on the top-level algorithm object
 # probably makes sense to have an object for each run of data?
-# then have a multi-dimensional list of alg objects for subjects x runs?
-# or could shove it all into one alg object and have $fit specify how to minimize SSE (over all subjects and runs, for each subject, for each run within subject?)
+# then have a multi-dimensional list of clock_model objects for subjects x runs?
+# or could shove it all into one clock_model object and have $fit specify how to minimize SSE (over all subjects and runs, for each subject, for each run within subject?)
 # maybe a subject class would be good... Containing runs, and fit objects per run?
 
 
 
-a <- alg(RTobs=c(1,2,3), Reward=c(1,2,3))
+a <- clock_model(RTobs=c(1,2,3), Reward=c(1,2,3))
 a$add_params(
     gold=goForGold(min_value=0, max_value=500, init_value=0, cur_value=10),
     K=meanRT(max_value=4000, cur_value=1000)
@@ -21,7 +21,7 @@ a$get_param_minimum_vector()
 a$params$gold$min_value <- 22 
 a$params$gold$getRTUpdate()
 a$params$gold$workspace$sharedX <- -10
-ls(a$workspace) #workspace environment is shared between params and alg 
+ls(a$workspace) #workspace environment is shared between params and clock_model 
 a$workspace$sharedX
 
 
@@ -67,7 +67,7 @@ detach(n)
 
 
 
-a <- alg(RTobs=c(1719, 2896, 3260, 3414, 3425, 3633, 3320, 3414, 3438, 3507), 
+a <- clock_model(RTobs=c(1719, 2896, 3260, 3414, 3425, 3633, 3320, 3414, 3438, 3507), 
     Reward=c(0, 78, 87, 92, 88, 0, 89, 95, 89, 0))
 
 #simple fit with just mean RT
@@ -76,7 +76,7 @@ a$predict()
 a$fit()
 mean(RTobs[2:length(RTobs)]) #expected value of K: first trial does not contribute to cost
 
-a <- alg(RTobs=c(1719, 2896, 3260, 3414, 3425, 3633, 3320, 3414, 3438, 3507), 
+a <- clock_model(RTobs=c(1719, 2896, 3260, 3414, 3425, 3633, 3320, 3414, 3438, 3507), 
     Reward=c(0, 78, 87, 92, 88, 0, 89, 95, 89, 0))
 
 a$add_params(
@@ -101,7 +101,7 @@ print(predMat)
 #pilot data that MF had initially fit. Use to test whether my estimates are close
 pilot1001 <- read.table("/Users/michael/CogEmoFaceReward/subjects/pilot/1001_tc.txt", header=TRUE)
 
-p1001 <- alg(RTobs=pilot1001$RT, Reward=pilot1001$ScoreInc)
+p1001 <- clock_model(RTobs=pilot1001$RT, Reward=pilot1001$ScoreInc)
 p1001$add_params(
     K=meanRT(max_value=4000, cur_value=1000),
     gold=goForGold(min_value=0, max_value=500, init_value=0, cur_value=10),
@@ -145,7 +145,7 @@ ms <- ddply(x, .(run), function(subdf) {
     })
 print(mean(ms$m))
 
-a <- alg()
+a <- clock_model()
 
 a$add_params(K=meanRT(max_value=4000, cur_value=1000))
 
@@ -161,7 +161,7 @@ library(profr)
 ggplot.profr(parse_rprof("profile1.out"))
 summaryRprof("profile1.out")#, lines = "show")
 
-a <- alg()
+a <- clock_model()
 
 a$add_params(
     K=meanRT(max_value=4000),
@@ -187,7 +187,7 @@ summaryRprof("profile1.out")#, lines = "show")
 s1000 <- clockSubject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
 #s1000$import_runs_from_csv()
 
-atest <- alg()
+atest <- clock_model()
 atest$add_params(
     K=meanRT(max_value=4000),
     art1=autocorrPrevRT(),
@@ -204,7 +204,7 @@ f <- atest$fit(toFit=s1000)
 f$AIC
 
 
-atest <- alg()
+atest <- clock_model()
 atest$add_params(
     K=meanRT(max_value=4000),
     art1=autocorrPrevRT(),
@@ -226,7 +226,7 @@ sum(sapply(allF, "[[", "AIC"))
 times <- list()
 
 #testing parameter variation by condition
-atest <- alg()
+atest <- clock_model()
 atest$add_params(
     K=meanRT(max_value=4000, by=c("rew_function")),
    autocorrPrevRT(by="run_condition")
