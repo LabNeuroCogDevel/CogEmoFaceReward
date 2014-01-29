@@ -1,8 +1,0 @@
-exportPattern("^[[:alpha:]]+")
-exportClasses(
-    "clockDataset",
-     "clockFit",
-     "clockRun",
-     "clockSubject",
-     "clock_model" 
-)
