@@ -184,18 +184,19 @@ summaryRprof("profile1.out")#, lines = "show")
 
 #try to figure out a match with MF fits
 #pilot: 1000
-s1000 <- clockSubject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
+library(fitclock)
+s1000 <- clockdata_subject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
 #s1000$import_runs_from_csv()
 
-atest <- clock_model()
+atest <- clock_model(clock_data=s1000)
 atest$add_params(
-    K=meanRT(max_value=4000),
-    art1=autocorrPrevRT(),
-    gold=goForGold(),
-    g=go(),
-    n=noGo(),
-    m=meanSlowFast(),
-    e=exploreBeta()
+    K=meanRT(max_value=4000)
+#    art1=autocorrPrevRT(),
+#    gold=goForGold(),
+#    g=go(),
+#    n=noGo()
+#    m=meanSlowFast(),
+#    e=exploreBeta()
 )
 
 
