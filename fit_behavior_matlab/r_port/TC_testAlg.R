@@ -190,17 +190,17 @@ s1000 <- clockdata_subject(subject_ID="1000_pilot", csv_file="/Users/michael/Cog
 
 atest <- clock_model(clock_data=s1000)
 atest$add_params(
-    K=meanRT(max_value=4000)
-#    art1=autocorrPrevRT(),
-#    gold=goForGold(),
-#    g=go(),
-#    n=noGo()
+    K=meanRT(max_value=4000),
+    art1=autocorrPrevRT(),
+    gold=goForGold(),
+    g=go(),
+    n=noGo()
 #    m=meanSlowFast(),
 #    e=exploreBeta()
 )
 
 
-f <- atest$fit(toFit=s1000)
+f <- atest$fit()
 
 f$AIC
 
