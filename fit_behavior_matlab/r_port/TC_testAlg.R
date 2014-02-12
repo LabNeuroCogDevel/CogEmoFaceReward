@@ -169,8 +169,8 @@ a$add_params(
     art1=autocorrPrevRT(),
     g=go(),
     n=noGo()
-    #m=meanSlowFast()
-    #e=exploreBeta()
+    m=meanSlowFast()
+    e=exploreBeta()
 )
 #run fit
 #a$fit(toFit=s$runs[[1]])
@@ -188,17 +188,21 @@ library(fitclock)
 s1000 <- clockdata_subject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
 #s1000$import_runs_from_csv()
 
+library(compiler)
+enableJIT(3) #byte compile everything for faster overall run (~10% speedup)w
 atest <- clock_model(clock_data=s1000)
 atest$add_params(
     K=meanRT(max_value=4000),
     art1=autocorrPrevRT(),
     gold=goForGold(),
     g=go(),
-    n=noGo()
-#    m=meanSlowFast(),
-#    e=exploreBeta()
+    n=noGo(),
+    m=meanSlowFast(),
+    e=exploreBeta(),
+    s=stickyChoice(init_value=c(weight=0.4, decay=0.2), by="run_condition")
 )
 
+atest$set_data(s1000)
 
 f <- atest$fit()
 
@@ -224,24 +228,49 @@ allF <- lapply(s1000$runs, function(r) {
 
 sum(sapply(allF, "[[", "AIC"))
 
+#test sticky choice
+atest <- clock_model(clock_data=s1000)
+atest$add_params(
+    K=meanRT(max_value=4000),
+    stickyChoice=stickyChoice(),
+    alphaG=go(),
+    alphaN=noGo(),
+    rho=meanSlowFast(),
+    epsilonBeta=exploreBeta(min_value=-100000) #allow negative epsilon
+)
+f <- atest$fit(toFit=s1000, random_starts=NULL)
+
+atest$params$K$cur_value <- c(K=317.5653)
+atest$params$alphaG$cur_value <- c(alphaG=.1151)
+atest$params$alphaN$cur_value <-  c(alphaN=.0882)
+atest$params$epsilonBeta$cur_value <- c(epsilonBeta=2016.7350)
+atest$params$rho$cur_value <- c(rho=476.8464)
+atest$params$stickyChoice$cur_value <- c(stickyWeight=.7709, stickyDecay=.0856)
+
+atest$predict(updateFields=TRUE)
+
+
+
+#test whether we obtain identical SSE using fitted values from MATLAB
+
+
 times <- list()
 
 #testing parameter variation by condition
 atest <- clock_model()
 atest$add_params(
-    K=meanRT(max_value=4000, by=c("rew_function")),
-   autocorrPrevRT(by="run_condition")
-#    autocorrPrevRT(),
-#    gold=goForGold(),
-#    g=go()
-#    n=noGo(),
-#    m=meanSlowFast(),
-#    e=exploreBeta()
+    meanRT(max_value=4000),
+    autocorrPrevRT(),
+    goForGold(),
+    go(),
+    noGo(),
+    meanSlowFast(),
+    exploreBeta()
 )
 
 atest$set_data(s1000)
-#atest$predict()
-atest$fit()
+atest$predict()
+f <- atest$fit()
 
 s1000Dat <- read.csv("/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv", header=TRUE)
 library(plyr)
@@ -284,6 +313,16 @@ atest$params[["gold"]]$cur_value <- 0.26445
 
 
 #values from MATLAB for full model
+
+atest$params$K$cur_value <- c(K=809.8756)
+atest$params$alphaG$cur_value <- c(alphaG=0.06214)
+atest$params$alphaN$cur_value <-  c(alphaN=0.11034)
+atest$params$epsilonBeta$cur_value <- c(epsilonBeta=2162.829)
+atest$params$rho$cur_value <- c(rho=192.7773)
+atest$params$scale$cur_value <- c(scale=0.27036)
+atest$params$lambda$cur_value <- c(lambda=0.60583)
+
+
 #atest$params[["K"]]$cur_value <- 809.8756
 #atest$params[["gold"]]$cur_value <- 0.27036
 #atest$params[["art1"]]$cur_value <- 0.60583
@@ -307,3 +346,23 @@ atest$params[]
 
 #try fitting using parameters from MATLAB. Do we recover identical SSE?
 #Nope
+
+
+
+#trying out a real fMRI subject
+jh <- clockdata_subject(subject_ID="008_jh", csv_file="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/008jh_13Jan2014/fMRIEmoClock_88_tc_tcExport.csv")
+
+jh_model <- clock_model()
+jh_model$add_params(
+    meanRT(max_value=4000),
+    autocorrPrevRT(),
+    goForGold(),
+    go(),
+    noGo(),
+    meanSlowFast(),
+    exploreBeta()
+)
+
+jh_model$set_data(jh)
+f <- jh_model$fit()
+
