@@ -75,7 +75,6 @@ function test = TestfMRI()
     % 0.2 do this for the remaining runs
     KBResponse=[...
      0 KbName('SPACE'); ... reminder
-     0 KbName('SPACE'); ... win/loose
      0 KbName('6^');    ... fixation cross
      blockresponses;
      2 KbName('SPACE'); ... final score

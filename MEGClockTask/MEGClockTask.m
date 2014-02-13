@@ -86,9 +86,16 @@ function subject = MEGClockTask(sid,blk,varargin)
   %% populate subject structure
   %     prompt for subject info or ask to resume task
   %     subject.*, start, etc  
-  subject=getSubjInfo('MEG',subject, totalnumblocks,opts.trialsPerBlock,opts,blk)
+  subject=getSubjInfo('MEG',subject, totalnumblocks,opts.trialsPerBlock,opts,blk);
+
+
+  % log all output of matlab
+  diaryfile = [ num2str(subject.subj_id) '_' num2str(GetSecs()) '_tcdiary.log'];
+  diary(diaryfile);
+
+  % save mat output to a textfile too
   fprintf('saving to %s\n', subject.txtfile);
-  txtfid      =fopen(subject.txtfile,'w');
+  txtfid      =fopen(subject.txtfile,'a'); % append so we only have one text file but all blocks
 
   %% sanity checks
   % how long (trials) is a block
@@ -398,7 +405,7 @@ function subject = MEGClockTask(sid,blk,varargin)
         
         % save to mat so crash can be reloaded
         trialnum=subject.trialnum;
-        save(subject.filename,'trialnum','subject');
+        save(subject.matfile,'trialnum','subject');
         subject.blockTrial(subject.run_num) = subject.blockTrial(subject.run_num) + 1;
        
         % line like

@@ -30,6 +30,7 @@ function subject=getSubjInfo(taskname,subject,totalBlocks,trialsPerBlock,opts,bl
   
   filename = ['subjects/' taskname '_' num2str(subject.subj_id) '_' num2str(subject.run_date) '_tc'];
   subject.filename=filename; % export where we are saving things
+  subject.matfile=[filename '.mat']; % export where we are saving things
   
   
   % is the subject new? should we resume from existing?
@@ -38,15 +39,15 @@ function subject=getSubjInfo(taskname,subject,totalBlocks,trialsPerBlock,opts,bl
   backup=[subject.txtfile '.' num2str(GetSecs()) '.bak'];
   
   % we did something with this subject before?
-  if exist(subject.txtfile,'file')
+  if exist(subject.txtfile,'file') || exist(subject.matfile,'file')
       % check that we have a matching mat file
       % if not, backup txt file and restart
-      if ~ exist([filename '.mat'],'file')
-          fprintf('%s exists, but .mat does not!\n', subject.txtfile)
+      if ~ exist(subject.matfile,'file')
+          fprintf('%s exists, but (%s) does not!\n', subject.txtfile,subject.matfile)
           fprintf('moving %s to %s, start from top\n', subject.txtfile, backup)
           movefile(subject.txtfile, backup);
       else
-          localVar = load(filename);
+          localVar = load(subject.matfile);
           
           % sanity check
           if localVar.subject.subj_id ~= subject.subj_id
@@ -123,7 +124,7 @@ function subject=getSubjInfo(taskname,subject,totalBlocks,trialsPerBlock,opts,bl
     error('no good block, not running')
   end
 
-  % reset block list
+  % reset block list and score -- remove trials on the block we are going to try
   [subject.order, subject.score] = resetOrder(subject.order,subject.run_num,trialsPerBlock)
   
 
