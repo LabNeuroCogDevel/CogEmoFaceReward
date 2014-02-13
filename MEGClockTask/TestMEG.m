@@ -2,7 +2,6 @@
 %
 %     test = TestMEG; res=run(test)
 
-
 classdef TestMEG < matlab.unittest.TestCase
 
     properties
@@ -10,7 +9,7 @@ classdef TestMEG < matlab.unittest.TestCase
      sid
      trialsPerBlock
      speedincrease
-     trialsPerRun
+     numBlocks
      subjmat
     end
 
@@ -28,7 +27,7 @@ classdef TestMEG < matlab.unittest.TestCase
             global  LastKBCheck KBcounter KBResponse inputCounter initInput speedincrease;
             % test info
             tc.sid=99999;
-            tc.trialsPerBlock=63; tc.trialsPerRun=8;
+            tc.trialsPerBlock=63; tc.numBlocks=8;
             tc.speedincrease=8;
             % matfile
             c=clock();
@@ -57,16 +56,19 @@ classdef TestMEG < matlab.unittest.TestCase
         %%%%%%%%%% ACTUAL TASK  %%%%%%%%
         function testActual(tc)
 
+            import matlab.unittest.constraints.IsTrue;
             % path and overloading things
             global  LastKBCheck KBcounter KBResponse inputCounter initInput speedincrease;
 
 
-            % starting question
+            % starting question (keyboard input)
             % (1) age, (2) m or f
+            % screen (need space from keybard):
+            % (1):winpoints, (2):response, (3):rewardfunc=borderinfo, (4)hint, (5)getready 
+            
+            % 
             inputCounter=1;  KBcounter=1;
             initInput={'99', 'm'};
-            % screen (need space):
-            % (1):winpoints, (2):response, (3):rewardfunc=borderinfo, (4)hint, (5)getready 
 
             spcrsp = KbName('SPACE');
             blockresponses=[ ...
@@ -98,10 +100,12 @@ classdef TestMEG < matlab.unittest.TestCase
             orderlens = length(find(cellfun(@(x) length(x), subject.order)));
             tc.verifyEqual(orderlens,tc.trialsPerBlock)
             
+            [~,txtcount]=system([' perl -lne "END{print \$.}" ', subject.txtfile ]);
+            txtcount=str2num(txtcount);
             
 
             %% do it again
-            for(i=2:tc.trialsPerRun)
+            for(i=2:tc.numBlocks)
                % next blox all llike
                KBResponse=[...
                 0 spcrsp;      ... initial instructions
@@ -111,32 +115,61 @@ classdef TestMEG < matlab.unittest.TestCase
                 2 KbName('ESCAPE'); 
                 2 KbName('ESCAPE');
                 ];
-               % do not redo block 1
+
+               %kb response: do not redo block 1
                initInput={'n'};
                inputCounter=1;  KBcounter=1;
 
+               % run paradigm!
                [success subject]=runParadigm(tc.sid,1);
+
+               %% CHECKS
+               % didn't crash
                tc.verifyEqual(success,1);
+               
                % make sure the experiment is the same each time
-               tc.verifyEqual(subject.subj_id,sid);
+               tc.verifyEqual(subject.subj_id,tc.sid);
                tc.verifyEqual(subject.experiment,experiment);
 
+               % make sure we're growing the txt file
+               % -- needs linux
+               [~,newcount]=system([' perl -lne "END{print \$.}" ', subject.txtfile ]);
+               newcount=str2num(newcount);
+               tc.verifyThat(newcount>txtcount,IsTrue);
+               txtcount=newcount;
+
+               % did we finish all the trials up to (+ including) the end of the block
                orderlens = length(find(cellfun(@(x) length(x), subject.order)));
                tc.verifyEqual(orderlens,tc.trialsPerBlock*i)
+
+               % make sure the sum of order point inc matches total score
+               goodidx = find(cellfun(@(x) length(x), subject.order));
+               totalpoints = sum( cellfun(@(x) x{8}, subject.order(goodidx)) )
+               tc.verifyEqual(subject.score,totalpoints)
             end
 
-            %% check order
+            %% check order -- redudant
+            % length should be #trials/block * #block
             orderlens = length(find(cellfun(@(x) length(x), subject.order)));
-            tc.verifyEqual(orderlens,tc.trialsPerBlock*i)
-            %% todo - unique this
-            cellfun(@(x) x{1}, subject.order,'UniformOutput',0)
+            tc.verifyEqual(orderlens,tc.trialsPerBlock*tc.numBlocks)
+
+            % each block has only one reward type and only one emotion type
+            for col=[1 12] % reward is first column, emotion is 12th
+              % pull the vector of reward functions out from the cell of cells, reshape to a cell that has #trial rows and #blocks columns
+              a = reshape(cellfun(@(x) x{col}, subject.order,'UniformOutput',0), tc.trialsPerBlock,tc.numBlocks);
+              % verify that there is only one unique entry per column
+              allunique = all( arrayfun(@(j) length(unique(a(:,j))) == 1 , 1:size(a,2)) );
+              tc.verifyThat(allunique,IsTrue);
+            end
 
 
-            % support running functions
+
+            %%% support running functions
             function [success subject]=runParadigm(sid,block)
                 try 
                     fprintf('MEGClockTask(%d,%d,''DEBUG'',''NODAQ'')\n',tc.sid,block);
-                    subject=MEGClockTask(tc.sid,block,'DEBUG','NODAQ');
+                    %subject=MEGClockTask(tc.sid,block,'DEBUG','NODAQ');
+                    subject=MEGClockTask(tc.sid,block,'NODAQ');
                     success=1;
                 catch
                     fprintf('Presentation died -- early quit I hope\n')

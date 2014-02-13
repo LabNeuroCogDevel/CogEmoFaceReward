@@ -410,7 +410,11 @@ function MEGCogEmoFaceReward(varargin)
         setTimeDiff('ITI'); %build times (debug timing)
 
         % show score -- will send trigger and show box for diode before flip if needed
+        % send trigger for receipt +4 if rewarded
         scoreRxt(rspnstime,rew,trigger.(rew).(emo).score);
+        
+        
+        sendTrigger(trigger.(rew).(emo).score);
         
         setTimeDiff('receipt'); %build times (debug timing)
         
@@ -854,7 +858,8 @@ function MEGCogEmoFaceReward(varargin)
         DrawFormattedText(w, sprintf('You \nwon\n%d\npoints', inc),'center','center',black);
 
         % varagin will be trigger, send if we have it
-        if(~isempty(varargin)), sendTrigger(varargin{1}), end
+        % trigger is +4 if rewarded
+        if(~isempty(varargin)), sendTrigger(varargin{1} + 4*inc>0), end
         
         
         % draw box for photodiode, opposite luminocity as when face is on
