@@ -366,3 +366,6 @@ jh_model$add_params(
 jh_model$set_data(jh)
 f <- jh_model$fit()
 
+d <- f$build_design_matrix(regressors=c("button_press", "rel_uncertainty"), event_onsets=c("rt", "clock_onset"), durations=c(0, "rt"))
+d <- f$build_design_matrix(regressors=c("rpe_pos", "rel_uncertainty"), event_onsets=c("feedback_onset", "clock_onset"), durations=c("feedback_duration", "rt"))
+
