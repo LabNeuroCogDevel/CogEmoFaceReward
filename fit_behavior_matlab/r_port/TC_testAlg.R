@@ -366,6 +366,25 @@ jh_model$add_params(
 jh_model$set_data(jh)
 f <- jh_model$fit()
 
-d <- f$build_design_matrix(regressors=c("button_press", "rel_uncertainty"), event_onsets=c("rt", "clock_onset"), durations=c(0, "rt"))
+d <- f$build_design_matrix(regressors=c("button_press", "rel_uncertainty"), event_onsets=c("rt", "clock_onset"), durations=c(0, "rt"), baselineCoefOrder=2)
 d <- f$build_design_matrix(regressors=c("rpe_pos", "rel_uncertainty"), event_onsets=c("feedback_onset", "clock_onset"), durations=c("feedback_duration", "rt"))
 
+#I believe this matches badre et al.
+d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "rpe_pos", "rpe_neg", "rt"), 
+    event_onsets=c("clock_onset", "clock_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
+    durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2)
+
+library(ggplot2)
+gmat <- lapply(d$design.convolve, function(r) {
+      r$vol <- 1:nrow(r)
+      r.melt <- reshape2::melt(r, id.vars="vol")
+      print(ggplot(r.melt, aes(x=vol, y=value)) + geom_line() + facet_grid(variable~., scales="free_y"))
+    })
+
+corstarsl(d$design.convolve[[1]])
+
+#contingencies
+sapply(jh$runs, "[[", "rew_function")
+
+#collinearity of convolved data
+d$collin.convolve
