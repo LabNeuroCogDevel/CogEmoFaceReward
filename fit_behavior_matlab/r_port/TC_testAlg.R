@@ -135,7 +135,7 @@ xmin
 
 #try out creation of clockSubject with runs
 s <- clockSubject(subject_ID="006_mb", csv_file="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/006mb_05Nov2013/fMRIEmoClock/fMRIEmoClock_6_tc_tcExport.csv")
-s$import_runs_from_csv()
+s$import_runs()
 
 #is the basic mean RT fit working across all blocks?
 x <- read.csv("/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/006mb_05Nov2013/fMRIEmoClock/fMRIEmoClock_6_tc_tcExport.csv", header=TRUE)
@@ -186,7 +186,7 @@ summaryRprof("profile1.out")#, lines = "show")
 #pilot: 1000
 library(fitclock)
 s1000 <- clockdata_subject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
-#s1000$import_runs_from_csv()
+#s1000$import_runs()
 
 library(compiler)
 enableJIT(3) #byte compile everything for faster overall run (~10% speedup)w
@@ -350,7 +350,7 @@ atest$params[]
 
 
 #trying out a real fMRI subject
-jh <- clockdata_subject(subject_ID="008_jh", csv_file="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/008jh_13Jan2014/fMRIEmoClock_88_tc_tcExport.csv")
+jh <- clockdata_subject(subject_ID="008_jh", dataset="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/008jh_13Jan2014/fMRIEmoClock_88_tc_tcExport.csv")
 
 jh_model <- clock_model()
 jh_model$add_params(
@@ -364,7 +364,10 @@ jh_model$add_params(
 )
 
 jh_model$set_data(jh)
-f <- jh_model$fit()
+
+incr_fit <- jh_model$incremental_fit(njobs=6)
+
+f <- jh_model$fit(random_starts=NULL)
 
 d <- f$build_design_matrix(regressors=c("button_press", "rel_uncertainty"), event_onsets=c("rt", "clock_onset"), durations=c(0, "rt"), baselineCoefOrder=2)
 d <- f$build_design_matrix(regressors=c("rpe_pos", "rel_uncertainty"), event_onsets=c("feedback_onset", "clock_onset"), durations=c("feedback_duration", "rt"))
