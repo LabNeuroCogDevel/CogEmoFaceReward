@@ -350,6 +350,7 @@ atest$params[]
 
 
 #trying out a real fMRI subject
+library(fitclock)
 jh <- clockdata_subject(subject_ID="008_jh", dataset="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/008jh_13Jan2014/fMRIEmoClock_88_tc_tcExport.csv")
 
 jh_model <- clock_model()
@@ -375,7 +376,7 @@ d <- f$build_design_matrix(regressors=c("rpe_pos", "rel_uncertainty"), event_ons
 #I believe this matches badre et al.
 d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "rpe_pos", "rpe_neg", "rt"), 
     event_onsets=c("clock_onset", "clock_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
-    durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2)
+    durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2, writeTimingFiles=TRUE)
 
 library(ggplot2)
 gmat <- lapply(d$design.convolve, function(r) {
