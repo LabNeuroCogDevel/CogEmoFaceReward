@@ -351,9 +351,10 @@ atest$params[]
 
 #trying out a real fMRI subject
 library(fitclock)
+
 jh <- clockdata_subject(subject_ID="008_jh", dataset="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/008jh_13Jan2014/fMRIEmoClock_88_tc_tcExport.csv")
 
-jh_model <- clock_model()
+jh_model <- clock_model(fit_RT_diffs=TRUE)
 jh_model$add_params(
     meanRT(max_value=4000),
     autocorrPrevRT(),
