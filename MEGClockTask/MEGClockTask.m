@@ -90,7 +90,7 @@ function subject = MEGClockTask(sid,blk,varargin)
 
 
   % log all output of matlab
-  diaryfile = [ num2str(subject.subj_id) '_' num2str(GetSecs()) '_tcdiary.log'];
+  diaryfile = fullfile( 'logs', [num2str(subject.subj_id) '_' num2str(GetSecs()) '_tcdiary.log'] );
   diary(diaryfile);
 
   % save mat output to a textfile too
@@ -458,14 +458,6 @@ function subject = MEGClockTask(sid,blk,varargin)
             Screen('Flip',w);
             Screen('FillRect',w,backgroundColor,[0 0 screenResolution])
             waitForResponse('space');
-            
-            %DONT DRAW NEW INSTRUCTIONS, we'll get them when we restart
-            %drawRect(subject.trialnum+1);
-            %DrawFormattedText(w, InstructionsBetween,'center','center',black);
-            %blockTotal=0; %reset block score for new block
-            %Screen('Flip', w);
-            %waitForResponse('space');
-            %getReady();
 
         end
         
@@ -592,6 +584,7 @@ function subject = MEGClockTask(sid,blk,varargin)
      startTimeMS   = GetSecs()*10^3;
      durationMS  = timerDuration*10^3; % 4 seconds of looking at a face
      remainingMS = durationMS;
+     keyIsDown = 0;
      %elapsedMS = 0;
      % Loop while there is time.
      while remainingMS > 0 
@@ -651,6 +644,9 @@ function subject = MEGClockTask(sid,blk,varargin)
      end
      
      elapsedMS = round(GetSecs()*10^3 - startTimeMS);
+     if ~keyIsDown
+         elapsedMS = (timerDuration+1)*10^3; % make sure we know this trial is bogus
+     end
      % if 4s, give them no points? -- just a test for warning
      if elapsedMS >= (timerDuration) *10^3
      %    fprintf('warning: RT is %f\n', elapsedMS*10^8);
@@ -770,6 +766,11 @@ function subject = MEGClockTask(sid,blk,varargin)
        %trial start time
        t_start = (GetSecs - scannerStart);
        
+       % is this RT usable?
+       % 200 just incase they did actually push the button 
+       % 1second is added if no response
+       usableRT = ~ (RT > timerDuration*10^3 + 200);
+       
        [F_Mag F_Freq] = getScore(RT,func);
 
         %%% Compute Score
@@ -787,7 +788,7 @@ function subject = MEGClockTask(sid,blk,varargin)
         rd=rand(1);
                
         % is freq above thresold and do we have a resonable RT
-        if F_Freq > rd && RT~=0 && RT <= timerDuration*10^3
+        if F_Freq > rd && RT~=0 && usableRT
             subject.score=subject.score+F_Mag;
             blockTotal=blockTotal+F_Mag;
             inc=F_Mag;
@@ -804,8 +805,15 @@ function subject = MEGClockTask(sid,blk,varargin)
         %Screen('DrawText', w, sprintf('Your Score is: %d\nrecorded rxt: %d', score, rspnstime));
         %DrawFormattedText(w, sprintf('Total score is: %d\nincrease is: %d\nradnom vs Freq (ev): %f v %f (%f)\nrecorded rxt: %d', score,F_Mag,rd,F_Freq,ev, RT),'center','center',black);
         Screen('TextSize', w, 22);
-        DrawFormattedText(w, sprintf('You \nwon\n%d\npoints', inc),'center','center',black);
-
+        
+        % warn if there was no response!
+        % otherwise just show how many points were gained
+        if ~usableRT 
+            DrawFormattedText(w, ['You won 0 points.\n\n\n' ...
+                'Please respond before the ball goes all the way around.\n\n'],'center','center',black);
+        else
+            DrawFormattedText(w, sprintf('You \nwon\n%d\npoints', inc),'center','center',black);
+        end
         % varagin will be trigger, send if we have it
         % trigger is +4 if rewarded
         if(~isempty(varargin)), sendTrigger(varargin{1} + 4*inc>0), end
