@@ -352,10 +352,12 @@ atest$params[]
 #trying out a real fMRI subject
 library(fitclock)
 
-jh <- clockdata_subject(subject_ID="008_jh", dataset="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/008jh_13Jan2014/fMRIEmoClock_88_tc_tcExport.csv")
+#setup subject
+jh <- clockdata_subject(subject_ID="008_jh", dataset=clocksubject_fMRI_008jh)
 
-jh_model <- clock_model(fit_RT_diffs=TRUE)
-jh_model$add_params(
+#setup model to fit RT differences
+expDiff_model <- clock_model(fit_RT_diffs=TRUE, smooth=5)
+expDiff_model$add_params(
     meanRT(max_value=4000),
     autocorrPrevRT(),
     goForGold(),
@@ -365,16 +367,22 @@ jh_model$add_params(
     exploreBeta()
 )
 
-jh_model$set_data(jh)
+#tell model which dataset to use
+expDiff_model$set_data(jh)
 
-incr_fit <- jh_model$incremental_fit(njobs=6)
+#test the incremental contribution of each parameter to AIC (fit)
+incr_fit <- expDiff_model$incremental_fit(njobs=6)
 
-f <- jh_model$fit(random_starts=NULL)
+#vector of AIC values
+sapply(incr_fit$incremental_fits, "[[", "AIC")
 
-d <- f$build_design_matrix(regressors=c("button_press", "rel_uncertainty"), event_onsets=c("rt", "clock_onset"), durations=c(0, "rt"), baselineCoefOrder=2)
-d <- f$build_design_matrix(regressors=c("rpe_pos", "rel_uncertainty"), event_onsets=c("feedback_onset", "clock_onset"), durations=c("feedback_duration", "rt"))
+#fit full model, using 5 random starts and choosing the best fit
+f <- expDiff_model$fit(random_starts=5)
 
-#I believe this matches badre et al.
+#d <- f$build_design_matrix(regressors=c("button_press", "rel_uncertainty"), event_onsets=c("rt", "clock_onset"), durations=c(0, "rt"), baselineCoefOrder=2)
+#d <- f$build_design_matrix(regressors=c("rpe_pos", "rel_uncertainty"), event_onsets=c("feedback_onset", "clock_onset"), durations=c("feedback_duration", "rt"))
+
+#design matrix matching Badre et al. 2012 Neuron
 d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "rpe_pos", "rpe_neg", "rt"), 
     event_onsets=c("clock_onset", "clock_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
     durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2, writeTimingFiles=TRUE)
@@ -393,3 +401,102 @@ sapply(jh$runs, "[[", "rew_function")
 
 #collinearity of convolved data
 d$collin.convolve
+
+
+
+
+#####
+#fit the heck out of 008JH (alternative models and visualizations)
+library(fitclock)
+library(parallel)
+#setup subject
+jh <- clockdata_subject(subject_ID="008_jh", dataset=clocksubject_fMRI_008jh)
+
+#basic TC explore
+##pos epsilon constraint
+
+exp_model <- clock_model()
+exp_model$add_params(
+    meanRT(max_value=4000),
+    autocorrPrevRT(),
+    goForGold(),
+    go(),
+    noGo(),
+    meanSlowFast(),
+    exploreBeta(min_value=0.0) #positive epsilon
+)
+
+#tell model which dataset to use
+#exp_model$set_data(jh)
+
+#test the incremental contribution of each parameter to AIC (fit)
+incr_fit <- exp_model$incremental_fit(njobs=6)
+
+#vector of AIC values
+sapply(incr_fit$incremental_fits, "[[", "AIC")
+
+#fit full model, using 5 random starts and choosing the best fit
+f <- exp_model$fit(toFit=jh, random_starts=5)
+
+##unique fits per run
+runFits <- mclapply(jh$runs, mc.cores=6, FUN=function(r) {
+      exp_model$fit(toFit=r)
+    })
+
+#look at total SSE
+totalSSE <- sum(sapply(runFits, "[[", "SSE"))
+totalParams <- sum(sapply(runFits, "[[", "nparams"))
+#AIC, allowing for unique params
+AIC <- ntrials*(log(2*pi*(SSE/ntrials))+1) + 2*nparams
+sum(sapply(allF, "[[", "AIC"))
+
+
+
+
+#usual explore model
+
+
+
+
+
+#plot of predicted versus actual RTs
+df <- data.frame(rtobs)
+
+library(reshape2)
+library(plyr)
+run <- 3
+run1 <- f$pred_contrib[[run]]
+trials <- 50
+run1.melt <- melt(run1[,1:trials], value.name="RTcontrib", varnames=c("var", "trial"))
+run1.melt <- ddply(run1.melt, .(trial), function(trialdf) {
+      trialdf$xmin <- NA
+      trialdf$xmax <- NA
+      trialdf$ymin <- NA
+      trialdf$ymax <- NA
+      for (i in 1:nrow(trialdf)) {
+        if (i == 1) {
+          trialdf$xmin[i] <- 0.0
+          trialdf$ymin[i] <- 0.0
+          trialdf$ymax[i] <- trialdf$RTcontrib[i]
+        } else {
+          trialdf$xmin[i] <- trialdf$xmax[i-1] 
+          trialdf$ymin[i] <- trialdf$ymax[i-1]
+          trialdf$ymax[i] <- trialdf$ymax[i-1] + trialdf$RTcontrib[i]
+        }
+        trialdf$xmax[i] <- i*(1/nrow(trialdf))
+      }
+      trialdf
+
+    })
+#make sure that variable order matches original data (since parameter order matters)
+
+run1.melt$var <- factor(run1.melt$var, levels=dimnames(run1)[[1L]])
+run1.rtobs <- data.frame(trial=1:trials, rtobs=f$RTobs[run,1:trials])
+run1.rtpred <- data.frame(trial=1:trials, rtpred=f$RTpred[run,1:trials])
+
+pdf("plottest.pdf", width=24, height=9)
+ggplot(run1.melt, aes(x=xmin, ymin=ymin, ymax=ymax, color=var)) + 
+    geom_linerange(size=1.2) + geom_segment(aes(x=xmin, y=ymax, xend=xmax, yend=ymax)) + facet_wrap(~trial, scales="free_y") + 
+    xlab("") + ylab("RT") + theme(axis.text.x=element_blank()) + geom_hline(data=run1.rtobs, aes(yintercept=rtobs), color="blue") +
+    geom_hline(data=run1.rtpred, aes(yintercept=rtpred), color="red")
+dev.off()
