@@ -385,7 +385,7 @@ f <- expDiff_model$fit(random_starts=5)
 #design matrix matching Badre et al. 2012 Neuron
 d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "rpe_pos", "rpe_neg", "rt"), 
     event_onsets=c("clock_onset", "clock_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
-    durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2, writeTimingFiles=TRUE)
+    durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2, writeTimingFiles="AFNI")
 
 library(ggplot2)
 gmat <- lapply(d$design.convolve, function(r) {
@@ -430,13 +430,29 @@ exp_model$add_params(
 #exp_model$set_data(jh)
 
 #test the incremental contribution of each parameter to AIC (fit)
-#incr_fit <- exp_model$incremental_fit(njobs=6)
+incr_fit <- exp_model$incremental_fit(toFit=jh, njobs=6)
 
 #vector of AIC values
 #sapply(incr_fit$incremental_fits, "[[", "AIC")
 
 #fit full model, using 5 random starts and choosing the best fit
-f <- exp_model$fit(toFit=jh, random_starts=5)
+f <- exp_model$fit(toFit=jh, random_starts=NULL)#5)
+
+#design matrix matching Badre et al. 2012 Neuron
+d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "rpe_pos", "rpe_neg", "rt"), 
+    event_onsets=c("clock_onset", "clock_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
+    durations=c("rt", "rt", "feedback_duration", "feedback_duration", 0), baselineCoefOrder=2, writeTimingFiles="AFNI",
+    runVolumes=c(223,273,280,244,324,228,282,310))
+
+#simpler model
+setwd("~/")
+#EV, clock onset, feedback_onset, PE+, PE-
+d <- f$build_design_matrix(regressors=c("clock", "feedback", "ev", "rpe_neg", "rpe_pos"), 
+    event_onsets=c("clock_onset", "feedback_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
+    durations=c(0, 0, "feedback_duration", "feedback_duration", "feedback_duration"), baselineCoefOrder=2, writeTimingFiles="AFNI",
+    runVolumes=c(223,273,280,244,324,228,282,310))
+
+
 
 ##unique fits per run
 runFits <- mclapply(jh$runs, mc.cores=6, FUN=function(r) {
@@ -454,9 +470,6 @@ sum(sapply(allF, "[[", "AIC"))
 
 
 #usual explore model
-
-
-
 
 
 #plot of predicted versus actual RTs
