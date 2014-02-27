@@ -1,4 +1,4 @@
-function ClockToExcel(filename, fieldnames)
+function ClockToCSV(filename, fieldnames)
     %helper function
     function st = cell2str(cellStr)
         if isempty(cellStr)
