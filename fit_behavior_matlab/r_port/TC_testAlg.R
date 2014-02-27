@@ -430,10 +430,10 @@ exp_model$add_params(
 #exp_model$set_data(jh)
 
 #test the incremental contribution of each parameter to AIC (fit)
-incr_fit <- exp_model$incremental_fit(njobs=6)
+#incr_fit <- exp_model$incremental_fit(njobs=6)
 
 #vector of AIC values
-sapply(incr_fit$incremental_fits, "[[", "AIC")
+#sapply(incr_fit$incremental_fits, "[[", "AIC")
 
 #fit full model, using 5 random starts and choosing the best fit
 f <- exp_model$fit(toFit=jh, random_starts=5)
@@ -500,3 +500,15 @@ ggplot(run1.melt, aes(x=xmin, ymin=ymin, ymax=ymax, color=var)) +
     xlab("") + ylab("RT") + theme(axis.text.x=element_blank()) + geom_hline(data=run1.rtobs, aes(yintercept=rtobs), color="blue") +
     geom_hline(data=run1.rtpred, aes(yintercept=rtpred), color="red")
 dev.off()
+
+
+#try out V model
+jh <- clockdata_subject(subject_ID="008_jh", dataset=clocksubject_fMRI_008jh)
+vm <- deltavalue_model(clock_data=jh, alphaV=0.1) #N.B. This matches V matrix from full time-clock algorithm fit.
+vm$predict() #predicted value at learning rate of 0.1
+V_0p1 <- vm$V #v matrix for learning rate of 0.1
+f <- vm$fit() #estimate learning rate as a free parameter
+V_free <- vm$V #v matrix for free parameter
+
+
+
