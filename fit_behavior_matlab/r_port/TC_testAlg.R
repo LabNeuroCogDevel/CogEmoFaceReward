@@ -373,6 +373,10 @@ expDiff_model$set_data(jh)
 #test the incremental contribution of each parameter to AIC (fit)
 incr_fit <- expDiff_model$incremental_fit(njobs=6)
 
+png("Incremental Fit Example.png", width=9, height=6, units="in", res=300)
+incr_fit$AICplot
+dev.off()
+
 #vector of AIC values
 sapply(incr_fit$incremental_fits, "[[", "AIC")
 
