@@ -185,7 +185,7 @@ summaryRprof("profile1.out")#, lines = "show")
 #try to figure out a match with MF fits
 #pilot: 1000
 library(fitclock)
-s1000 <- clockdata_subject(subject_ID="1000_pilot", csv_file="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
+s1000 <- clockdata_subject(subject_ID="1000_pilot", data="/Users/michael/CogEmoFaceReward/subjects/pilot/1000_tc_tcExport.csv")
 #s1000$import_runs()
 
 library(compiler)
@@ -427,13 +427,13 @@ exp_model$add_params(
 )
 
 #tell model which dataset to use
-#exp_model$set_data(jh)
+exp_model$set_data(jh)
 
 #test the incremental contribution of each parameter to AIC (fit)
 incr_fit <- exp_model$incremental_fit(toFit=jh, njobs=6)
 
 #vector of AIC values
-#sapply(incr_fit$incremental_fits, "[[", "AIC")
+sapply(incr_fit$incremental_fits, "[[", "AIC")
 
 #fit full model, using 5 random starts and choosing the best fit
 f <- exp_model$fit(toFit=jh, random_starts=NULL)#5)
@@ -517,11 +517,46 @@ dev.off()
 
 #try out V model
 jh <- clockdata_subject(subject_ID="008_jh", dataset=clocksubject_fMRI_008jh)
-vm <- deltavalue_model(clock_data=jh, alphaV=0.1) #N.B. This matches V matrix from full time-clock algorithm fit.
-vm$predict() #predicted value at learning rate of 0.1
-V_0p1 <- vm$V #v matrix for learning rate of 0.1
-f <- vm$fit() #estimate learning rate as a free parameter
-V_free <- vm$V #v matrix for free parameter
+vm <- deltavalue_model(clock_data=jh, alphaV=0.3) #N.B. This matches V matrix from full time-clock algorithm fit.
+f <- vm$predict(returnFit=TRUE) #SSE for prediction errors at learning rate of 0.1
+#V_0p1 <- vm$V #v matrix for learning rate of 0.1
+f_1p <- vm$fit() #estimate learning rate as a free parameter
+#V_free <- vm$V #v matrix for free parameter
+
+#separate learning rates for rewards versus omissions.
+vm <- deltavalue_model(clock_data=jh, alphaV=0.3, betaV=0.3) #N.B. This matches V matrix from full time-clock algorithm fit.
+f_2p <- vm$fit() #estimate learning rate as a free parameter
+
+V_0p3 <- vm$V #v matrix for learning rate of 0.1
+library(ggplot2); library(reshape2)
+
+m <- melt(V_0p3, varnames=c("Run", "Trial"))
+m$Run <- factor(m$Run, levels=c(1:8), labels=paste0(f$run_condition, f$rew_function))
+ggplot(m, aes(x=Trial, y=value)) + geom_point() + geom_line() + facet_wrap(~Run)
+
+#simple design matrix for value regressors
+setwd("~/") #write timing files to home directory
+#EV, clock onset, feedback_onset, PE+, PE-
+d <- f$build_design_matrix(regressors=c("clock", "feedback", "ev", "rpe_neg", "rpe_pos"), 
+    event_onsets=c("clock_onset", "feedback_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
+    durations=c(0, 0, "feedback_duration", "feedback_duration", "feedback_duration"), baselineCoefOrder=2, writeTimingFiles="AFNI",
+    runVolumes=c(223,273,280,244,324,228,282,310))
 
 
 
+#006mb
+mb <- clockdata_subject(subject_ID="006_mb", dataset="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/006mb_05Nov2013/fMRIEmoClock/fMRIEmoClock_6_tc_tcExport.csv")
+vm <- deltavalue_model(clock_data=mb, alphaV=0.3) #N.B. This matches V matrix from full time-clock algorithm fit.
+f <- vm$predict(returnFit=TRUE) #SSE for prediction errors at learning rate of 0.1
+
+#005ai
+ai <- clockdata_subject(subject_ID="005_ai", dataset="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/005ai_06Nov2013/fMRIEmoClock_5_tc_tcExport.csv")
+vm <- deltavalue_model(clock_data=ai, alphaV=0.3) #N.B. This matches V matrix from full time-clock algorithm fit.
+f <- vm$predict(returnFit=TRUE) #SSE for prediction errors at learning rate of 0.1
+
+
+
+#RT plot
+m <- melt(f$RTobs, varnames=c("Run", "Trial"))
+m$Run <- factor(m$Run, levels=c(1:8), labels=paste0(f$run_condition, f$rew_function))
+ggplot(m, aes(x=Trial, y=value)) + geom_point() + geom_line() + facet_wrap(~Run)
