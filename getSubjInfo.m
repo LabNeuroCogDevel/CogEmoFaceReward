@@ -1,6 +1,7 @@
 %% helper function to get subject info and reload after failed run
-function [order, runTotals, filename] = getSubjInfo(taskname, trialsPerBlock, totalBlocks)
-global subject;
+function [order, runTotals, filename] = getSubjInfo(taskname)
+
+global subject facenumC blockC emotionC rewardC ITIC experiment totalBlocks trialsPerBlock;
 
 if nargin < 1
     taskname='fMRIEmoClock';
@@ -10,14 +11,7 @@ if nargin < 2
     trialsPerBlock = 50; %assume 50
 end
 
-% initialize the order of events
-order=cell(trialsPerBlock*totalBlocks,1);
-
-%initialize run totals
-runTotals = zeros(totalBlocks, 1);
-
-%whether to prompt user for run to execute
-askRun=false;
+subject=[]; %clear out any cached subject information
 
 %determine subject number
 %if .mat file exists for this subject, then likely a reload and continue
@@ -31,7 +25,68 @@ while isnan(subject.subj_id)
     end
 end
 
-filename = ['subjects/' taskname '_' num2str(subject.subj_id) '_tc'];
+%determine session number (for repeated behavioral visits)
+subject.session = NaN;
+while isnan(subject.session)
+    idInput = str2double(input('Enter the session number: ','s')); %force to be numeric
+    if ~isnan(idInput)
+        subject.session = idInput;
+    else
+        fprintf('\n  Session must be a number\n\n');
+    end
+end
+
+if strcmpi(taskname, 'BehavEmoClock')
+    if subject.session == 1
+        csvfile='FaceBehavOrder.csv';
+    elseif subject.session == 2
+        csvfile='FaceBehavOrder_Followup.csv';
+    elseif subject.session == 3
+        csvfile='FaceBehavOrder_Followup.csv';
+    else
+        error(['unable to identify design file for session ' subject.session]);
+    end
+
+    fid=fopen(csvfile);
+    indexes={1,2,3,4};
+    [ facenumC, blockC, emotionC, rewardC ] = indexes{:};
+    experiment=textscan(fid,'%d %d %s %s','HeaderLines',1,'Delimiter', ',');
+    fclose(fid);
+elseif strcmpi(taskname, 'fMRIEmoClock')
+    csvfile='FaceFMRIOrder.csv'; %not checking for session at this time
+    
+    fid=fopen(csvfile);
+    indexes={1,2,3,4,5};
+    [ facenumC, blockC, emotionC, rewardC, ITIC ] = indexes{:};
+    experiment=textscan(fid,'%d %d %s %s','HeaderLines',1,'Delimiter', ',');
+    fclose(fid);
+else
+    %MEG currently uses forked copies of utility scripts, so don't check
+    error(['Unable to determine what to do for task' taskname]);
+end
+
+fprintf('Reading design from %s\n', csvfile);
+
+% how long (trials) is a block
+[~,blockchangeidx] = unique(experiment{blockC});
+trialsPerBlock     = unique(diff(blockchangeidx));
+if(length(trialsPerBlock) > 1)
+    error('Whoa?! Different block lengths? I dont know what''s going on!\n')
+end
+
+totalBlocks = length(experiment{blockC})/trialsPerBlock;
+
+% initialize the order of events
+order=cell(trialsPerBlock*totalBlocks,1);
+
+%initialize run totals
+runTotals = zeros(totalBlocks, 1);
+
+%whether to prompt user for run to execute
+askRun=false;
+
+
+filename = ['subjects/' taskname '_' num2str(subject.subj_id) '_' num2str(subject.session) '_tc'];
 
 % is the subject new? should we resume from existing?
 % set t accordingly, maybe load subject structure
@@ -112,7 +167,7 @@ if ~ismember('run_num', fields(subject)), subject.run_num = 1; end %if new parti
 
 %% fill out the subject struct if any part of it is still empty
 
-if ~ismember('age', fields(subject))
+if ~ismember('age', fields(subject)) || isnan(subject.age)
     subject.age = NaN;
     while isnan(subject.age)
         ageInput = str2double(input('Enter the subject''s age: ','s')); %force to be numeric

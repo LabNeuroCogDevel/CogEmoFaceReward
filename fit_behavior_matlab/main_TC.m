@@ -18,7 +18,7 @@ options = optimset(@fmincon);
 %get a list of subject data to fit
 
 %subject directory is relative to this fit_behavior directory.
-subjdir='../subjects/pilot/';
+subjdir='../subjects/';
 subjfiles=dir(strcat(subjdir, '*.mat'));
 
 if isempty(subjfiles)

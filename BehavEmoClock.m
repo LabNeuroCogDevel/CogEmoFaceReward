@@ -41,7 +41,7 @@ function BehavEmoClock(varargin)
 %
 % each presentation can last up to 4 seconds
 % the subject can hit space at any time
-% reward is calcluated based on the time allowed to elapse and the current reward function
+% reward is calculated based on the time allowed to elapse and the current reward function
 %
 % score function from M. Frank
 % output emulates his timeconflict.m
@@ -49,7 +49,7 @@ function BehavEmoClock(varargin)
 % This used 'KbDemo' as template
 
 %window pointer, slack, and subject structure are global across functions
-global w slack subject resppad;
+global w slack subject resppad facenumC blockC emotionC rewardC ITIC experiment totalBlocks trialsPerBlock;
 
 %% PROCESS ARGUMENTS GIVEN TO FUNCTION
 % * are we using a response pad?
@@ -98,24 +98,7 @@ postResponseISI = .05;  %50ms delay between response and feedback
 postFeedbackITI = .10;  %100ms delay after feedback prior to next trial. Any ITI is added to this.
 timerDuration    = 4.0; %time for revolution of clock
 
-%% set order of trials
-
-
-% read in order of blocks and trials
-fid=fopen('FaceBehavOrder.csv');
-indexes={1,2,3,4};
-[ facenumC, blockC, emotionC, rewardC ] = indexes{:};
-experiment=textscan(fid,'%d %d %s %s','HeaderLines',1,'Delimiter', ',');
-fclose(fid);
-
-% how long (trials) is a block
-[~,blockchangeidx] = unique(experiment{blockC});
-trialsPerBlock     = unique(diff(blockchangeidx));
-if(length(trialsPerBlock) > 1)
-    error('Whoa?! Different block lengths? I dont know what''s going on!\n')
-end
-
-totalBlocks = length(experiment{blockC})/trialsPerBlock;
+%N.B.: read in of design (blocks and trials) now internal to getSubjInfo to allow for customization based on session number.
 
 %obtain subject and run information
 %this populates:
@@ -125,7 +108,7 @@ totalBlocks = length(experiment{blockC})/trialsPerBlock;
 % 4) runTotals (total points per run, clearing out old totals for re-run)
 % 5) order (cell array of behavior)
 
-[order, runTotals, filename] = getSubjInfo('BehavEmoClock', trialsPerBlock, totalBlocks);
+[order, runTotals, filename] = getSubjInfo('BehavEmoClock');
 
 %% Counter balance order of runs by reversing order for odd subjects
 if mod(subject.subj_id, 2) == 1

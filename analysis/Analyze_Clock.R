@@ -143,20 +143,26 @@ plot(~ AICchange + epsChange, noemo)
 
 #learningParams <- read.table("../fit_behavior/SubjsSummary_emoexplore.txt", header=TRUE)
 
-learning_emoexplore <- read.table("../fit_behavior/SubjsSummary_emoexploresticky.txt", header=TRUE)
-learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemosticky.txt", header=TRUE)
+learning_emoexplore <- read.table("../fit_behavior_matlab/SubjsSummary_emoexploresticky.txt", header=TRUE)
+learning_noemo <- read.table("../fit_behavior_matlab/SubjsSummary_noemosticky.txt", header=TRUE)
+#learning_noemo <- read.table("../fit_behavior_matlab/SubjsSummary_noemo.txt", header=TRUE)
 #learning_noemo <- read.table("../fit_behavior/SubjsSummary_noemo_scram.txt", header=TRUE)
 
 learning_emoexplore <- rename(learning_emoexplore, c(Subject="LunaID"))
 learning_emoexplore <- merge(learning_emoexplore, behav[,c("LunaID", "AgeAtVisit", 
             "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", "UPPS_Prem", "UPPS_Pers", 
-            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
-            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
+            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS", "CD",
+            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", 
+            "ADI_Total", "DERS_Total", "DERS_Clarity", "DERS_Strategies", "DERS_Awareness", "DERS_Impulse", "DERS_NonAccept", 
+            "STAI_Score", "ADI_Emotional", "ADI_Behavioral", "ADI_Cognitive", "RPI", "RSE")], by="LunaID")
 
 learning_noemo <- rename(learning_noemo, c(Subject="LunaID"))
-learning_noemo <- merge(learning_noemo, behav[,c("LunaID", "AgeAtVisit", "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", 
-            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
-            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")], by="LunaID")
+learning_noemo <- merge(learning_noemo, behav[,c("LunaID", "AgeAtVisit", 
+            "UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", "UPPS_Prem", "UPPS_Pers",
+            "NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS", "CD",
+            "RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", 
+            "ADI_Total", "DERS_Total", "DERS_Clarity", "DERS_Strategies", "DERS_Awareness", "DERS_Impulse", "DERS_NonAccept", 
+            "STAI_Score", "ADI_Emotional", "ADI_Behavioral", "ADI_Cognitive", "RPI", "RSE")], by="LunaID")
 
 learning_noemo$explorePos <- sapply(learning_noemo$explore, function(x) { ifelse(x > 0, x, NA) })
 learning_noemo$exploreGt0 <- sapply(learning_noemo$explore, function(x) { ifelse(x > 0, 1, 0) })
@@ -172,6 +178,8 @@ cor.test(~ alphaN + SSS_Total, learning_noemo)
 cor.test(~ alphaG + AgeAtVisit, learning_noemo)
 cor.test(~ alphaN + AgeAtVisit, learning_noemo)
 
+
+
 ggplot(learning_noemo, aes(x=AgeAtVisit, y=alphaG)) + geom_point() + stat_smooth()
 ggplot(learning_noemo, aes(x=AgeAtVisit, y=alphaN)) + geom_point() + stat_smooth()
 
@@ -180,49 +188,24 @@ ggplot(learning_noemo, aes(x=AgeAtVisit, y=exploreGt0)) + geom_point()
 
 corstarsl(learning_noemo, omit=c("LunaID", "Session", "ignore"))
 corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
-
-
 corstarsl(learning_emoexplore, omit=c("LunaID", "Session", "ignore"))
 
-corwithtarget <- function(df, omit=NULL, target, withvars=NULL, pmin=NULL) {
-  if (!is.null(omit)) { 
-    dnames <- which(names(df) %in% omit)
-    df <- df[,-1*dnames]
-  }
-  
-  if (is.null(withvars)) {
-    withvars <- names(df)[which(!names(df) %in% target)]
-  }
-  
-  res <- sapply(target, function(tv) {
-        cvec <- sapply(withvars, function(wv) { 
-              rc <- Hmisc::rcorr(df[,tv], df[,wv])
-              list(r=plyr::round_any(rc$r[1,2], .001), p=plyr::round_any(rc$P[1,2], .001))
-            } 
-        )
-        
-        if (!is.null(pmin)) { 
-          sigr <- which(unlist(cvec["p",]) <= pmin)
-          if (length(sigr) == 0L) { cvec <- c() 
-          } else { cvec <- cvec[,sigr, drop=FALSE] }
-        }  
-          return(cvec)
-        
-        #print(cvec)
-      }, simplify=FALSE)
-  
-  return(res)
-}
-
-#params <- c("lambda", "alphaN", "alphaG", "explore_scram", "explore_fear", "explore_happy", "K", "sticky_decay", "rho", "SSE")
-params <- c("lambda", "alphaN", "alphaG", "explore", "K", "sticky_decay", "rho", "SSE")
+params <- c("lambda", "alphaN", "alphaG", "explore_scram", "explore_fear", "explore_happy", "K", "sticky_decay", "rho", "SSE")
+#params <- c("lambda", "alphaN", "alphaG", "explore", "K", "sticky_decay", "rho", "SSE")
 selfreports <- c("UPPS_Urg", "UPPS_PosUrg", "UPPS_SS", "UPPS_Prem", "UPPS_Pers", 
-"NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS",
-"RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS", "ADI_Total", "DERS_Total", "STAI_Score")
+"NN", "NSR", "EPA", "ESA", "OAI", "OII", "OU", "ANO", "APO", "CO", "CGS", "CD",
+"RIST.INDEZ", "SSS_Total", "TAS", "ES", "DIS", "BS",
+"DERS_Total", "DERS_Clarity", "DERS_Strategies", "DERS_Awareness", "DERS_Impulse", "DERS_NonAccept",
+"ADI_Total", "DERS_Total", "STAI_Score", "ADI_Emotional", "ADI_Behavioral", "ADI_Cognitive",
+"STAI_Score", "RSE", "RSI")
 
 sigrs <- corwithtarget(learning_emoexplore, pmin=.05, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target=params)
+#sigrs <- corwithtarget(learning_noemo, pmin=.05, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target=params)
+
+#sigrs <- corwithtarget(learning_noemo, pmin=.05, target="AgeAtVisit", with=c(params, selfreports))
 
 #follow-up to see whether there are linear or quadratic interactions with age
+pdf("learning_by_age_interactions.pdf", width=11, height=7)
 for (p in 1:length(sigrs)) {
   if (is.null(sigrs[[p]])) { next }
   p_name <- names(sigrs)[p]
@@ -232,26 +215,58 @@ for (p in 1:length(sigrs)) {
   
   for(s in 1:length(sreports)) {
     s_name <- sreports[s]
+#    df_test <- data.frame(
+#        as.vector(scale(learning_emoexplore[[ p_name ]], scale=FALSE)),
+#        learning_emoexplore[[ s_name ]],
+#        as.vector(scale(learning_emoexplore$AgeAtVisit, scale=FALSE))
+#    )
+    
     df_test <- data.frame(
-        as.vector(scale(learning_emoexplore[[ p_name ]], scale=FALSE)),
+        learning_emoexplore[[ p_name ]],
         learning_emoexplore[[ s_name ]],
-        as.vector(scale(learning_emoexplore$AgeAtVisit, scale=FALSE))
+        learning_emoexplore$AgeAtVisit
     )
+#    df_test <- data.frame(
+#        as.vector(scale(learning_noemo[[ p_name ]], scale=FALSE)),
+#        learning_noemo[[ s_name ]],
+#        as.vector(scale(learning_noemo$AgeAtVisit, scale=FALSE))
+#    )    
     
     names(df_test) <- c(p_name, s_name, "AgeAtVisit")
-    #form <- as.formula(paste(s_name, "~", p_name, "*AgeAtVisit + ", p, "*I(AgeAtVisit^2)"))
+    #form <- as.formula(paste(s_name, "~", p_name, "*AgeAtVisit + ", p_name, "*I(AgeAtVisit^2)"))
     form <- as.formula(paste(s_name, "~", p_name, "*AgeAtVisit"))
     model <- lm(form, data=df_test)
     pvals <- summary(model)$coefficients[,c("Pr(>|t|)")][-1L] #-1L to drop p-value for intercept
     #if (any(pvals < .05)) {
     #if (pvals[paste0(p, ":I(AgeAtVisit^2)")] < .05) {
-    #if (pvals[paste0(p, ":AgeAtVisit")] < .05) {
+    if (pvals[paste0(p_name, ":AgeAtVisit")] < .05) {
       
-    cat("------\n\nParameter:", p_name, ", Self-report:", s_name, "\n")
-    print(summary(model))
-    cat("\n-----\n\n")
+      cat("------\n\nParameter:", p_name, ", Self-report:", s_name, "\n")
+      print(summary(model))
+      cat("\n-----\n\n")
+      
+      p <- plot(effect(term=paste0(p_name, ":AgeAtVisit"),mod=model,default.levels=5, x.var="AgeAtVisit"),multiline=TRUE)
+      print(p)
+    }
   }
 }
+dev.off()
+
+learning_emoexplore$alphaG.c <- learning_emoexplore$alphaG - mean(learning_emoexplore$alphaG, na.rm=TRUE)
+learning_emoexplore$AgeAtVisit.c <- learning_emoexplore$AgeAtVisit - mean(learning_emoexplore$AgeAtVisit, na.rm=TRUE)
+#adiModel <- lm(ADI_Total ~ alphaG.c*AgeAtVisit.c, learning_emoexplore)
+adiModel <- lm(ADI_Total ~ alphaG*AgeAtVisit, learning_emoexplore)
+
+gr <- expand.grid(
+    AgeAtVisit = seq(14, 31, by=0.5),
+    alphaG = c(-0.1544, 0, .1544))
+    #ADI_Total=0)
+
+gr$pred <- predict(adiModel, gr)
+gr$alphaG <- ordered(gr$alphaG)
+ggplot(gr, aes(x=AgeAtVisit, y=pred, color=alphaG)) + geom_line()
+
+upps <- lm(UPPS_PosUrg ~ alphaG*AgeAtVisit, learning_emoexplore)
 
 sigrs <- corwithtarget(learning_emoexplore, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target="AgeAtVisit")
 sigrs <- corwithtarget(learning_noemo, omit=c("LunaID", "Session", "ignore", "explore_HappyMScramble", "explore_FearMScramble"), target="AgeAtVisit")

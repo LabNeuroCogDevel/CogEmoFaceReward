@@ -49,7 +49,7 @@ function fMRIEmoClock
 % This used 'KbDemo' as template
 
 %window pointer, slack, and subject structure are global across functions
-global w slack subject;
+global w slack subject facenumC blockC emotionC rewardC ITIC experiment totalBlocks trialsPerBlock;
 
 %screenResolution=[640 480]; %basic VGA
 %screenResolution=[1600 1200];
@@ -80,22 +80,6 @@ preStartWait     = 8.0; %initial fixation
 % Based on R calculations, we want to optimize the ITI sequence and distribution with an assumption
 % of 2-second avg RTs and a target presentation percentage of 55%.
 
-% read in order of blocks and trials
-fid=fopen('FaceFMRIOrder.csv');
-indexes={1,2,3,4,5};
-[ facenumC, blockC, emotionC, rewardC, ITIC ] = indexes{:};
-experiment=textscan(fid,'%d %d %s %s','HeaderLines',1,'Delimiter', ',');
-fclose(fid);
-
-% how long (trials) is a block
-[~,blockchangeidx] = unique(experiment{blockC});
-trialsPerBlock     = unique(diff(blockchangeidx));
-if(length(trialsPerBlock) > 1)
-    error('Whoa?! Different block lengths? I dont know what''s going on!\n')
-end
-
-totalBlocks = length(experiment{blockC})/trialsPerBlock;
-
 %obtain subject and run information
 %this populates:
 % 1) subject.blockColors (colors of rectangles around stimuli for each block)
@@ -104,7 +88,7 @@ totalBlocks = length(experiment{blockC})/trialsPerBlock;
 % 4) runTotals (total points per run, clearing out old totals for re-run)
 % 5) order (cell array of behavior)
 
-[order, runTotals, filename] = getSubjInfo('fMRIEmoClock', trialsPerBlock, totalBlocks);
+[order, runTotals, filename] = getSubjInfo('fMRIEmoClock');
 
 %load ITI distribution for all runs.
 %NB: the .runITIs element is runs x trials in size (8 x 50)
