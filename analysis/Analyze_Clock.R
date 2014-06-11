@@ -558,6 +558,14 @@ for (s in split(allData, allData$LunaID)) {
 }
 dev.off()
 
+pdf("AllSubjDensity.pdf", width=11, height=8)
+for (s in split(allData, allData$LunaID)) {
+  g <- ggplot(s, aes(x=RT)) + geom_density() + facet_grid(Emotion ~ Func) + ggtitle(s$LunaID[1L])
+  print(g)
+}
+dev.off()
+
+
 pdf("AllSubjRTs_withMax.pdf", width=11, height=8)
 for (s in split(allData, allData$LunaID)) {
     sm <- reshape2::melt(s[,c("TrialRel", "RT", "Emotion", "Func", "bestRewRT", "bestEVRT")], id.vars=c("TrialRel", "Emotion", "Func"))
