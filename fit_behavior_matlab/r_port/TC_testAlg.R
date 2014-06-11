@@ -134,7 +134,7 @@ xmin
 
 
 #try out creation of clockSubject with runs
-s <- clockSubject(subject_ID="006_mb", csv_file="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/006mb_05Nov2013/fMRIEmoClock/fMRIEmoClock_6_tc_tcExport.csv")
+s <- clockdata_subject(subject_ID="006_mb", csv_file="/Users/michael/Dropbox/Hallquist_K01/Data/fMRI/006mb_05Nov2013/fMRIEmoClock/fMRIEmoClock_6_tc_tcExport.csv")
 s$import_runs()
 
 #is the basic mean RT fit working across all blocks?
