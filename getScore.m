@@ -13,8 +13,7 @@ sin_factor = 0.25;
 switch scrfunc
     case 'CEV'
         Mag = (k*rt_extended)/(rt_extended-(RT+Shift));
-        Freq = 1-((RT+Shift)/rt_extended);
-        
+        Freq = 1-((RT+Shift)/rt_extended);        
     case 'DEV'
         Mag = DEV_factor*log(DEV_factor2*(RT+Shift));
         CEV_x = 1-((RT+Shift)/rt_extended);
@@ -31,6 +30,26 @@ switch scrfunc
         Mag = Mag*200;
         Freq = (k*rt_extended)/(rt_extended-(RT+Shift)) ;
         Freq = Freq/200;
+    case 'IEVLINPROB'
+        %for 0-500ms, use the min probability of 0.2
+        %for 3750-4000ms, use the max probability of 0.8
+        if RT < 500
+            RT = 500;
+        elseif RT > 3750
+            RT = 3750;
+        end
+        Freq = (RT - 500)/5416.667 + 0.2; %5416.667 is 3750 - 500 / 0.6
+        Mag = 1; %1 or 0 outcome        
+    case 'DEVLINPROB'
+        %for 0-500ms, use the max probability of 0.8
+        %for 3750-4000ms, use the min probability of 0.2
+        if RT < 500
+            RT = 500;
+        elseif RT > 3750
+            RT = 3750;
+        end        
+        Freq = (4000 - 250 - RT)/5416.667 + 0.2;
+        Mag = 1; %1 or 0 outcome
     otherwise
         Mag = 0;
         Freq = 0;

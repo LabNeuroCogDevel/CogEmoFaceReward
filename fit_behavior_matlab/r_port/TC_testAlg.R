@@ -440,7 +440,7 @@ incr_fit <- exp_model$incremental_fit(toFit=jh, njobs=6)
 sapply(incr_fit$incremental_fits, "[[", "AIC")
 
 #fit full model, using 5 random starts and choosing the best fit
-f <- exp_model$fit(toFit=jh, random_starts=NULL)#5)
+f <- exp_model$fit(toFit=jh, random_starts=NULL)
 
 #design matrix matching Badre et al. 2012 Neuron
 d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "rpe_pos", "rpe_neg", "rt"), 
@@ -452,8 +452,14 @@ d <- f$build_design_matrix(regressors=c("mean_uncertainty", "rel_uncertainty", "
 setwd("~/")
 #EV, clock onset, feedback_onset, PE+, PE-
 d <- f$build_design_matrix(regressors=c("clock", "feedback", "ev", "rpe_neg", "rpe_pos"), 
-    event_onsets=c("clock_onset", "feedback_onset", "feedback_onset", "feedback_onset", "feedback_onset"), 
-    durations=c(0, 0, "feedback_duration", "feedback_duration", "feedback_duration"), baselineCoefOrder=2, writeTimingFiles="AFNI",
+    event_onsets=c("clock_onset", "feedback_onset", "clock_onset", "feedback_onset", "feedback_onset"), 
+    durations=c(0, 0, "clock_duration", "feedback_duration", "feedback_duration"), baselineCoefOrder=2, writeTimingFiles="AFNI",
+    runVolumes=c(223,273,280,244,324,228,282,310))
+
+
+d <- f$build_design_matrix(regressors=c("clock", "feedback", "ev", "rpe_neg", "rpe_pos"), 
+    event_onsets=c("clock_onset", "feedback_onset", "clock_onset", "feedback_onset", "feedback_onset"), 
+    durations=c(0, 0, "clock_duration", "feedback_duration", "feedback_duration"), baselineCoefOrder=2, writeTimingFiles="FSL",
     runVolumes=c(223,273,280,244,324,228,282,310))
 
 
