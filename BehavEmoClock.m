@@ -56,15 +56,15 @@ global w slack subject resppad facenumC blockC emotionC rewardC ITIC experiment 
 % * TODO: what resolution to use?, this should all be done in a for loop with class(varargin{i})
 resppad=[];
 % find all character arguments to the function
-vanCharI    = cellfun(@(x) any(strmatch(class(x),'char')), varargin );
+vanCharI    = varargin(cellfun(@(x) any(strmatch(class(x),'char')), varargin ));
 % find all arguments that match usb or com (port for Cedrus)
-vanCharIrpI = cellfun(@(x) any(regexpi(x,'.*(usb|com).*')), varargin( vanCharI ));
+vanCharIrpI = cellfun(@(x) ~isempty(regexpi(x,'usb|com')), vanCharI);
 
-if(vanCharIrpI)
-  port=varargin{vanCharIrpI(vanCharIrpI(1))};
-  fprintf('USING RESPOSE BOX: %s\n', port)
+if(any(vanCharIrpI))
+  %figure out port number
+  port=vanCharI{vanCharIrpI==1};
+  fprintf('USING RESPONSE BOX: %s\n', port)
   try; CedrusResponseBox('CloseAll'); end
-  % port is the first character argument matching com or usb
   try
    %% sometimes opening the the device seems to lead to
    %% an endless loop. Works when dev is *USB0
@@ -84,7 +84,9 @@ end
 %screenResolution=[1600 1200];
 %screenResolution=[1440 900]; %new eyelab room
 %screenResolution=[1680 1050]; %mac laptop
-screenResolution=[1024 768]; %mac laptop
+%screenResolution=[1024 768]; %mac laptop
+screenResolution=[1920 1080]; %bellefield dell
+
 
 
 
@@ -467,6 +469,7 @@ sca
         ListenChar(0);
         ShowCursor;
         sca
+        CedrusResponseBox('Close', resppad);
     end
 
 %% print time since last check
