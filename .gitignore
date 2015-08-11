@@ -2,3 +2,6 @@ analysis/clock_questionnaires_n36.xls
 .DS_Store
 .RData
 .Rhistory
+logs/*
+subjects/*.mat
+subjects/*.txt

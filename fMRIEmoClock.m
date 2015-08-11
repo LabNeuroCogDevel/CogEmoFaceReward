@@ -372,7 +372,9 @@ try
         expected.receipt = receiptDuration;
         expected.ISI     = double(postResponseISI);
         expected.end     = 0; 
-        expected.end     = sum(struct2array(expected));
+        %expected.end     = sum(struct2array(expected)); %the sensible version, but somehow MRRC is missing struct2array
+        expected.end     = sum(cellfun( @(x) x, struct2cell(expected))); %the ugly, but available, version.
+
         fprintf('\n%d: %s_%d.png\n%.2f in, expected, obs, diff\n',i, experiment{emotionC}{i},experiment{facenumC}(i),timing.start);
                 
         for f = {'clock'  'ISI' 'receipt' 'ITI' 'end' };

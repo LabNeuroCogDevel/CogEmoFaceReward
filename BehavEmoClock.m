@@ -64,7 +64,7 @@ if(any(vanCharIrpI))
   %figure out port number
   port=vanCharI{vanCharIrpI==1};
   fprintf('USING RESPONSE BOX: %s\n', port)
-  try; CedrusResponseBox('CloseAll'); end
+  try CedrusResponseBox('CloseAll'); end
   try
    %% sometimes opening the the device seems to lead to
    %% an endless loop. Works when dev is *USB0
@@ -214,7 +214,7 @@ try
     for emo=unique(experiment{emotionC})'
         for facenum=unique(experiment{facenumC})'
             stimfilename=strcat('faces/',emo{1},'_',num2str(facenum),'.png');
-            [imdata, colormap, alpha]=imread(stimfilename);
+            [imdata, ~, alpha]=imread(stimfilename);
             imdata(:, :, 4) = alpha(:, :); %add alpha information
             % make texture image out of image matrix 'imdata'
             facetex.(emo{1}){facenum} = Screen('MakeTexture', w, imdata);
@@ -385,7 +385,9 @@ try
         expected.receipt = receiptDuration;
         expected.ISI     = double(postResponseISI);
         expected.end     = 0; 
-        expected.end     = sum(struct2array(expected));
+        %expected.end     = sum(struct2array(expected)); %the sensible version, but somehow MRRC is missing struct2array
+        expected.end     = sum(cellfun( @(x) x, struct2cell(expected))); %the ugly, but available, version.
+        
         fprintf('\n%d: %s_%d.png\n%.2f in, expected, obs, diff\n',subject.trial_num, experiment{emotionC}{subject.trial_num},experiment{facenumC}(subject.trial_num),timing.start);
                 
         for f = {'clock'  'ISI' 'receipt' 'ITI' 'end' };
@@ -469,7 +471,7 @@ sca
         ListenChar(0);
         ShowCursor;
         sca
-        CedrusResponseBox('Close', resppad);
+        if(~isempty(resppad)), CedrusResponseBox('Close', resppad); end
     end
 
 %% print time since last check
