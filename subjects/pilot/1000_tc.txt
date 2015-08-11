@@ -1,8 +1,0 @@
-#Subj:	1000
-#Run:	1
-#Age:	16
-#Gender:	male
-#18-Apr-2013
-Func	Run	Trial	Block	Null	trialStartTime	Mag	ScoreInc	Freq	EV	RT	Emotion	Image
-CEV	   1	   1	   1	   0	1.850906e+01	 116	   0	3.255714e-01	3.765114e+01	4021	fear	fear_10.png	
-CEV	   1	   2	   1	   0	2.498283e+01	  48	  48	7.997143e-01	3.859943e+01	 702	fear	fear_4.png	

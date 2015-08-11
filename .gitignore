@@ -5,3 +5,6 @@ analysis/clock_questionnaires_n36.xls
 logs/*
 subjects/*.mat
 subjects/*.txt
+subjects/orgfmt
+subjects/pilot
+subjects/withoutEmo
